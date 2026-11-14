@@ -186,6 +186,15 @@ def write_api(cells, meta):
             "site_url": SITE + "?bbox=" + ",".join("%g" % x for x in r["bbox"]),
         }
         json.dump(out[rid], open(os.path.join(api, "summary", f"{rid}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    # persistent industrial / static hotspots (FIRMS type 2-3), for filtering NRT files that have no "type" column
+    static = defaultdict(int)
+    for path in glob.glob(os.path.join(ROOT, "data", "raw", "*.csv")):
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row.get("type") in ("2", "3"):
+                    static[(round(float(row["latitude"]), 2), round(float(row["longitude"]), 2))] += 1
+    json.dump(sorted([la, lo] for (la, lo), n in static.items() if n >= 5),
+              open(os.path.join(api, "static_sources.json"), "w"))
     json.dump({k: {"name": v["name"], "bbox": v["bbox"]} for k, v in regions.items()},
               open(os.path.join(api, "regions.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     json.dump({"data_until": last, "regions": out}, open(os.path.join(api, "all.json"), "w", encoding="utf-8"), ensure_ascii=False)
