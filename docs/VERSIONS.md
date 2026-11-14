@@ -11,6 +11,9 @@ Each version is a git tag and is hosted on the server for comparison:
 | **v4** | **Villages near fires** (GeoNames): ranking for the region, live list shows "Orlovka · 2 km" instead of coordinates, Bishkek time | `/v4/?bbox=42.2,72.8,43.3,76` |
 | **v5** | Kyrgyz regions open in **"Now" mode**: "Right now in Chui: 33 hotspots in 7 days, a normal November week has ~2 — 19× more"; correct Russian number agreement; 2001 note | `/v5/?bbox=42.2,72.8,43.3,76` |
 | **v6** | **Fire danger today + 3 days** card (same rules as the bot, Open-Meteo forecast) | `/v6/?bbox=39.3,72.4,40.9,75` |
+| **v7** | Map zoom: mouse wheel and +/− buttons | `/v7/` |
+| **v8** | Universal tool: search any place, click = country (real borders, localized names), live 7 days for the whole world (gas flares filtered), nearest-town names, fire danger anywhere | `/v8/?c=398` |
+| **v9** | **16× faster load** (0.56 s instead of 9 s locally), country click 4× faster, click in space ignored, player fixed (globe + map, panel follows the playhead), clear message for the world view, smooth camera flights, no misleading numbers while live data loads, mobile fixes | `/v9/` |
 
 To make a version the real site: `git checkout main && git merge vN` (or reset main to the tag) and push; GitHub Pages and the server update themselves.
 

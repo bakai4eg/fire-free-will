@@ -506,7 +506,7 @@ async function apply(s) {
   liveCellsSel = { n20:0, all:0 };
   if (LSUM) for (const [c, n20, all] of LSUM.cells) { const la = Math.floor(c / 360) - 90 + .5, lo = c % 360 - 180 + .5, b = sel.bbox;
     if (sel.kind !== 'world' && (la < b[0] - 1 || la > b[2] + 1 || lo < b[1] - 1 || lo > b[3] + 1)) continue;
-    const ok = sel.kind === 'world' ? true : sel.kind === 'kg' ? null : sel.contains(lo, la);
+    const ok = sel.kind === 'world' ? true : sel.kind === 'kg' ? inKgKey(regionOf(lo, la), sel.key) : sel.contains(lo, la);   // KG: rough first, exact once the points load
     if (ok) { liveCellsSel.n20 += n20; liveCellsSel.all += all; } }
   livePts = null; liveOn = sel.kind !== 'world' && !!LSUM; $('now').classList.toggle('on', liveOn);
   const u = new URL(location); ['bbox', 'c', 'kg'].forEach(k => u.searchParams.delete(k));
@@ -613,7 +613,9 @@ function render() {
     <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${selSrc() !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
 
   let liveRatio = null;
-  if (liveOn && sel.kind !== 'world' && LSUM) {
+  if (liveOn && sel.kind === 'kg' && livePts === null) {     // exact Kyrgyz count comes with the points: show a placeholder, not a wrong number
+    $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story" style="color:var(--muted)">…</div><div class="big num" style="color:#ff8a7a">…</div>`;
+  } else if (liveOn && sel.kind !== 'world' && LSUM) {
     const lm = +LSUM.newest.slice(5, 7), ly = +LSUM.newest.slice(0, 4), dim = new Date(ly, lm, 0).getDate(), wk = med[lm - 1] * 7 / dim, n20 = liveCellsSel.n20;
     liveRatio = med[lm - 1] >= 3 ? n20 / Math.max(wk, .1) : null;
     $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${t.storyLive({ n:n20, m:lm - 1, norm:wk < 1 ? '<1' : fmt(wk), ratio:liveRatio, peak })}</div>
@@ -630,7 +632,7 @@ function render() {
       ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
       ${statsHtml(phase)}`;
   }
-  $('csvCal').onclick = csvCal; $('csvPts').onclick = csvPts;
+  if ($('csvCal')) { $('csvCal').onclick = csvCal; $('csvPts').onclick = csvPts; }
   renderDanger(med, liveRatio);
 
   const lc = $('liveCard'); lc.style.display = sel.kind === 'world' || !LSUM ? 'none' : '';
