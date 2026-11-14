@@ -59,11 +59,13 @@
 
   .panel { overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; background:var(--panel) }
   .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px }
+  .panel.swap .card { animation:fadein .45s ease } @keyframes fadein { from { opacity:.35; transform:translateY(6px) } to { opacity:1; transform:none } }
+  @media (prefers-reduced-motion:reduce) { .panel.swap .card { animation:none } }
   .card h2 { font-size:15px; margin:0 } .card .sub { color:var(--muted); font-size:12px; margin:2px 0 10px }
   .head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px }
   .place { font:700 13px Inter; color:var(--muted); text-transform:uppercase; letter-spacing:.08em }
   .story { font:600 17px/1.45 Manrope; color:var(--ink); margin:8px 0 2px; letter-spacing:-.01em }
-  .story em { font-style:normal; color:var(--fire2) } .story .lv { color:#ffb4ae }
+  .story em { font-style:normal; color:var(--fire2) } .story b { color:var(--ink); font-weight:800 } .story .lv { color:#ffb4ae }
   .big { font:800 46px/1 Manrope; letter-spacing:-.03em; margin:14px 0 2px } .big span { font-size:15px; color:var(--muted); letter-spacing:0; font-weight:600 }
   .badge { display:inline-flex; border-radius:999px; padding:4px 10px; font-weight:600; font-size:13px; margin-top:8px }
   .badge.up { background:var(--up-bg); color:var(--up) } .badge.down { background:var(--down-bg); color:var(--down) } .badge.na { background:var(--card2); color:var(--muted) }
@@ -92,6 +94,7 @@
   @media (max-width:980px) {
     .app { display:block; height:auto } .mapside { height:70vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px; row-gap:8px }
     .search { order:9; flex-basis:100%; max-width:none; margin:0 } .panel { overflow:visible }
+    .hint { display:none } .scale { top:10px } .clock .n { display:none } .clock .m { font-size:30px }
   }
 </style>
 </head>
@@ -175,6 +178,7 @@ const I18N = {
     days:['Сегодня','Завтра'], disc:'Оценка условий, а не прогноз пожаров: сезон по истории 2001–2025, свежие очаги и прогноз погоды. Та же формула, что в Telegram-боте.', wxErr:'Прогноз погоды сейчас недоступен.', bigArea:'Для такой большой области опасность не считается — выберите место поменьше.',
     villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', villNone:'Очагов рядом с сёлами не было.',
     y2001:'2001: первые полгода работал один спутник — оценка менее точная',
+    worldMsg:(lo, hi) => `Каждый месяц спутники NASA видят на Земле от <em>${lo}</em> до <em>${hi}</em> очагов. <b>Нажмите на страну</b> или найдите место — покажем, когда там обычно горит и что происходит сейчас.`,
     story:s => { const peak = s.peak2 !== null ? `<em>${MON_LOC_RU[s.peak]}</em> и <em>${MON_LOC_RU[s.peak2]}</em>` : `<em>${MON_LOC_RU[s.peak]}</em>`;
       let cmp; if (s.ratio === null) cmp = 'в это время года тут почти не горит'; else if (s.ratio === 0) cmp = 'ни одного очага';
       else if (s.ratio >= 2) cmp = `<em>в ${ruTimes(s.ratio)} больше нормы</em>`; else if (s.ratio <= .5) cmp = `в ${ruTimes(1 / s.ratio)} меньше нормы`;
@@ -204,6 +208,7 @@ const I18N = {
     days:['Бүгүн','Эртең'], disc:'Бул шарттардын баасы, өрттүн божомолу эмес: тарых боюнча сезон, жаңы очоктор жана аба ырайынын божомолу. Telegram-боттогу формула.', wxErr:'Аба ырайынын божомолу азыр жеткиликсиз.', bigArea:'Мынчалык чоң аймак үчүн коркунуч эсептелбейт — кичирээк жерди тандаңыз.',
     villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', villNone:'Айылдардын жанында очок болгон жок.',
     y2001:'2001: алгачкы жарым жылда бир гана спутник иштеген — баа так эмес',
+    worldMsg:(lo, hi) => `NASA спутниктери ар айда Жерде <em>${lo}</em> дан <em>${hi}</em> чейин очок көрөт. <b>Өлкөнү басыңыз</b> же жер издеңиз — ал жерде качан күйөрүн жана азыр эмне болуп жатканын көрсөтөбүз.`,
     story:s => { const M = I18N.ky.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> жана <em>${M[s.peak2]}</em> айларында` : `<em>${M[s.peak]}</em> айында`;
       let cmp; if (s.ratio === null) cmp = 'жылдын бул маалында дээрлик күйбөйт'; else if (s.ratio === 0) cmp = 'бир да очок жок';
       else if (s.ratio >= 2) cmp = `<em>нормадан ${x10(s.ratio)} эсе көп</em>`; else if (s.ratio <= .5) cmp = `нормадан ${x10(1 / s.ratio)} эсе аз`;
@@ -233,6 +238,7 @@ const I18N = {
     days:['Today','Tomorrow'], disc:'A rating of conditions, not a fire forecast: season from 2001–2025 history, fresh detections and the weather forecast. Same formula as the Telegram bot.', wxErr:'Weather forecast is unavailable right now.', bigArea:'Danger is not rated for such a large area — pick a smaller place.',
     villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', villNone:'No hotspots near villages.',
     y2001:'2001: only one satellite for the first half of the year — a rougher estimate',
+    worldMsg:(lo, hi) => `Every month NASA satellites see between <em>${lo}</em> and <em>${hi}</em> fires on Earth. <b>Click a country</b> or search for a place to see when it usually burns there and what is happening now.`,
     story:s => { const M = I18N.en.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> and <em>${M[s.peak2]}</em>` : `<em>${M[s.peak]}</em>`;
       let cmp; if (s.ratio === null) cmp = 'it hardly burns here at this time of year'; else if (s.ratio === 0) cmp = 'not a single hotspot';
       else if (s.ratio >= 2) cmp = `<em>${x10(s.ratio)}× the normal</em>`; else if (s.ratio <= .5) cmp = `${x10(1 / s.ratio)}× below normal`;
@@ -261,6 +267,7 @@ const rewind = f => { if (d3.geoArea(f) > 2 * Math.PI) { const rv = r => r.slice
 
 // =============================== state ===============================
 let MONTHS, N, SUMMARY, KGMETA, WEATHER, LSUM, world, COUNTRIES = [], NUM2A2 = {}, REGIONS = [], POINTS = new Map();
+const CELLCACHE = new Map();
 let gCells = [], kgCells = [], VILL = [], VGRID = new Map(), CITIES = null, CGRID = null, TILES = new Map();
 let sel = { kind:'world' }, selCells = null, liveCellsSel = null, livePts = null;
 let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
@@ -280,6 +287,8 @@ function label() {
 const ringHas = (ring, x, y) => { let k = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j];
   if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) k = !k; } return k; };
 const polyHas = (poly, x, y) => ringHas(poly[0], x, y) && !poly.slice(1).some(h => ringHas(h, x, y));
+const featPlanar = (f, lo, la) => { const b = f.pb; if (lo < b[0] || lo > b[2] || la < b[1] || la > b[3]) return false; const g = f.geometry;
+  return g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la)); };
 const featHas = (f, lo, la) => { const b = f.bb; if (b[0] <= b[2] ? (lo < b[0] || lo > b[2]) : (lo < b[0] && lo > b[2])) return false; if (la < b[1] || la > b[3]) return false; return d3.geoContains(f, [lo, la]); };
 const regionOf = (lo, la) => { for (const f of REGIONS) { const b = f.bb; if (lo < b[0] || lo > b[2] || la < b[1] || la > b[3]) continue;
   const g = f.geometry; if (g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la))) return f.properties.key; } return null; };
@@ -306,11 +315,34 @@ const sprite = document.createElement('canvas'); sprite.width = sprite.height = 
 { const g = sprite.getContext('2d'), r = g.createRadialGradient(32,32,0,32,32,32);
   r.addColorStop(0,'rgba(255,240,200,1)'); r.addColorStop(.2,'rgba(255,160,50,.85)'); r.addColorStop(.5,'rgba(255,80,20,.3)'); r.addColorStop(1,'rgba(255,60,0,0)'); g.fillStyle = r; g.fillRect(0,0,64,64); }
 let GRID = 3, off, offCtx, img, buf, pix, offB, offBCtx, LUT, LUTLIVE, P99G, P99K, XYZ = null, LCELLS;
-const heat = d3.scaleSequential(t => d3.interpolateInferno(.25 + .75 * t)).clamp(true);
+const heat = d3.scaleSequential(t => d3.interpolateInferno(.25 + .75 * t)).clamp(true), HEAT = d3.range(64).map(i => heat(i / 63));
+let VIS = [], LIVEXY = [];
 const boxGeo = b => { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); } return { type:'MultiPoint', coordinates:pts }; };
 const zoomed = () => proj.scale() > 600;
 
+let tween = null;
+function viewParams() {        // target projection for the current selection
+  const pj = d3.geoEqualEarth();
+  if (sel.kind !== 'world') { const b = sel.bbox, pad = Math.max(.6, (b[2]-b[0]) * .18), lon0 = sel.center ? sel.center[0] : (b[1] + b[3]) / 2;
+    pj.rotate([-lon0, 0]).fitExtent([[20, 44], [W - 20, H - 74]], sel.geo || boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3])); }
+  else pj.fitExtent([[10, 44], [W - 10, H - 64]], { type:'Sphere' });
+  return { r:pj.rotate(), s:pj.scale(), t:pj.translate() };
+}
+function flyTo() {             // animate the flat map from the current view to the new selection, then lay out for real
+  if (!proj || isGlobe() || proj.clipAngle && proj.clipAngle() || matchMedia('(prefers-reduced-motion: reduce)').matches) return layout();
+  const r = $('stage').getBoundingClientRect(); if (Math.abs(r.width - W) > 1 || Math.abs(r.height - H) > 1) return layout();
+  const a = { r:proj.rotate(), s:proj.scale(), t:proj.translate() }, b = viewParams();
+  const ir = d3.interpolate(a.r, b.r), it = d3.interpolate(a.t, b.t), ls = d3.interpolate(Math.log(a.s), Math.log(b.s)), t0 = performance.now(), D = 650;
+  if (tween) cancelAnimationFrame(tween);
+  ctx.fire.clearRect(0, 0, W, H); ctx.marks.clearRect(0, 0, W, H);
+  const step = now => { const k = Math.min(1, (now - t0) / D), e = d3.easeCubicInOut(k);
+    proj.rotate(ir(e)).scale(Math.exp(ls(e))).translate(it(e)); drawBase();
+    if (k < 1) tween = requestAnimationFrame(step); else { tween = null; layout(); } };
+  tween = requestAnimationFrame(step);
+  setTimeout(() => { if (tween) layout(); }, D + 250);      // frames frozen (background tab): finish anyway
+}
 function layout() {
+  if (tween) { cancelAnimationFrame(tween); tween = null; }
   const r = $('stage').getBoundingClientRect(); W = r.width; H = r.height;
   Object.values(C).forEach(c => { c.width = W * DPR; c.height = H * DPR; });
   Object.values(ctx).forEach(g => g.setTransform(DPR,0,0,DPR,0,0));
@@ -325,6 +357,7 @@ function layout() {
   drawBase();
   ptsG = isGlobe() ? [] : gCells.map(c => proj([c.lo, c.la]));
   if (!isGlobe()) buildPix();
+  buildVis(); buildLiveXY();
   $('scaleNote').textContent = liveOn && zoomed() ? T().gridLive : zoomed() ? (selSrc() === 'kg' ? T().gridKg : T().grid) : '';
   ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks();
 }
@@ -338,6 +371,17 @@ function drawBase() {
   g.beginPath(); path(isGlobe() && spinning ? world.landLite : world.land); g.fillStyle = '#1c1b21'; g.fill();
   if (!isGlobe() || !spinning) { g.beginPath(); path(world.borders); g.strokeStyle = sel.kind !== 'world' ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)'; g.lineWidth = sel.kind !== 'world' ? 1 : .6; g.stroke(); }
   if (selSrc() === 'kg' && REGIONS.length) { g.beginPath(); REGIONS.forEach(f => path(f)); g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = .8; g.stroke(); }
+}
+function buildVis() {         // cells on screen when zoomed in, with their screen rectangles (computed once per view)
+  VIS = []; if (isGlobe() || !zoomed()) return;
+  const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, d = kg ? .125 : .5, tl = proj.invert([0, 0]), br = proj.invert([W, H]);
+  const la0 = Math.min(tl[1], br[1]) - 1, la1 = Math.max(tl[1], br[1]) + 1, lo0 = Math.min(tl[0], br[0]) - 1, lo1 = Math.max(tl[0], br[0]) + 1;
+  cells.forEach((c, i) => { if (c.la < la0 || c.la > la1 || c.lo < lo0 || c.lo > lo1) return; const r = cellRect(c.la, c.lo, d); if (r && r[0] < W && r[1] < H && r[0] + r[2] > 0 && r[1] + r[3] > 0) VIS.push([i, r]); });
+}
+function buildLiveXY() {      // screen positions of the live hotspots (computed once per view)
+  LIVEXY = []; if (!livePts || !zoomed()) return; const now = Date.now();
+  for (const p of livePts) { const xy = proj([p[1], p[0]]); if (!xy || xy[0] < 0 || xy[1] < 0 || xy[0] > W || xy[1] > H) continue;
+    LIVEXY.push([xy[0], xy[1], now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5, (p[0] * 7) % 1]); }
 }
 function buildPix() {
   GRID = 3; const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
@@ -378,9 +422,9 @@ function drawFire(fade) {
   g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${isGlobe() ? 1 : fade})`; g.fillRect(0,0,W,H); g.globalCompositeOperation = 'source-over';
   if (zoomed()) {
     g.clearRect(0,0,W,H);
-    const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, d = kg ? .125 : .5, lm = Math.log1p(kg ? P99K : P99G);
-    cells.forEach(c => { const n = c.h[cur]; if (n < .5) return; const r = cellRect(c.la, c.lo, d); if (!r || r[0] > W || r[1] > H || r[0] + r[2] < 0 || r[1] + r[3] < 0) return;
-      const v = Math.min(1, Math.log1p(n) / lm); g.fillStyle = heat(v); g.globalAlpha = .25 + .55 * v; g.fillRect(r[0] + .5, r[1] + .5, Math.max(1, r[2] - 1), Math.max(1, r[3] - 1)); });
+    const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, lm = Math.log1p(kg ? P99K : P99G);
+    for (const [i, r] of VIS) { const n = cells[i].h[cur]; if (n < .5) continue;
+      const v = Math.min(1, Math.log1p(n) / lm); g.fillStyle = HEAT[Math.round(v * 63)]; g.globalAlpha = .25 + .55 * v; g.fillRect(r[0] + .5, r[1] + .5, Math.max(1, r[2] - 1), Math.max(1, r[3] - 1)); }
     g.globalAlpha = 1;
     if (kg) { const pts = (POINTS.get(MONTHS[cur]) || []).filter(p => sel.contains(p[1], p[0]));
       g.globalCompositeOperation = 'lighter'; for (const [la, lo] of pts) { const p = proj([lo, la]); if (p) { g.globalAlpha = .55; g.drawImage(sprite, p[0] - 6, p[1] - 6, 12, 12); } }
@@ -390,11 +434,10 @@ function drawFire(fade) {
   paintGrid(i => { const n = gCells[i].h[cur]; return n >= 2 ? n : 0; }, LUT, Math.log1p(P99G));
 }
 function drawLivePoints() {
-  if (!livePts || !zoomed()) return;
-  const g = ctx.fire, now = Date.now();
-  for (const p of livePts) { const xy = proj([p[1], p[0]]); if (!xy || xy[0] < 0 || xy[1] < 0 || xy[0] > W || xy[1] > H) continue;
-    const fresh = now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5, r = 4;
-    if (fresh) { const k = (livePhase + (p[0] * 7 % 1)) % 1; g.strokeStyle = `rgba(255,59,48,${.7 * (1 - k)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(xy[0], xy[1], r + 14 * k, 0, 7); g.stroke(); }
+  if (!LIVEXY.length) return;
+  const g = ctx.fire;
+  for (const [x, y, fresh, ph] of LIVEXY) { const xy = [x, y], r = 4;
+    if (fresh) { const k = (livePhase + ph) % 1; g.strokeStyle = `rgba(255,59,48,${.7 * (1 - k)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(xy[0], xy[1], r + 14 * k, 0, 7); g.stroke(); }
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = fresh ? .9 : .5; g.drawImage(sprite, xy[0] - r * 3, xy[1] - r * 3, r * 6, r * 6);
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = fresh ? '#fff' : '#ffb36b'; g.beginPath(); g.arc(xy[0], xy[1], 1.8, 0, 7); g.fill(); }
 }
@@ -409,7 +452,9 @@ function drawMarks(drag) {
 }
 
 let down = null;
-const countryAt = (lo, la) => COUNTRIES.find(f => featHas(f, lo, la));
+const onEarth = p => { const a = proj.invert(p); if (!a || !isFinite(a[0]) || !isFinite(a[1])) return null; const b = proj(a);
+  return b && Math.hypot(b[0] - p[0], b[1] - p[1]) < 2 && (!isGlobe() || d3.geoDistance(a, [-rot[0], -rot[1]]) < Math.PI / 2) ? a : null; };
+const countryAt = (lo, la) => COUNTRIES.find(f => featPlanar(f, lo, la));
 $('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player,.zoom,.view')) return; const r = $('stage').getBoundingClientRect(); down = [e.clientX - r.left, e.clientY - r.top]; });
 $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top];
   if (isGlobe()) { if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 4) { spinning = false; $('stage').classList.add('drag'); const k = 90 / proj.scale();
@@ -417,12 +462,12 @@ $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $
   if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 6) { const a = proj.invert(down), c = proj.invert(p); if (a && c) drawMarks([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); } });
 addEventListener('pointerup', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top], d0 = down; down = null;
   $('stage').classList.remove('drag'); if (d0.moved) return;
-  const a = proj.invert(d0); if (!a || !isFinite(a[0])) return;
+  const a = onEarth(d0); if (!a) return;
   if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) {
     const [lo, la] = a, inside = sel.kind !== 'world' && sel.kind !== 'box' && sel.contains(lo, la);
     if (!inside) { const c = countryAt(lo, la); if (c) return selectCountry(c); }
     const d = .5; selectBox([la - d, lo - d * 1.3, la + d, lo + d * 1.3], null, [lo, la]);
-  } else { const c = proj.invert(p); if (!c) return; selectBox([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); }
+  } else { const c = onEarth(p); if (!c) return; selectBox([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); }
 });
 
 // =============================== selection ===============================
@@ -432,7 +477,7 @@ function selectWorld() { apply({ kind:'world', contains:() => true, bbox:[-90,-1
 function selectCountry(f) {
   if (f.id === KG_NUM && REGIONS.length) return selectKg('kg');
   const b = d3.geoBounds(f), bbox = [b[0][1], b[0][0], b[1][1], b[1][0] < b[0][0] ? b[1][0] + 360 : b[1][0]];
-  apply({ kind:'country', f, contains:(lo, la) => featHas(f, lo, la), bbox, geo:f, center:d3.geoCentroid(f) });
+  apply({ kind:'country', f, contains:(lo, la) => featPlanar(f, lo, la), bbox, geo:f, center:d3.geoCentroid(f) });
 }
 function selectKg(key) {
   const fs = REGIONS.filter(f => inKgKey(f.properties.key, key)), fc = { type:'FeatureCollection', features:fs }, b = d3.geoBounds(fc);
@@ -442,25 +487,33 @@ async function selectBox(bbox, name, at) {
   bbox = bbox.map(x => +x.toFixed(3));
   const s = { kind:'box', bbox, name, contains:(lo, la) => la >= bbox[0] && la <= bbox[2] && lo >= bbox[1] && lo <= bbox[3] };
   s.kgBox = REGIONS.length > 0 && (bbox[2] - bbox[0]) <= 5 && (bbox[3] - bbox[1]) <= 12 && regionOf((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2) != null;
-  if (!name) { await ensureCities(); const c = at || [(bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2], pn = placeName(c[1], c[0]);
-    if (pn && (bbox[2] - bbox[0]) < 6) s.name = { ru:I18N.ru.near(pn[0]), ky:I18N.ky.near(pn[0]), en:I18N.en.near(pn[0]) }; }
+  const nameIt = () => { const c = at || [(bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2], pn = placeName(c[1], c[0]);
+    if (pn && (bbox[2] - bbox[0]) < 6) s.name = { ru:I18N.ru.near(pn[0]), ky:I18N.ky.near(pn[0]), en:I18N.en.near(pn[0]) }; };
+  if (!name) { if (CITIES || s.kgBox) nameIt(); else ensureCities().then(() => { if (sel === s) { nameIt(); drawCrumbs(); render(); } }); }
   apply(s);
 }
 async function apply(s) {
   sel = s; playing = false; $('play').textContent = '▶';
   if (sel.kind === 'world') { series = Float32Array.from(SUMMARY.harmonized); selCells = []; }
-  else { const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, out = new Float32Array(N); selCells = [];
-    cells.forEach((c, i) => { const ok = sel.kind === 'kg' ? inKgKey(c.reg, sel.key) : sel.contains(c.lo, c.la); if (!ok) return; selCells.push(i); for (let m = 0; m < N; m++) out[m] += c.h[m]; });
+  else { const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, out = new Float32Array(N), ck = sel.kind === 'country' ? 'c' + sel.f.id : null;
+    if (ck && CELLCACHE.has(ck)) selCells = CELLCACHE.get(ck);
+    else { selCells = []; const b = sel.bbox;
+      cells.forEach((c, i) => { if (sel.kind !== 'kg' && (c.la < b[0] - 1 || c.la > b[2] + 1 || c.lo < b[1] - 1 || c.lo > b[3] + 1)) return;
+        if (sel.kind === 'kg' ? inKgKey(c.reg, sel.key) : sel.contains(c.lo, c.la)) selCells.push(i); });
+      if (ck) CELLCACHE.set(ck, selCells); }
+    for (const i of selCells) { const h = cells[i].h; for (let m = 0; m < N; m++) out[m] += h[m]; }
     series = out; }
   liveCellsSel = { n20:0, all:0 };
-  if (LSUM) for (const [c, n20, all] of LSUM.cells) { const la = Math.floor(c / 360) - 90 + .5, lo = c % 360 - 180 + .5;
+  if (LSUM) for (const [c, n20, all] of LSUM.cells) { const la = Math.floor(c / 360) - 90 + .5, lo = c % 360 - 180 + .5, b = sel.bbox;
+    if (sel.kind !== 'world' && (la < b[0] - 1 || la > b[2] + 1 || lo < b[1] - 1 || lo > b[3] + 1)) continue;
     const ok = sel.kind === 'world' ? true : sel.kind === 'kg' ? null : sel.contains(lo, la);
     if (ok) { liveCellsSel.n20 += n20; liveCellsSel.all += all; } }
   livePts = null; liveOn = sel.kind !== 'world' && !!LSUM; $('now').classList.toggle('on', liveOn);
   const u = new URL(location); ['bbox', 'c', 'kg'].forEach(k => u.searchParams.delete(k));
   if (sel.kind === 'box') u.searchParams.set('bbox', sel.bbox.join(',')); if (sel.kind === 'country') u.searchParams.set('c', sel.f.id); if (sel.kind === 'kg') u.searchParams.set('kg', sel.key);
   history.replaceState(null, '', u);
-  drawCrumbs(); layout(); render();
+  drawCrumbs(); flyTo(); render();
+  const pn = document.querySelector('.panel'); pn.classList.remove('swap'); void pn.offsetWidth; pn.classList.add('swap');
   if (sel.kind !== 'world') await loadLivePoints();
 }
 async function loadLivePoints() {
@@ -468,10 +521,10 @@ async function loadLivePoints() {
   const need = []; for (let a = Math.floor(b[0] / 10); a <= Math.floor(b[2] / 10); a++) for (let o = Math.floor(b[1] / 10); o <= Math.floor(b[3] / 10); o++) need.push(`${a}_${((o + 18) % 36 + 36) % 36 - 18}`);
   const parts = await Promise.all(need.map(k => TILES.has(k) ? TILES.get(k) : fetch(`data/live/t_${k}.json`).then(r => r.ok ? r.json() : []).catch(() => []).then(v => (TILES.set(k, v), v))));
   if (s !== sel) return;
-  if (selSrc() !== 'kg') await ensureCities();
+  if (selSrc() !== 'kg' && !CITIES) ensureCities().then(() => { if (s === sel) render(); });
   livePts = parts.flat().filter(p => sel.contains(p[1], p[0])).sort((x, y) => x[2] < y[2] ? 1 : -1);
   if (sel.kind === 'kg') liveCellsSel = { n20:livePts.filter(p => p[3] === 20).length, all:livePts.length };   // exact borders for Kyrgyz regions
-  render(); if (liveOn) { ctx.fire.clearRect(0,0,W,H); drawFire(1); }
+  if (!tween) buildLiveXY(); render(); if (liveOn && !tween) { ctx.fire.clearRect(0,0,W,H); drawFire(1); }
 }
 
 // =============================== search ===============================
@@ -543,6 +596,7 @@ async function renderDanger(med, liveRatio) {
 }
 
 // =============================== panel ===============================
+let RS = null;
 const viewRange = () => period === 'all' ? [0, N - 1] : [Math.max(0, N - 12 * +period), N - 1];
 function render() {
   const t = T(), [a, b] = viewRange(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
@@ -550,6 +604,7 @@ function render() {
   const at = (y, m) => { const i = (y - 2001) * 12 + m - 1; return i < 0 || i >= N ? null : series[i]; };
   const normYears = d3.range(2001, lastY + 1).filter(y => y !== cy);
   const med = d3.range(12).map(m => median(normYears.map(y => at(y, m + 1))));
+  RS = { med, years };
   const order = med.map((v, i) => [v, i]).sort((p, q) => q[0] - p[0]), peak = order[0][1];
   const second = order.slice(1).find(([v, i]) => v >= .55 * order[0][0] && Math.min(Math.abs(i - peak), 12 - Math.abs(i - peak)) >= 3);
   const full = d3.range(2001, lastY + 1).map(y => [y, d3.sum(d3.range(12), m => at(y, m + 1) || 0)]), worst = d3.greatest(full.filter(d => d[0] > 2001), d => d[1]);
@@ -569,7 +624,7 @@ function render() {
     const now = series[cur], m0 = med[cm-1], anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null, ratio = m0 >= 3 ? now / m0 : null;
     const toPeak = (peak - (cm - 1) + 12) % 12, phase = toPeak === 0 ? t.peakNow : toPeak <= 2 ? t.peakIn(toPeak) : t.peakMonth(t.monFull[peak]);
     let st = t.story({ peak, peak2:second ? second[1] : null, m:cm - 1, y:cy, n:fmt(now), nRaw:Math.round(now), anom, ratio });
-    if (sel.kind === 'world') st = st.replace('Больше всего здесь горит', 'На планете больше всего горит').replace('It burns most here', 'The planet burns most').replace('Бул жерде эң көп', 'Дүйнөдө эң көп');
+    if (sel.kind === 'world') { const recent = Array.from(series.subarray(N - 120)); st = t.worldMsg(fmt(d3.min(recent)), fmt(d3.max(recent))); }
     $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${st}</div>
       <div class="big num">${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span></div>
       ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
@@ -655,6 +710,12 @@ function renderHow(med) {
 }
 $('how').addEventListener('toggle', () => { if ($('how').open) render(); });
 
+function playUI() {           // cheap panel update while playing: big number, badge, calendar frame
+  if (!RS) return; const t = T(), cy = +MONTHS[cur].slice(0, 4), cm = +MONTHS[cur].slice(5), now = series[cur], m0 = RS.med[cm - 1];
+  const big = document.querySelector('#hero .big'); if (big) big.innerHTML = `${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span>`;
+  const bd = document.querySelector('#hero .badge'); if (bd && m0 >= 3) { const an = Math.round(100 * (now - m0) / m0); bd.className = `badge ${an >= 0 ? 'up' : 'down'}`; bd.textContent = `${an >= 0 ? '▲ +' : '▼ '}${an}% ${t.toNorm} (${fmt(m0)})`; }
+  const yi = RS.years.indexOf(cy); charts.cal.setOption({ series:[{}, { data:yi >= 0 ? [[cm - 1, yi]] : [] }] });
+}
 function drawClock() {
   const t = T(), [y, m] = MONTHS[cur].split('-'); $('clock').classList.toggle('live', liveOn);
   if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${fmt(sel.kind === 'world' ? LSUM.cells.reduce((s, c) => s + c[2], 0) : liveCellsSel.all)}</b> ${t.fires} · ${t.liveDays} · NOAA-20 + NOAA-21`; return; }
@@ -680,16 +741,17 @@ $('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoun
 function seek(i) { cur = Math.max(0, Math.min(N - 1, i)); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
 function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) { playing = false; $('play').textContent = '▶'; } $('now').classList.toggle('on', liveOn); layout(); render(); }
 
-let last = 0, acc = 0, globeAcc = 0;
+let last = 0, acc = 0, globeAcc = 0, liveAcc = 0;
 function tick(now) {
-  const dt = Math.min(500, now - (last || now)); last = now;
-  if (isGlobe() && spinning && !down && (globeAcc += dt) > 45) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); if (!playing) drawFire(1); }
-  if (liveOn && zoomed()) { livePhase = (livePhase + dt / 1800) % 1; drawFire(1); }
+  const dt = Math.max(0, Math.min(500, now - (last || now))); last = Math.max(last, now);   // never negative, even if timestamps jump
+  if (isGlobe() && spinning && !down && (globeAcc += dt) > 40) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); drawFire(1); }
+  if (!tween && liveOn && zoomed() && (liveAcc += dt) > 33) { livePhase = (livePhase + liveAcc / 1800) % 1; liveAcc = 0; drawFire(1); }
   else if (playing && (acc += dt) >= 130) { acc = 0; const [, b] = viewRange();
-    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; drawFire(.55); drawClock(); drawTimeline(); } }
+    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning)) drawFire(.55); drawClock(); drawTimeline(); playUI(); } }
   requestAnimationFrame(tick);
 }
-$('play').onclick = () => { if (liveOn) { liveOn = false; $('now').classList.remove('on'); layout(); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a; $('play').textContent = playing ? '❚❚' : '▶'; if (!playing) render(); };
+$('play').onclick = () => { const wasLive = liveOn; if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
+  $('play').textContent = playing ? '❚❚' : '▶'; if (wasLive) layout(); render(); };
 $('now').onclick = () => toggleLive();
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
 function zoomBy(k, at) {
@@ -697,13 +759,13 @@ function zoomBy(k, at) {
   if (!b) { if (k >= 1) return; const c = at || [-rot[0], -rot[1]], h = 40; b = [c[1] - h, c[0] - h * 1.4, c[1] + h, c[0] + h * 1.4]; k = 1; }
   const cy = at ? at[1] : (b[0] + b[2]) / 2, cx = at ? at[0] : (b[1] + b[3]) / 2;
   const nb = [cy - (cy - b[0]) * k, cx - (cx - b[1]) * k, cy + (b[2] - cy) * k, cx + (b[3] - cx) * k];
-  if (nb[2] - nb[0] > 120) return selectWorld(); if (nb[2] - nb[0] < .2) return;
+  if (nb[2] - nb[0] > 70) return selectWorld(); if (nb[2] - nb[0] < .2) return;
   selectBox([Math.max(-89, nb[0]), nb[1], Math.min(89, nb[2]), nb[3]], null);
 }
 $('zin').onclick = () => zoomBy(.55); $('zout').onclick = () => zoomBy(1.8);
 let wheelT = 0;
 $('stage').addEventListener('wheel', e => { e.preventDefault(); const now = performance.now(); if (now - wheelT < 250) return; wheelT = now;
-  const r = $('stage').getBoundingClientRect(), at = proj.invert([e.clientX - r.left, e.clientY - r.top]); zoomBy(e.deltaY < 0 ? .6 : 1.7, at && isFinite(at[0]) ? at : null); }, { passive:false });
+  const r = $('stage').getBoundingClientRect(), at = onEarth([e.clientX - r.left, e.clientY - r.top]); zoomBy(e.deltaY < 0 ? .6 : 1.7, at); }, { passive:false });
 
 function applyLang() {
   document.documentElement.lang = lang;
@@ -730,7 +792,7 @@ Promise.all([
   fetch('data/cells.json').then(r => r.json()), fetch('data/meta.json').then(r => r.json()),
   fetch('data/weather.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   fetch('data/live/summary.json').then(r => r.ok ? r.json() : null).catch(() => null),
-  fetch('data/points.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+  fetch('data/kg_points.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/kg_regions.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/villages.json').then(r => r.ok ? r.json() : []).catch(() => []),
   fetch('https://cdn.jsdelivr.net/npm/i18n-iso-countries@7.11.3/codes.json').then(r => r.json()).catch(() => []),
@@ -742,7 +804,9 @@ Promise.all([
   world = { land:topojson.feature(topo, topo.objects.land), borders:topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b) };
   const thin = ring => ring.length < 12 ? ring : ring.filter((_, i) => i % 3 === 0 || i === ring.length - 1);
   world.landLite = { type:'FeatureCollection', features:world.land.features.map(f => ({ type:'Feature', geometry:{ type:f.geometry.type, coordinates:f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(thin) : f.geometry.coordinates.map(p => p.map(thin)) } })) };
-  COUNTRIES = topojson.feature(topo, topo.objects.countries).features.filter(f => f.id).map(f => { const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
+  COUNTRIES = topojson.feature(topo, topo.objects.countries).features.filter(f => f.id).map(f => { const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]];
+    let x0 = 180, y0 = 90, x1 = -180, y1 = -90; (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates).forEach(pl => pl[0].forEach(([x, y]) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }));
+    f.pb = [x0, y0, x1, y1]; return f; });
   if (kreg) REGIONS = kreg.features.map(f => { rewind(f); const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
   gCells = fr.cells.map(c => ({ la:Math.floor(c / 360) - 90 + .5, lo:c % 360 - 180 + .5, h:new Float32Array(N) }));
   fr.frames.forEach((f, i) => { for (let k = 0; k < f.length; k += 2) gCells[f[k]].h[i] = f[k+1]; });
@@ -751,9 +815,9 @@ Promise.all([
   const mi = new Map(MONTHS.map((m, i) => [m, i]));
   const toArr = o => { const a = new Float32Array(N); for (const [ym, v] of Object.entries(o)) { const i = mi.get(ym); if (i !== undefined) a[i] = v; } return a; };
   kgCells = kc.map(c => ({ la:c.la, lo:c.lo, h:toArr(c.h), m:toArr(c.m), v:toArr(c.v), reg:regionOf(c.lo, c.la) }));
-  pts.split('\n').slice(1).forEach(l => { const p = l.split(','); if (p.length < 4) return; const ym = p[2].slice(0,7); if (!POINTS.has(ym)) POINTS.set(ym, []);
-    POINTS.get(ym).push([+p[0], +p[1], regionOf(+p[1], +p[0]), nearestIn(VILL, VGRID, +p[0], +p[1], 3.5)]); });
-  const q99 = cells => { const v = []; cells.forEach(c => c.h.forEach(x => { if (x >= 1) v.push(x); })); v.sort((p, q) => p - q); return v[Math.floor(v.length * .99)] || 10; };
+  if (pts) pts.rows.forEach(([la, lo, ym, ri, vk, km]) => { if (!POINTS.has(ym)) POINTS.set(ym, []); POINTS.get(ym).push([la, lo, ri >= 0 ? pts.regions[ri] : null, vk >= 0 ? [vk, km / 10] : null]); });
+  const q99 = cells => { let n = 0; for (const c of cells) for (const x of c.h) if (x >= 1) n++; const v = new Float32Array(n); n = 0;
+    for (const c of cells) for (const x of c.h) if (x >= 1) v[n++] = x; v.sort(); return v[Math.floor(n * .99)] || 10; };   // typed-array sort: native and fast
   P99G = q99(gCells); P99K = q99(kgCells);
   const mk = f => { const L = new Uint32Array(256); for (let k = 0; k < 256; k++) { const c = d3.rgb(f(k / 255)), al = Math.round(60 + 195 * k / 255); L[k] = (al << 24) | (c.b << 16) | (c.g << 8) | c.r; } return L; };
   LUT = mk(t => d3.interpolateInferno(.45 + .55 * t)); LUTLIVE = mk(t => d3.interpolateRgb('#7a1010', '#ff4d3a')(t));
