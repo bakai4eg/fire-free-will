@@ -20,7 +20,7 @@ for sat, path in FILES.items():
     req = urllib.request.Request(BASE + path, headers={"User-Agent": "BurnBeat/1.0"})
     for row in csv.DictReader(io.StringIO(urllib.request.urlopen(req, timeout=60).read().decode("utf-8"))):
         la, lo = float(row["latitude"]), float(row["longitude"])
-        if not (BOX[0] <= la <= BOX[2] and BOX[1] <= lo <= BOX[3]) or row["confidence"] not in ("n", "h"):
+        if not (BOX[0] <= la <= BOX[2] and BOX[1] <= lo <= BOX[3]) or row["confidence"].strip().lower() not in ("n", "h", "nominal", "high"):
             continue
         if static(la, lo):
             continue

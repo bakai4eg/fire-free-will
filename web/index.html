@@ -3,68 +3,77 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BurnBeat</title>
-<meta name="description" content="Harmonized MODIS + VIIRS burning calendar for any place on Earth.">
+<meta name="description" content="When and where does it usually burn — and is it worse than usual now? Harmonized NASA MODIS + VIIRS hotspots, 2001 to today.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 12h4l2-6 4 12 3-9 2 3h5' fill='none' stroke='%23ff6a1a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0b0b0e; --panel:#121216; --card:#18181d; --card2:#1f1f25; --ink:#f2ede6; --muted:#9b938a; --dim:#5f5952; --line:rgba(255,255,255,.08);
-          --fire:#ff6a1a; --up:#ff7a45; --up-bg:rgba(255,106,26,.14); --down:#6cb4ff; --down-bg:rgba(108,180,255,.13); }
-  * { box-sizing:border-box }
-  html, body { height:100% }
+  :root { --bg:#0b0b0e; --panel:#111115; --card:#17171c; --card2:#1f1f26; --ink:#f2ede6; --soft:#d6cfc6; --muted:#9b938a; --dim:#5f5952; --line:rgba(255,255,255,.08);
+          --fire:#ff6a1a; --fire2:#ffb36b; --up:#ff7a45; --up-bg:rgba(255,106,26,.14); --down:#6cb4ff; --down-bg:rgba(108,180,255,.13); --live:#ff3b30; }
+  * { box-sizing:border-box } html, body { height:100% }
   body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased }
   h1,h2,.num { font-family:Manrope,Inter,sans-serif; letter-spacing:-.02em }
   .mono { font-family:'JetBrains Mono',ui-monospace,monospace }
-  button, input { font:inherit; color:inherit }
+  button { font:inherit; color:inherit }
 
-  header { height:60px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--line); background:var(--panel) }
-  .brand { display:flex; align-items:center; gap:9px; margin-right:8px; color:var(--ink); text-decoration:none }
-  .brand svg { width:22px; height:22px } .brand b { font:800 18px Manrope } .brand small { color:var(--muted); font-size:12px; margin-left:6px }
-  .sp { flex:1 }
-  .pill { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 13px; font-weight:500; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-flex; gap:6px; align-items:center }
-  .pill:hover { background:var(--card2) } .pill.fire { background:var(--fire); border-color:var(--fire); color:#160800 } .pill:disabled { opacity:.4; cursor:not-allowed }
+  header { height:58px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--line); background:var(--panel) }
+  .brand { display:flex; align-items:center; gap:9px; color:var(--ink); text-decoration:none; margin-right:auto }
+  .brand svg { width:22px; height:22px } .brand b { font:800 18px Manrope } .brand small { color:var(--muted); font-size:12px; margin-left:4px }
+  .pill { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 13px; font-weight:500; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-flex; gap:6px; align-items:center; color:var(--ink) }
+  .pill:hover { background:var(--card2) } .pill.fire { background:var(--fire); border-color:var(--fire); color:#160800; font-weight:600 } .pill:disabled { opacity:.35; cursor:not-allowed }
   .seg { display:inline-flex; background:var(--card); border-radius:999px; padding:3px; border:1px solid var(--line) }
-  .seg button { border:0; background:none; padding:5px 10px; border-radius:999px; color:var(--muted); cursor:pointer; font-weight:600; font-size:12px }
+  .seg button { border:0; background:none; padding:5px 11px; border-radius:999px; color:var(--muted); cursor:pointer; font-weight:600; font-size:12px }
   .seg button.on { background:var(--card2); color:var(--ink) }
-  input[type=month] { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 10px; color-scheme:dark }
 
-  .app { display:grid; grid-template-columns:minmax(0,1fr) 440px; height:calc(100vh - 60px) }
-  /* map side */
+  .app { display:grid; grid-template-columns:minmax(0,1fr) 450px; height:calc(100vh - 58px) }
   .mapside { position:relative; display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--line) }
   .chips { display:flex; gap:6px; overflow-x:auto; padding:10px 12px; scrollbar-width:none; border-bottom:1px solid var(--line) }
-  .chip { flex:none; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:6px 12px; cursor:pointer; color:#d9d2c9 }
+  .chip { flex:none; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:6px 12px; cursor:pointer; color:var(--soft) }
   .chip:hover { background:var(--card2) } .chip.on { background:var(--ink); color:#111; border-color:var(--ink) }
   .chip.sep { border:0; background:none; color:var(--dim); cursor:default; padding:6px 2px }
   #stage { position:relative; flex:1; min-height:300px; cursor:crosshair; touch-action:none; overflow:hidden }
   #stage canvas { position:absolute; inset:0; width:100%; height:100% }
-  .hint { position:absolute; left:12px; top:10px; color:var(--muted); font-size:12px; pointer-events:none; background:rgba(11,11,14,.7); padding:4px 8px; border-radius:8px }
-  .clock { position:absolute; left:14px; bottom:10px; pointer-events:none }
-  .clock .m { font:800 clamp(28px,4vw,48px)/1 Manrope; letter-spacing:-.03em } .clock .n { color:var(--muted); font-size:12px; margin-top:4px } .clock .n b { color:var(--fire) }
+  .hint { position:absolute; left:12px; top:10px; color:var(--muted); font-size:12px; pointer-events:none; background:rgba(11,11,14,.72); padding:4px 9px; border-radius:8px }
+  .scale { position:absolute; right:12px; top:10px; color:var(--dim); font-size:11px; pointer-events:none }
+  .clock { position:absolute; left:14px; bottom:12px; pointer-events:none }
+  .clock .m { font:800 clamp(28px,4vw,46px)/1 Manrope; letter-spacing:-.03em } .clock .n { color:var(--muted); font-size:12px; margin-top:4px } .clock .n b { color:var(--fire) }
+  .clock.live .m { color:var(--live) }
   .player { position:absolute; right:12px; bottom:12px; display:flex; gap:8px; align-items:center }
-  .player button { width:40px; height:40px; border-radius:50%; border:0; background:var(--fire); color:#160800; font-size:15px; cursor:pointer; box-shadow:0 0 24px rgba(255,106,26,.45) }
-  #timeline { height:70px; border-top:1px solid var(--line); cursor:pointer; display:block; width:100% }
+  .player .play { width:42px; height:42px; border-radius:50%; border:0; background:var(--fire); color:#160800; font-size:15px; cursor:pointer; box-shadow:0 0 24px rgba(255,106,26,.45) }
+  .player .now { border:1px solid rgba(255,59,48,.5); background:rgba(255,59,48,.12); color:#ffb4ae; border-radius:999px; padding:9px 14px; cursor:pointer; font-weight:600 }
+  .player .now.on { background:var(--live); color:#fff; border-color:var(--live) }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--live); margin-right:6px; vertical-align:1px; animation:pulse 1.6s infinite }
+  @keyframes pulse { 50% { opacity:.3 } }
+  #timeline { height:66px; border-top:1px solid var(--line); cursor:pointer; display:block; width:100% }
 
-  /* panel side */
   .panel { overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; background:var(--panel) }
   .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px }
   .card h2 { font-size:15px; margin:0 } .card .sub { color:var(--muted); font-size:12px; margin:2px 0 10px }
   .head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px }
-  .where { color:var(--muted); font-weight:500 } .where b { color:var(--ink) }
-  .big { font:800 52px/1 Manrope; letter-spacing:-.03em; margin:10px 0 2px } .big span { font-size:16px; color:var(--muted); letter-spacing:0; font-weight:600 }
+  .place { font:700 13px Inter; color:var(--muted); text-transform:uppercase; letter-spacing:.08em }
+  .story { font:600 17px/1.45 Manrope; color:var(--ink); margin:8px 0 2px; letter-spacing:-.01em }
+  .story em { font-style:normal; color:var(--fire2) } .story .lv { color:#ffb4ae }
+  .big { font:800 46px/1 Manrope; letter-spacing:-.03em; margin:14px 0 2px } .big span { font-size:15px; color:var(--muted); letter-spacing:0; font-weight:600 }
   .badge { display:inline-flex; border-radius:999px; padding:4px 10px; font-weight:600; font-size:13px; margin-top:8px }
   .badge.up { background:var(--up-bg); color:var(--up) } .badge.down { background:var(--down-bg); color:var(--down) } .badge.na { background:var(--card2); color:var(--muted) }
   .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px }
-  .stat { background:var(--card2); border-radius:12px; padding:10px 12px } .stat b { display:block; font:800 18px Manrope } .stat span { color:var(--muted); font-size:12px }
-  #cal { height:470px } #line, #harm, #wx { height:220px }
+  .stat { background:var(--card2); border-radius:12px; padding:10px 12px } .stat b { display:block; font:800 17px Manrope } .stat span { color:var(--muted); font-size:12px }
+  .dl { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap }
+  .live { border-color:rgba(255,59,48,.3); background:linear-gradient(180deg, rgba(255,59,48,.08), var(--card) 60%) }
+  .live ul { list-style:none; padding:0; margin:8px 0 0 } .live li { display:flex; justify-content:space-between; padding:6px 0; border-top:1px solid var(--line); color:var(--soft); font-size:13px }
+  .live li span { color:var(--muted) }
+  #cal { height:460px } #line, #harm, #wx { height:220px }
   .note { color:var(--muted); font-size:12px; margin-top:6px }
-  .src { color:var(--dim); font-size:11px; margin-top:4px }
-  .bot { display:flex; gap:12px; align-items:center } .bot p { margin:0; color:#cfc7bd; font-size:13px }
+  details.card { padding:0 } details.card > summary { list-style:none; cursor:pointer; padding:16px; font:700 15px Manrope; display:flex; justify-content:space-between } details.card > summary::-webkit-details-marker { display:none }
+  details.card > summary::after { content:'+'; color:var(--muted) } details[open].card > summary::after { content:'−' }
+  details .inner { padding:0 16px 16px } details .inner h3 { font:700 13px Inter; margin:14px 0 2px }
+  .src { color:var(--dim); font-size:11px; line-height:1.6 }
+  .bot { display:flex; gap:12px; align-items:center } .bot p { margin:0; color:var(--soft); font-size:13px }
   #loading { position:fixed; inset:0; z-index:9; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
-  @media (max-width:1300px) { .brand small { display:none } }
-  @media (max-width:1100px) { #csvCal, #csvPts { padding:7px 10px } input[type=month] { width:150px } }
+  @media (max-width:1250px) { .brand small { display:none } }
   @media (max-width:980px) {
-    .app { display:block; height:auto } .mapside { height:72vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px }
-    .brand small { display:none } .panel { overflow:visible }
+    .app { display:block; height:auto } .mapside { height:68vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px; row-gap:8px }
+    .panel { overflow:visible } .tg-text { display:none }
   }
 </style>
 </head>
@@ -72,11 +81,8 @@
 <div id="loading" class="mono">BURNBEAT · loading 25 years of fire…</div>
 <header>
   <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b><small data-t="tagline"></small></a>
-  <div class="sp"></div>
-  <input type="month" id="y0" aria-label="from"><input type="month" id="y1" aria-label="to">
-  <button class="pill" id="csvCal" data-t="csvCal"></button>
-  <button class="pill" id="csvPts" data-t="csvPts"></button>
-  <a class="pill fire" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener" data-t="tg"></a>
+  <div class="seg" id="period"><button data-v="1" data-t="p1"></button><button data-v="5" data-t="p5"></button><button data-v="10" data-t="p10"></button><button data-v="all" class="on" data-t="pall"></button></div>
+  <a class="pill fire" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener">✈<span class="tg-text" data-t="tg"></span></a>
   <div class="seg" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
 </header>
 
@@ -86,24 +92,29 @@
     <div id="stage">
       <canvas id="land"></canvas><canvas id="fire"></canvas><canvas id="marks"></canvas>
       <div class="hint" data-t="hint"></div>
-      <div class="clock"><div class="m mono" id="clockM"></div><div class="n" id="clockN"></div></div>
-      <div class="player"><button id="play" aria-label="play">▶</button></div>
+      <div class="scale" id="scaleNote"></div>
+      <div class="clock" id="clock"><div class="m mono" id="clockM"></div><div class="n" id="clockN"></div></div>
+      <div class="player"><button class="now" id="now"><span class="dot"></span><span data-t="nowBtn"></span></button><button class="play" id="play" aria-label="play">▶</button></div>
     </div>
     <canvas id="timeline"></canvas>
   </section>
 
   <aside class="panel">
     <div class="card" id="hero"></div>
+    <div class="card live" id="liveCard"></div>
     <div class="card">
       <div class="head"><div><h2 data-t="calT"></h2><div class="sub" data-t="calS"></div></div>
         <div class="seg" id="mode"><button data-v="n" class="on" data-t="modeN"></button><button data-v="a" data-t="modeA"></button></div></div>
       <div id="cal"></div>
     </div>
-    <div class="card"><h2 id="lineT"></h2><div class="sub" data-t="lineS"></div><div id="line"></div></div>
-    <div class="card" id="wxCard"><h2 data-t="wxT"></h2><div class="sub" data-t="wxS"></div><div id="wx"></div><div class="note" id="wxNote"></div></div>
-    <div class="card"><h2 data-t="harmT"></h2><div class="sub" id="harmS"></div><div id="harm"></div><div class="note" id="valid"></div></div>
+    <div class="card"><h2 id="lineT"></h2><div class="sub" id="lineS"></div><div id="line"></div></div>
+    <details class="card" id="how"><summary data-t="howT"></summary><div class="inner">
+      <p class="note" data-t="howP"></p>
+      <h3 data-t="harmT"></h3><div class="sub" id="harmS"></div><div id="harm"></div><div class="note" id="valid"></div>
+      <div id="wxBox"><h3 data-t="wxT"></h3><div class="sub" data-t="wxS"></div><div id="wx"></div><div class="note" id="wxNote"></div></div>
+      <h3 data-t="srcT"></h3><div class="src" data-t="footer"></div>
+    </div></details>
     <div class="card bot"><div style="font-size:30px">📱</div><p data-t="botP"></p></div>
-    <div class="src" data-t="footer"></div>
   </aside>
 </div>
 
@@ -111,70 +122,114 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <script>
-// ---------------- text (KY needs a native-speaker check) ----------------
+// ======================= text (KY needs a native-speaker check) =======================
+const ruPl = (n, one, few, many) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
+const firesWord = (n, l) => l === 'ru' ? ruPl(n, 'очаг', 'очага', 'очагов') : l === 'en' ? (Math.round(n) === 1 ? 'hotspot' : 'hotspots') : 'очок';
+const MON_LOC_RU = ['январе','феврале','марте','апреле','мае','июне','июле','августе','сентябре','октябре','ноябре','декабре'];
 const I18N = {
-  ru: { tagline:'календарь горения · MODIS + VIIRS', csvCal:'CSV календаря', csvPts:'CSV очагов', tg:'Сводка в Telegram',
-    hint:'Клик — выбрать место · протянуть — выбрать область', calT:'Календарь горения', calS:'Гармонизированные очаги (VIIRS-эквивалент) · клик по клетке — перейти к месяцу',
-    modeN:'Очаги', modeA:'К норме', lineS:'Медиана прошлых лет по месяцам', lineT:y=>`${y} против нормы`,
-    wxT:'Огонь и дождь', wxS:'Месяцы сезона 2012–2025 · погода NASA POWER', harmT:'Почему нужна гармонизация',
-    harmWorld:'Весь мир: сырой ряд «прыгает» в 2012, когда появился VIIRS', harmLocal:'Эта область: сырой ряд против гармонизированного',
-    botP:'Бот @burn_beat_bot каждое утро присылает службам Кыргызстана оценку пожарной опасности: сезон, отклонение от нормы, погода, свежие очаги.',
-    footer:'Данные: NASA FIRMS (MODIS C6.1, VIIRS S-NPP), NASA POWER · метод и проверка: docs/METHOD.md · NASA Space Apps 2026',
+  ru: { tagline:'когда и где горит · NASA MODIS + VIIRS', p1:'Год', p5:'5 лет', p10:'10 лет', pall:'Все 25 лет', tg:'Сводка в Telegram', nowBtn:'Сейчас',
+    hint:'Клик — выбрать место · протянуть — область', calT:'Календарь горения', calS:'Каждая клетка — месяц. Клик по клетке — показать этот месяц на карте',
+    modeN:'Очаги', modeA:'К норме', lineT:y => `${y} против нормы`, lineS:(a, b) => `Норма — медиана ${a}–${b} по месяцам`,
+    howT:'Как это посчитано', howP:'Два поколения спутников видят огонь по-разному: новый VIIRS замечает в несколько раз больше мелких очагов, чем старый MODIS. Мы пересчитали 25 лет MODIS в шкалу VIIRS, чтобы прошлое и настоящее можно было честно сравнивать.',
+    harmT:'Без гармонизации — ложный скачок в 2012', harmWorld:'Весь мир, очагов в год', harmLocal:'Эта область, очагов в год', wxT:'Огонь и дождь', wxS:'Месяцы сезона 2012–2025 · погода NASA POWER', srcT:'Данные',
+    botP:'Каждое утро бот @burn_beat_bot присылает службам Кыргызстана оценку пожарной опасности: сезон, отклонение от нормы, погода, свежие очаги.',
+    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, пересчитан), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (последние 7 дней) · погода NASA POWER · только растительные пожары, заводы и вулканы исключены · метод и проверка: docs/METHOD.md',
     mon:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'], monFull:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
-    fires:'очагов', toNorm:'к норме', normLow:'норма почти ноль — не с чем сравнить', phase:'Сезон', peakNow:'сейчас пик', peakIn:n=>`пик через ${n} мес.`, peakMonth:m=>`пик: ${m}`,
-    worst:'Худший год', yearNorm:'Норма за год', lastYear:y=>`Очагов за ${y}`, norm:'Норма', raw:'Сырой MODIS → VIIRS', harm:'Гармонизированный',
-    many:'больше', few:'меньше', above:'выше нормы', below:'ниже нормы', custom:'Выбранная область', point:'Точка',
-    validW:v=>`Проверка (каждый год 2012–2019 скрыт по очереди): смещение ${v.cell.bias_pct}% против ${v.raw.bias_pct}% без гармонизации; ошибка в месяц в ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} раз меньше.`,
-    validK:(b,r)=>`Проверка по Кыргызстану: ошибка ${b.mae} очага/мес против ${r} у сырого MODIS · смещение ${b.bias_pct}%`,
-    rain:'Осадки, % нормы месяца', fireAnom:'Очаги, % к норме', wxNote:r=>`Корреляция осадки ↔ пожары: r = ${r}. ${r < -0.25 ? 'Дождливые месяцы горят меньше.' : 'Связь слабая.'}`,
-    ptsOnlyKg:'Отдельные очаги доступны для областей Кыргызстана' },
-  ky: { tagline:'күйүү календары · MODIS + VIIRS', csvCal:'Календарь CSV', csvPts:'Очоктор CSV', tg:'Telegram сводка',
-    hint:'Басуу — жерди тандоо · тартуу — аймакты тандоо', calT:'Күйүү календары', calS:'Гармонизацияланган очоктор (VIIRS эквиваленти) · уячаны басыңыз — ошол айга өтүү',
-    modeN:'Очоктор', modeA:'Нормага', lineS:'Мурунку жылдардын айлык медианасы', lineT:y=>`${y} жана норма`,
-    wxT:'Өрт жана жаан', wxS:'2012–2025 сезон айлары · аба ырайы NASA POWER', harmT:'Гармонизация эмне үчүн керек',
-    harmWorld:'Бүт дүйнө: 2012-жылы VIIRS чыкканда чийки катар секирет', harmLocal:'Бул аймак: чийки жана гармонизацияланган катар',
-    botP:'@burn_beat_bot ар күнү эртең менен Кыргызстандын кызматтарына өрт коркунучун жөнөтөт: сезон, нормадан четтөө, аба ырайы, жаңы очоктор.',
-    footer:'Маалымат: NASA FIRMS (MODIS C6.1, VIIRS S-NPP), NASA POWER · ыкма жана текшерүү: docs/METHOD.md · NASA Space Apps 2026',
+    fires:'очагов', toNorm:'к норме', normLow:'в это время года тут почти не горит', phase:'Сезон', peakNow:'сейчас пик', peakIn:n => `пик через ${n} мес.`, peakMonth:m => `пик: ${m}`,
+    worst:'Худший год', yearNorm:'Обычно за год', lastYear:y => `За ${y} год`, norm:'Норма', raw:'Сырые данные', harm:'Гармонизированные',
+    many:'больше', few:'меньше', above:'выше нормы', below:'ниже нормы', custom:'выбранной области', point:'Точка', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очаги CSV',
+    validW:v => `Проверка: каждый год 2012–2019 по очереди скрывали от модели и сравнивали с тем, что реально увидел VIIRS. Смещение ${v.cell.bias_pct}% (без гармонизации ${v.raw.bias_pct}%), ошибка в месяц в ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} раз меньше.`,
+    validK:(b, r) => `Проверка по Кыргызстану: ошибка ${b.mae} очага в месяц против ${r} у сырого MODIS, смещение ${b.bias_pct}%.`,
+    rain:'Осадки, % нормы', fireAnom:'Очаги, % к норме', wxNote:r => `r = ${r}: ${r < -0.25 ? 'дождливые месяцы горят заметно меньше.' : 'связь слабая.'}`,
+    ptsOnlyKg:'Отдельные очаги — для Кыргызстана', grid:'сетка ≈100 км', gridKg:'сетка ≈25 км · точки — отдельные очаги',
+    liveT:'Последние 7 дней', liveNone:'За последние 7 дней спутники не видели очагов в этой области.', liveOutside:'Свежие данные пока есть только для Центральной Азии.',
+    liveN:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за 7 дней`, liveNow:'СЕЙЧАС', liveDays:'последние 7 дней', newest:'Последний',
+    story:s => {
+      const peak = s.peak2 !== null ? `<em>${MON_LOC_RU[s.peak]}</em> и <em>${MON_LOC_RU[s.peak2]}</em>` : `<em>${MON_LOC_RU[s.peak]}</em>`;
+      let cmp;
+      if (s.ratio === null) cmp = 'в это время года тут почти не горит';
+      else if (s.ratio >= 2) cmp = `<em>в ${s.ratio < 10 ? s.ratio.toFixed(1).replace('.', ',') : Math.round(s.ratio)} раза больше нормы</em>`;
+      else if (s.ratio <= .5 && s.ratio > 0) cmp = `в ${(1 / s.ratio).toFixed(1).replace('.', ',')} раза меньше нормы`;
+      else if (s.ratio === 0) cmp = 'ни одного очага';
+      else if (Math.abs(s.anom) < 15) cmp = 'около нормы';
+      else cmp = s.anom > 0 ? `<em>на ${s.anom}% больше нормы</em>` : `на ${-s.anom}% меньше нормы`;
+      const live = s.live === null ? '' : s.live > 0 ? ` <span class="lv">За последние 7 дней спутники заметили ${s.live} ${ruPl(s.live, 'очаг', 'очага', 'очагов')}.</span>` : ' За последние 7 дней очагов не было.';
+      return `${s.where === 'мир' ? 'На планете' : 'В ' + s.where} больше всего горит в ${peak}. В ${MON_LOC_RU[s.m]} ${s.y} — ${s.n} ${ruPl(s.nRaw, 'очаг', 'очага', 'очагов')}, ${cmp}.${live}`; } },
+  ky: { tagline:'качан жана кайда күйөт · NASA MODIS + VIIRS', p1:'Жыл', p5:'5 жыл', p10:'10 жыл', pall:'25 жыл', tg:'Telegram сводка', nowBtn:'Азыр',
+    hint:'Басуу — жерди тандоо · тартуу — аймак', calT:'Күйүү календары', calS:'Ар бир уяча — бир ай. Уячаны бассаңыз, ошол ай картада көрүнөт',
+    modeN:'Очоктор', modeA:'Нормага', lineT:y => `${y} жана норма`, lineS:(a, b) => `Норма — ${a}–${b} айлык медианасы`,
+    howT:'Бул кантип эсептелген', howP:'Спутниктердин эки мууну өрттү ар башкача көрөт: жаңы VIIRS эски MODISке караганда майда очокторду бир нече эсе көп байкайт. Биз 25 жылдык MODISти VIIRS шкаласына которуп, өткөн менен азыркыны чынчыл салыштырууга мүмкүнчүлүк бердик.',
+    harmT:'Гармонизациясыз — 2012-жылы жалган секирик', harmWorld:'Бүт дүйнө, жылына очоктор', harmLocal:'Бул аймак, жылына очоктор', wxT:'Өрт жана жаан', wxS:'2012–2025 сезон айлары · аба ырайы NASA POWER', srcT:'Маалымат',
+    botP:'Ар күнү эртең менен @burn_beat_bot Кыргызстандын кызматтарына өрт коркунучун жөнөтөт: сезон, нормадан четтөө, аба ырайы, жаңы очоктор.',
+    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, кайра эсептелген), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (акыркы 7 күн) · аба ырайы NASA POWER · өсүмдүк өрттөрү гана, заводдор жана вулкандар алынып салынган',
     mon:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'], monFull:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
-    fires:'очок', toNorm:'нормага карата', normLow:'норма нөлгө жакын — салыштырууга болбойт', phase:'Сезон', peakNow:'азыр чокусу', peakIn:n=>`чокуга ${n} ай`, peakMonth:m=>`чокусу: ${m}`,
-    worst:'Эң оор жыл', yearNorm:'Жылдык норма', lastYear:y=>`${y}-жылы очоктор`, norm:'Норма', raw:'Чийки MODIS → VIIRS', harm:'Гармонизацияланган',
-    many:'көп', few:'аз', above:'нормадан жогору', below:'нормадан төмөн', custom:'Тандалган аймак', point:'Чекит',
-    validW:v=>`Текшерүү (2012–2019 ар бир жыл кезек менен жашырылган): жылыш ${v.cell.bias_pct}%, гармонизациясыз ${v.raw.bias_pct}%; айлык ката ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} эсе аз.`,
-    validK:(b,r)=>`Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r} · жылыш ${b.bias_pct}%`,
-    rain:'Жаан, айлык нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r=>`Жаан ↔ өрт корреляциясы: r = ${r}. ${r < -0.25 ? 'Жаандуу айларда өрт азыраак.' : 'Байланыш алсыз.'}`,
-    ptsOnlyKg:'Өзүнчө очоктор Кыргызстандын облустары үчүн гана бар' },
-  en: { tagline:'burning calendar · MODIS + VIIRS', csvCal:'Calendar CSV', csvPts:'Hotspots CSV', tg:'Telegram brief',
-    hint:'Click — pick a place · drag — pick an area', calT:'Burning calendar', calS:'Harmonized hotspots (VIIRS-equivalent) · click a cell to jump to that month',
-    modeN:'Hotspots', modeA:'vs normal', lineS:'Median of past years by month', lineT:y=>`${y} vs normal`,
-    wxT:'Fire and rain', wxS:'Fire-season months 2012–2025 · weather: NASA POWER', harmT:'Why harmonization matters',
-    harmWorld:'Whole world: the raw record jumps in 2012 when VIIRS arrives', harmLocal:'This area: raw vs harmonized record',
+    fires:'очок', toNorm:'нормага карата', normLow:'жылдын бул маалында дээрлик күйбөйт', phase:'Сезон', peakNow:'азыр чокусу', peakIn:n => `чокуга ${n} ай`, peakMonth:m => `чокусу: ${m}`,
+    worst:'Эң оор жыл', yearNorm:'Адатта жылына', lastYear:y => `${y}-жылы`, norm:'Норма', raw:'Чийки маалымат', harm:'Гармонизацияланган',
+    many:'көп', few:'аз', above:'нормадан жогору', below:'нормадан төмөн', custom:'тандалган аймак', point:'Чекит', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очоктор CSV',
+    validW:v => `Текшерүү: 2012–2019-жылдардын ар бири моделден кезек менен жашырылып, VIIRS көргөнү менен салыштырылды. Жылыш ${v.cell.bias_pct}% (гармонизациясыз ${v.raw.bias_pct}%), айлык ката ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} эсе аз.`,
+    validK:(b, r) => `Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r}, жылыш ${b.bias_pct}%.`,
+    rain:'Жаан, нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r => `r = ${r}: ${r < -0.25 ? 'жаандуу айларда өрт байкаларлык азыраак.' : 'байланыш алсыз.'}`,
+    ptsOnlyKg:'Өзүнчө очоктор — Кыргызстан үчүн', grid:'тор ≈100 км', gridKg:'тор ≈25 км · чекиттер — өзүнчө очоктор',
+    liveT:'Акыркы 7 күн', liveNone:'Акыркы 7 күндө бул аймакта спутниктер очок көргөн жок.', liveOutside:'Жаңы маалымат азырынча Борбор Азия үчүн гана бар.',
+    liveN:n => `7 күндө ${n} очок`, liveNow:'АЗЫР', liveDays:'акыркы 7 күн', newest:'Акыркысы',
+    story:s => {
+      const mo = i => `<em>${I18N.ky.monFull[i]}</em>`;
+      const peak = s.peak2 !== null ? `${mo(s.peak)} жана ${mo(s.peak2)} айларында` : `${mo(s.peak)} айында`;
+      let cmp;
+      if (s.ratio === null) cmp = 'жылдын бул маалында дээрлик күйбөйт';
+      else if (s.ratio >= 2) cmp = `<em>нормадан ${s.ratio < 10 ? s.ratio.toFixed(1) : Math.round(s.ratio)} эсе көп</em>`;
+      else if (s.ratio <= .5 && s.ratio > 0) cmp = `нормадан ${(1 / s.ratio).toFixed(1)} эсе аз`;
+      else if (s.ratio === 0) cmp = 'бир да очок жок';
+      else if (Math.abs(s.anom) < 15) cmp = 'нормага жакын';
+      else cmp = s.anom > 0 ? `<em>нормадан ${s.anom}% көп</em>` : `нормадан ${-s.anom}% аз`;
+      const live = s.live === null ? '' : s.live > 0 ? ` <span class="lv">Акыркы 7 күндө спутниктер ${s.live} очок байкады.</span>` : ' Акыркы 7 күндө очок болгон жок.';
+      return `${s.whereKy} эң көп ${peak} күйөт. ${s.y}-жылдын ${I18N.ky.monFull[s.m]} айында — ${s.n} очок, ${cmp}.${live}`; } },
+  en: { tagline:'when and where it burns · NASA MODIS + VIIRS', p1:'Year', p5:'5 years', p10:'10 years', pall:'All 25 years', tg:'Telegram brief', nowBtn:'Now',
+    hint:'Click — pick a place · drag — pick an area', calT:'Burning calendar', calS:'Each cell is a month. Click a cell to show that month on the map',
+    modeN:'Hotspots', modeA:'vs normal', lineT:y => `${y} vs normal`, lineS:(a, b) => `Normal = monthly median ${a}–${b}`,
+    howT:'How it is calculated', howP:'Two generations of satellites see fire differently: the new VIIRS spots several times more small fires than the old MODIS. We converted 25 years of MODIS to the VIIRS scale so that the past and the present can be compared honestly.',
+    harmT:'Without harmonization: a false jump in 2012', harmWorld:'Whole world, hotspots per year', harmLocal:'This area, hotspots per year', wxT:'Fire and rain', wxS:'Fire-season months 2012–2025 · weather: NASA POWER', srcT:'Data',
     botP:'Every morning @burn_beat_bot sends Kyrgyz services a fire-danger rating: season, anomaly vs normal, weather and fresh detections.',
-    footer:'Data: NASA FIRMS (MODIS C6.1, VIIRS S-NPP), NASA POWER · method and validation: docs/METHOD.md · NASA Space Apps 2026',
+    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, converted), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (last 7 days) · weather NASA POWER · vegetation fires only, factories and volcanoes removed · method and validation: docs/METHOD.md',
     mon:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], monFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
-    fires:'hotspots', toNorm:'vs normal', normLow:'normal is near zero — nothing to compare', phase:'Season', peakNow:'peak now', peakIn:n=>`peak in ${n} mo.`, peakMonth:m=>`peak: ${m}`,
-    worst:'Worst year', yearNorm:'Normal year', lastYear:y=>`Hotspots in ${y}`, norm:'Normal', raw:'Raw MODIS → VIIRS', harm:'Harmonized',
-    many:'more', few:'fewer', above:'above normal', below:'below normal', custom:'Selected area', point:'Point',
-    validW:v=>`Validation (each year 2012–2019 held out in turn): bias ${v.cell.bias_pct}% vs ${v.raw.bias_pct}% without harmonization; monthly error ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)}× smaller.`,
-    validK:(b,r)=>`Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS · bias ${b.bias_pct}%`,
-    rain:'Rainfall, % of monthly normal', fireAnom:'Hotspots, % vs normal', wxNote:r=>`Rainfall ↔ fire correlation: r = ${r}. ${r < -0.25 ? 'Wet months burn less.' : 'Weak link.'}`,
-    ptsOnlyKg:'Individual hotspots are available for Kyrgyz regions' },
+    fires:'hotspots', toNorm:'vs normal', normLow:'it hardly burns here at this time of year', phase:'Season', peakNow:'peak now', peakIn:n => `peak in ${n} mo.`, peakMonth:m => `peak: ${m}`,
+    worst:'Worst year', yearNorm:'Usually per year', lastYear:y => `In ${y}`, norm:'Normal', raw:'Raw data', harm:'Harmonized',
+    many:'more', few:'fewer', above:'above normal', below:'below normal', custom:'the selected area', point:'Point', csvCal:'⬇ Calendar CSV', csvPts:'⬇ Hotspots CSV',
+    validW:v => `Validation: each year 2012–2019 was hidden from the model in turn and compared with what VIIRS really saw. Bias ${v.cell.bias_pct}% (${v.raw.bias_pct}% without harmonization), monthly error ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)}× smaller.`,
+    validK:(b, r) => `Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS, bias ${b.bias_pct}%.`,
+    rain:'Rainfall, % of normal', fireAnom:'Hotspots, % vs normal', wxNote:r => `r = ${r}: ${r < -0.25 ? 'wet months burn noticeably less.' : 'weak link.'}`,
+    ptsOnlyKg:'Individual hotspots — Kyrgyzstan only', grid:'grid ≈100 km', gridKg:'grid ≈25 km · dots are individual hotspots',
+    liveT:'Last 7 days', liveNone:'Satellites saw no hotspots in this area in the last 7 days.', liveOutside:'Fresh data is available for Central Asia only so far.',
+    liveN:n => `${n} hotspots in 7 days`, liveNow:'NOW', liveDays:'last 7 days', newest:'Latest',
+    story:s => {
+      const M = I18N.en.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> and <em>${M[s.peak2]}</em>` : `<em>${M[s.peak]}</em>`;
+      let cmp;
+      if (s.ratio === null) cmp = 'it hardly burns here at this time of year';
+      else if (s.ratio >= 2) cmp = `<em>${s.ratio < 10 ? s.ratio.toFixed(1) : Math.round(s.ratio)}× the normal</em>`;
+      else if (s.ratio <= .5 && s.ratio > 0) cmp = `${(1 / s.ratio).toFixed(1)}× below normal`;
+      else if (s.ratio === 0) cmp = 'not a single hotspot';
+      else if (Math.abs(s.anom) < 15) cmp = 'about normal';
+      else cmp = s.anom > 0 ? `<em>${s.anom}% above normal</em>` : `${-s.anom}% below normal`;
+      const live = s.live === null ? '' : s.live > 0 ? ` <span class="lv">Satellites spotted ${s.live} ${s.live === 1 ? 'hotspot' : 'hotspots'} in the last 7 days.</span>` : ' No hotspots in the last 7 days.';
+      return `${s.whereEn} burns most in ${peak}. ${M[s.m]} ${s.y}: ${s.n} ${s.nRaw === 1 ? 'hotspot' : 'hotspots'}, ${cmp}.${live}`; } },
 };
-const PRESETS = [   // bbox = [south, west, north, east]
-  ['world', null, { ru:'Весь мир', ky:'Бүт дүйнө', en:'World' }],
-  ['amazon', [-15,-70,0,-45], { ru:'Амазония', ky:'Амазония', en:'Amazon' }],
-  ['sahel', [4,-18,14,35], { ru:'Сахель', ky:'Сахель', en:'Sahel' }],
-  ['siberia', [50,90,70,140], { ru:'Сибирь', ky:'Сибирь', en:'Siberia' }],
-  ['australia', [-40,112,-10,155], { ru:'Австралия', ky:'Австралия', en:'Australia' }],
-  ['casia', [35,46,56,88], { ru:'Центральная Азия', ky:'Борбор Азия', en:'Central Asia' }],
+// presets: key, bbox [S, W, N, E], names, weather key, RU locative, KY "в ..." form, EN name in sentence
+const PRESETS = [
+  ['world', null, { ru:'Весь мир', ky:'Бүт дүйнө', en:'World' }, null, 'мир', 'Дүйнөдө', 'The planet'],
+  ['amazon', [-15,-70,0,-45], { ru:'Амазония', ky:'Амазония', en:'Amazon' }, null, 'Амазонии', 'Амазонияда', 'The Amazon'],
+  ['sahel', [4,-18,14,35], { ru:'Сахель', ky:'Сахель', en:'Sahel' }, null, 'Сахеле', 'Сахелде', 'The Sahel'],
+  ['siberia', [50,90,70,140], { ru:'Сибирь', ky:'Сибирь', en:'Siberia' }, null, 'Сибири', 'Сибирде', 'Siberia'],
+  ['australia', [-40,112,-10,155], { ru:'Австралия', ky:'Австралия', en:'Australia' }, null, 'Австралии', 'Австралияда', 'Australia'],
+  ['casia', [35,46,56,88], { ru:'Центральная Азия', ky:'Борбор Азия', en:'Central Asia' }, null, 'Центральной Азии', 'Борбор Азияда', 'Central Asia'],
   ['|'],
-  ['kg', [39.1,69.2,43.3,80.3], { ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyrgyzstan' }, 'kg'],
-  ['chui', [42.2,72.8,43.3,76.0], { ru:'Чуй', ky:'Чүй', en:'Chui' }, 'chui'],
-  ['talas', [41.9,70.9,42.8,73.2], { ru:'Талас', ky:'Талас', en:'Talas' }, 'talas'],
-  ['issykkul', [41.6,76.0,43.0,80.3], { ru:'Иссык-Куль', ky:'Ысык-Көл', en:'Issyk-Kul' }, 'issykkul'],
-  ['naryn', [40.5,73.5,42.3,78.5], { ru:'Нарын', ky:'Нарын', en:'Naryn' }, 'naryn'],
-  ['jalalabad', [40.6,70.6,42.4,74.0], { ru:'Джалал-Абад', ky:'Жалал-Абад', en:'Jalal-Abad' }, 'jalalabad'],
-  ['osh', [39.3,72.4,40.9,75.0], { ru:'Ош', ky:'Ош', en:'Osh' }, 'osh'],
-  ['batken', [39.5,69.2,40.4,72.4], { ru:'Баткен', ky:'Баткен', en:'Batken' }, 'batken'],
+  ['kg', [39.1,69.2,43.3,80.3], { ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyrgyzstan' }, 'kg', 'Кыргызстане', 'Кыргызстанда', 'Kyrgyzstan'],
+  ['chui', [42.2,72.8,43.3,76.0], { ru:'Чуй', ky:'Чүй', en:'Chui' }, 'chui', 'Чуйской области', 'Чүй облусунда', 'Chui region'],
+  ['talas', [41.9,70.9,42.8,73.2], { ru:'Талас', ky:'Талас', en:'Talas' }, 'talas', 'Таласской области', 'Талас облусунда', 'Talas region'],
+  ['issykkul', [41.6,76.0,43.0,80.3], { ru:'Иссык-Куль', ky:'Ысык-Көл', en:'Issyk-Kul' }, 'issykkul', 'Иссык-Кульской области', 'Ысык-Көл облусунда', 'Issyk-Kul region'],
+  ['naryn', [40.5,73.5,42.3,78.5], { ru:'Нарын', ky:'Нарын', en:'Naryn' }, 'naryn', 'Нарынской области', 'Нарын облусунда', 'Naryn region'],
+  ['jalalabad', [40.6,70.6,42.4,74.0], { ru:'Джалал-Абад', ky:'Жалал-Абад', en:'Jalal-Abad' }, 'jalalabad', 'Джалал-Абадской области', 'Жалал-Абад облусунда', 'Jalal-Abad region'],
+  ['osh', [39.3,72.4,40.9,75.0], { ru:'Ош', ky:'Ош', en:'Osh' }, 'osh', 'Ошской области', 'Ош облусунда', 'Osh region'],
+  ['batken', [39.5,69.2,40.4,72.4], { ru:'Баткен', ky:'Баткен', en:'Batken' }, 'batken', 'Баткенской области', 'Баткен облусунда', 'Batken region'],
 ];
 const KG_EXTENT = [39.1,69.2,43.3,80.3];
 
@@ -188,14 +243,22 @@ const mean = a => a.reduce((s, x) => s + x, 0) / (a.length || 1);
 const corr = (a, b) => { const ma = mean(a), mb = mean(b); let n = 0, da = 0, db = 0; a.forEach((x, i) => { n += (x-ma)*(b[i]-mb); da += (x-ma)**2; db += (b[i]-mb)**2; }); return da && db ? n / Math.sqrt(da*db) : 0; };
 const zs = a => { const m = mean(a), s = Math.sqrt(mean(a.map(x => (x-m)**2))) || 1; return a.map(x => (x-m)/s); };
 
-// ---------------- state ----------------
-let MONTHS, N, WORLD, SUMMARY, KG, KGMETA, WEATHER, world;
-let gCells = [], kgCells = [];                // {la, lo, h:Float32Array, m?, v?}
+// ======================= state =======================
+let MONTHS, N, SUMMARY, KGMETA, WEATHER, LIVE, world, REGIONS = [], POINTS = new Map();
+// fast planar point-in-polygon (small regions, lon/lat), with a bounding-box pre-check per region
+const ringHas = (ring, x, y) => { let k = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j];
+  if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) k = !k; } return k; };
+const polyHas = (poly, x, y) => ringHas(poly[0], x, y) && !poly.slice(1).some(h => ringHas(h, x, y));
+const regionOf = (lo, la) => { for (const f of REGIONS) { const b = f.bb; if (lo < b[0] || lo > b[2] || la < b[1] || la > b[3]) continue;
+  const g = f.geometry; if (g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la))) return f.properties.key; } return null; };
+const inRegion = reg => sel.pre && sel.pre[3] && (sel.pre[3] === 'kg' ? reg != null : reg === sel.pre[3]);
+const regionMode = () => !!(sel.pre && sel.pre[3] && REGIONS.length);
+let gCells = [], kgCells = [];
 let sel = { key:'world', bbox:null, name:null, src:'global' };
-let cur = 0, playing = false, mode = 'n', series = null;
+let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
 const charts = {};
 
-// ---------------- map ----------------
+// ======================= map =======================
 const C = { land:$('land'), fire:$('fire'), marks:$('marks') };
 const ctx = Object.fromEntries(Object.entries(C).map(([k, c]) => [k, c.getContext('2d')]));
 let proj, path, W, H, ptsG = [], ptsK = [];
@@ -204,19 +267,20 @@ const sprite = document.createElement('canvas'); sprite.width = sprite.height = 
   r.addColorStop(0,'rgba(255,240,200,1)'); r.addColorStop(.2,'rgba(255,160,50,.85)'); r.addColorStop(.5,'rgba(255,80,20,.3)'); r.addColorStop(1,'rgba(255,60,0,0)');
   g.fillStyle = r; g.fillRect(0,0,64,64); }
 const GRID = 3; let off, offCtx, img, buf, pix, LUT, P99G, P99K;
+const heat = d3.scaleSequential(t => d3.interpolateInferno(.25 + .75 * t)).clamp(true);
 
 function boxGeo(b) { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8;
   pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); }
   return { type:'MultiPoint', coordinates:pts }; }
+const zoomed = () => proj.scale() > 600;
 
 function layout() {
   const r = $('stage').getBoundingClientRect(); W = r.width; H = r.height;
   Object.values(C).forEach(c => { c.width = W * DPR; c.height = H * DPR; });
   Object.values(ctx).forEach(g => g.setTransform(DPR,0,0,DPR,0,0));
   proj = d3.geoEqualEarth();
-  if (sel.bbox) { const b = sel.bbox, pad = Math.max(1.5, (b[2]-b[0]) * .35);
-    proj.rotate([-(b[1] + b[3]) / 2, 0]);          // centre the area so it is not sheared
-    proj.fitExtent([[20, 40], [W - 20, H - 70]], boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3])); }
+  if (sel.bbox) { const b = sel.bbox, pad = Math.max(1, (b[2]-b[0]) * .3);
+    proj.rotate([-(b[1] + b[3]) / 2, 0]).fitExtent([[20, 44], [W - 20, H - 74]], boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3])); }
   else proj.fitExtent([[10, 44], [W - 10, H - 64]], { type:'Sphere' });
   path = d3.geoPath(proj, ctx.land);
   const g = ctx.land; g.clearRect(0,0,W,H);
@@ -224,67 +288,88 @@ function layout() {
   g.beginPath(); path(d3.geoGraticule10()); g.strokeStyle = 'rgba(255,255,255,.03)'; g.lineWidth = .6; g.stroke();
   g.beginPath(); path(world.land); g.fillStyle = '#1c1b21'; g.fill();
   g.beginPath(); path(world.borders); g.strokeStyle = sel.bbox ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)'; g.lineWidth = sel.bbox ? 1 : .6; g.stroke();
+  if (sel.src === 'kg' && REGIONS.length) { g.beginPath(); REGIONS.forEach(f => path(f)); g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = .8; g.stroke(); }
   ptsG = gCells.map(c => proj([c.lo, c.la])); ptsK = kgCells.map(c => proj([c.lo, c.la]));
   const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
   off = document.createElement('canvas'); off.width = gw; off.height = gh; offCtx = off.getContext('2d');
   img = offCtx.createImageData(gw, gh); buf = new Uint32Array(img.data.buffer);
   pix = new Int32Array(ptsG.length).fill(-1);
   ptsG.forEach((p, i) => { if (!p) return; const x = Math.round(p[0]/GRID), y = Math.round(p[1]/GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y*gw + x; });
+  $('scaleNote').textContent = zoomed() ? (sel.src === 'kg' ? T().gridKg : T().grid) : '';
   ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks();
 }
 
+// cell square on screen (crisp, honest about the 1° / 0.25° grid)
+function cellRect(la, lo, d) { const a = proj([lo - d, la + d]), b = proj([lo + d, la - d]); return a && b ? [a[0], a[1], b[0] - a[0], b[1] - a[1]] : null; }
+
 function drawFire(fade) {
   const g = ctx.fire;
+  if (liveOn) { g.clearRect(0,0,W,H); drawLive(); return; }
   g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade})`; g.fillRect(0,0,W,H);
-  g.globalCompositeOperation = 'lighter';
-  const zoomed = proj.scale() > 600;
-  if (zoomed && sel.src === 'kg') {                  // fine 0.25° cells
-    const r0 = proj.scale() / 160 * .9, lm = Math.log1p(P99K);
-    kgCells.forEach((c, i) => { const n = c.h[cur], p = ptsK[i]; if (!p || n < 1) return;
-      const v = Math.min(1, Math.log1p(n) / lm), r = r0 * (0.6 + 1.6 * v); g.globalAlpha = .15 + .7 * v; g.drawImage(sprite, p[0]-r, p[1]-r, 2*r, 2*r); });
-  } else if (zoomed) {
-    const r0 = proj.scale() / 160 * 2.4, lm = Math.log1p(P99G);
-    gCells.forEach((c, i) => { const n = c.h[cur], p = ptsG[i]; if (!p || n < 1 || p[0] < -r0 || p[0] > W + r0 || p[1] < -r0 || p[1] > H + r0) return;
-      const v = Math.min(1, Math.log1p(n) / lm), r = r0 * (0.6 + 1.4 * v); g.globalAlpha = .15 + .7 * v; g.drawImage(sprite, p[0]-r, p[1]-r, 2*r, 2*r); });
-  } else {                                           // world: one pixel per cell, then glow
-    buf.fill(0); const lm = Math.log1p(P99G);
-    gCells.forEach((c, i) => { const q = pix[i], n = c.h[cur]; if (q < 0 || n < 2) return;
-      const v = Math.min(255, Math.round(255 * Math.log1p(n) / lm)); if (buf[q] >>> 0 < LUT[v] >>> 0) buf[q] = LUT[v]; });
-    offCtx.putImageData(img, 0, 0);
-    g.filter = 'blur(4px)'; g.globalAlpha = .9; g.drawImage(off, 0, 0, W, H);
-    g.filter = 'none'; g.globalAlpha = .6; g.drawImage(off, 0, 0, W, H);
+  if (zoomed()) {
+    g.globalCompositeOperation = 'source-over'; g.clearRect(0,0,W,H);
+    const kg = sel.src === 'kg', cells = kg ? kgCells : gCells, d = kg ? .125 : .5, lm = Math.log1p(kg ? P99K : P99G);
+    cells.forEach(c => { const n = c.h[cur]; if (n < .5) return; const r = cellRect(c.la, c.lo, d); if (!r || r[0] > W || r[1] > H || r[0] + r[2] < 0 || r[1] + r[3] < 0) return;
+      const v = Math.min(1, Math.log1p(n) / lm); g.fillStyle = heat(v); g.globalAlpha = .25 + .55 * v; g.fillRect(r[0] + .5, r[1] + .5, Math.max(1, r[2] - 1), Math.max(1, r[3] - 1)); });
+    g.globalAlpha = 1;
+    if (kg) {                                         // individual hotspots of this month on top
+      const pts = (POINTS.get(MONTHS[cur]) || []).filter(p => !regionMode() || inRegion(p[2]));
+      g.globalCompositeOperation = 'lighter';
+      for (const [la, lo] of pts) { const p = proj([lo, la]); if (!p) continue; g.globalAlpha = .55; g.drawImage(sprite, p[0] - 6, p[1] - 6, 12, 12); }
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.fillStyle = '#fff4e0';
+      for (const [la, lo] of pts) { const p = proj([lo, la]); if (p) { g.beginPath(); g.arc(p[0], p[1], 1.4, 0, 7); g.fill(); } }
+    }
+    return;
   }
+  g.globalCompositeOperation = 'lighter';
+  buf.fill(0); const lm = Math.log1p(P99G);
+  gCells.forEach((c, i) => { const q = pix[i], n = c.h[cur]; if (q < 0 || n < 2) return;
+    const v = Math.min(255, Math.round(255 * Math.log1p(n) / lm)); if (buf[q] >>> 0 < LUT[v] >>> 0) buf[q] = LUT[v]; });
+  offCtx.putImageData(img, 0, 0);
+  g.filter = 'blur(4px)'; g.globalAlpha = .9; g.drawImage(off, 0, 0, W, H);
+  g.filter = 'none'; g.globalAlpha = .6; g.drawImage(off, 0, 0, W, H);
   g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+}
+
+let livePhase = 0;
+function drawLive() {
+  const g = ctx.fire, t = livePhase, z = zoomed();
+  for (const p of LIVE.points) { const xy = proj([p[1], p[0]]); if (!xy || xy[0] < 0 || xy[1] < 0 || xy[0] > W || xy[1] > H) continue;
+    const ageH = (Date.now() - Date.parse(p[2].replace(' ', 'T') + 'Z')) / 36e5, fresh = ageH < 24;
+    const r = z ? 4 : 2.2;
+    if (fresh) { const k = (t + (p[0] * 7 % 1)) % 1; g.strokeStyle = `rgba(255,59,48,${.7 * (1 - k)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(xy[0], xy[1], r + 14 * k, 0, 7); g.stroke(); }
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = fresh ? .9 : .5; g.drawImage(sprite, xy[0] - r * 3, xy[1] - r * 3, r * 6, r * 6);
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = fresh ? '#ffffff' : '#ffb36b'; g.beginPath(); g.arc(xy[0], xy[1], r * .45, 0, 7); g.fill(); }
 }
 
 function drawMarks(drag) {
   const g = ctx.marks; g.clearRect(0,0,W,H);
+  if (!drag && regionMode()) { const pth = d3.geoPath(proj, g), fs = REGIONS.filter(f => inRegion(f.properties.key));
+    g.beginPath(); fs.forEach(f => pth(f)); g.strokeStyle = '#ffd2b0'; g.lineWidth = 1.8; g.stroke(); return; }
   const b = drag || sel.bbox; if (!b) return;
   const ring = [[b[1],b[0]],[b[3],b[0]],[b[3],b[2]],[b[1],b[2]]];
   g.beginPath();
-  ring.forEach((p, i) => { const q = ring[(i+1) % 4]; for (let t = 0; t <= 1; t += .1) { const xy = proj([p[0] + (q[0]-p[0])*t, p[1] + (q[1]-p[1])*t]); if (xy) (i || t) ? g.lineTo(...xy) : g.moveTo(...xy); } });
+  ring.forEach((p, i) => { const q = ring[(i+1) % 4]; for (let t = 0; t <= 1.0001; t += .1) { const xy = proj([p[0] + (q[0]-p[0])*t, p[1] + (q[1]-p[1])*t]); if (xy) (i || t) ? g.lineTo(...xy) : g.moveTo(...xy); } });
   g.closePath(); g.setLineDash([6,4]); g.strokeStyle = '#ffd2b0'; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]);
 }
 
-// click = point (±1°), drag = rectangle
 let down = null;
 $('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player')) return; const r = $('stage').getBoundingClientRect(); down = [e.clientX - r.left, e.clientY - r.top]; });
 $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top];
   if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 6) { const a = proj.invert(down), c = proj.invert(p); if (a && c) drawMarks([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); } });
 addEventListener('pointerup', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top], d0 = down; down = null;
   const a = proj.invert(d0); if (!a || !isFinite(a[0])) return;
-  if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) { const la = a[1], lo = a[0];
-    select({ key:null, bbox:[la-1, lo-1.3, la+1, lo+1.3].map(x => +x.toFixed(2)), name:`${T().point} ${la.toFixed(1)}°, ${lo.toFixed(1)}°` }); }
+  if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) { const la = a[1], lo = a[0], d = zoomed() ? .5 : 1;
+    select({ key:null, bbox:[la-d, lo-d*1.3, la+d, lo+d*1.3].map(x => +x.toFixed(2)), name:`${T().point} ${la.toFixed(1)}°, ${lo.toFixed(1)}°` }); }
   else { const c = proj.invert(p); if (!c) return;
-    select({ key:null, bbox:[Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])].map(x => +x.toFixed(2)), name:T().custom }); }
+    select({ key:null, bbox:[Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])].map(x => +x.toFixed(2)), name:null }); }
 });
 
-// ---------------- selection & data ----------------
+// ======================= selection & data =======================
 const inside = (b, o) => b[0] >= o[0] && b[1] >= o[1] && b[2] <= o[2] && b[3] <= o[3];
 function select(s) {
   const pre = PRESETS.find(p => p[0] === s.key);
-  sel = { key:s.key, bbox:s.bbox, name:s.name, wk:pre?.[3] || null,
-          src: s.bbox && inside(s.bbox, KG_EXTENT) ? 'kg' : 'global' };
+  sel = { key:s.key, bbox:s.bbox, name:s.name, pre, src:s.bbox && inside(s.bbox, KG_EXTENT) ? 'kg' : 'global' };
   document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.k === sel.key));
   const u = new URL(location); sel.bbox ? u.searchParams.set('bbox', sel.bbox.join(',')) : u.searchParams.delete('bbox'); history.replaceState(null, '', u);
   series = aggregate('h');
@@ -293,171 +378,227 @@ function select(s) {
 function aggregate(key) {
   if (!sel.bbox) return key === 'h' ? Float32Array.from(SUMMARY.harmonized) : null;
   const cells = sel.src === 'kg' ? kgCells : gCells, b = sel.bbox, out = new Float32Array(N);
+  if (regionMode()) { for (const c of kgCells) if (inRegion(c.reg) && c[key]) { const a = c[key]; for (let i = 0; i < N; i++) out[i] += a[i]; } return out; }
   for (const c of cells) if (c.la >= b[0] && c.la <= b[2] && c.lo >= b[1] && c.lo <= b[3] && c[key]) { const a = c[key]; for (let i = 0; i < N; i++) out[i] += a[i]; }
   return out;
 }
-const nameOf = () => sel.key ? PRESETS.find(p => p[0] === sel.key)[2][lang] : sel.name;
-const range = () => [Math.max(0, MONTHS.indexOf($('y0').value)), Math.max(0, MONTHS.indexOf($('y1').value))];
+const label = () => sel.pre ? sel.pre[2][lang] : sel.name || ({ ru:'Выбранная область', ky:'Тандалган аймак', en:'Selected area' })[lang];
+const liveInSel = () => { if (!LIVE) return null; const b = sel.bbox || [-90,-180,90,180], L = LIVE.box;
+  const covered = b[0] >= L[0] && b[1] >= L[1] && b[2] <= L[2] && b[3] <= L[3];
+  if (!covered) return null; if (regionMode()) return LIVE.points.filter(p => inRegion(p[5])); return LIVE.points.filter(p => p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]); };
+function viewRange() {     // indices [a, b] of the months shown, by the period buttons
+  const b = N - 1; if (period === 'all') return [0, b];
+  return [Math.max(0, N - 12 * +period), b];
+}
 
-// ---------------- panel ----------------
+// ======================= panel =======================
 function render() {
-  const t = T(), [a, b] = range(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
-  const years = d3.range(+MONTHS[a].slice(0,4), +MONTHS[b].slice(0,4) + 1);
-  const val = (y, m) => { const i = (y - 2001) * 12 + m - 1; return i < a || i > b || i >= N ? null : series[i]; };
-  const med = d3.range(12).map(m => median(years.filter(y => y !== cy).map(y => val(y, m + 1))));
+  const t = T(), [a, b] = viewRange(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
+  const lastY = +MONTHS[N-1].slice(0,4), years = d3.range(+MONTHS[a].slice(0,4), lastY + 1);
+  const at = (y, m) => { const i = (y - 2001) * 12 + m - 1; return i < 0 || i >= N ? null : series[i]; };
+  const normYears = d3.range(2001, lastY + 1).filter(y => y !== cy);           // norm always from the whole record
+  const med = d3.range(12).map(m => median(normYears.map(y => at(y, m + 1))));
 
-  // hero
-  const now = series[cur], m0 = med[cm-1], anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null;
-  const peak = med.indexOf(Math.max(...med)), toPeak = (peak - (cm - 1) + 12) % 12;
+  // ---- hero ----
+  const now = series[cur], m0 = med[cm-1];
+  const anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null, ratio = m0 >= 3 ? now / m0 : null;
+  const order = med.map((v, i) => [v, i]).sort((p, q) => q[0] - p[0]), peak = order[0][1];
+  const second = order.slice(1).find(([v, i]) => v >= .55 * order[0][0] && Math.min(Math.abs(i - peak), 12 - Math.abs(i - peak)) >= 3);
+  const toPeak = (peak - (cm - 1) + 12) % 12;
   const phase = toPeak === 0 ? t.peakNow : toPeak <= 2 ? t.peakIn(toPeak) : t.peakMonth(t.monFull[peak]);
-  const full = years.filter(y => y < 2025 || MONTHS.length > 300).map(y => [y, d3.sum(d3.range(12), m => val(y, m + 1) || 0)]);
-  const worst = d3.greatest(full, d => d[1]) || [0, 0];
-  $('hero').innerHTML = `<div class="where"><b>${nameOf()}</b> · ${t.mon[cm-1]} ${cy}</div>
-    <div class="big num">${fmt(now)} <span>${t.fires}</span></div>
+  const full = d3.range(2001, lastY + 1).map(y => [y, d3.sum(d3.range(12), m => at(y, m + 1) || 0)]);
+  const worst = d3.greatest(full, d => d[1]);
+  const live = liveInSel();
+  const ruWhere = sel.pre ? sel.pre[4] : t.custom, kyWhere = sel.pre ? sel.pre[5] : 'Тандалган аймакта', enWhere = sel.pre ? sel.pre[6] : 'The selected area';
+  const story = t.story({ where:ruWhere, whereKy:kyWhere, whereEn:enWhere, peak, peak2:second ? second[1] : null, m:cm - 1, y:cy, n:fmt(now), nRaw:Math.round(now), anom, ratio, live:live ? live.length : null });
+  $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${story}</div>
+    <div class="big num">${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span></div>
     ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
     <div class="stats"><div class="stat"><span>${t.phase}</span><b>${phase}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
-      <div class="stat"><span>${t.lastYear(full.at(-1)?.[0])}</span><b>${fmt(full.at(-1)?.[1] || 0)}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.map(d => d[1])))}</b></div></div>`;
+      <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
+    <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${sel.src !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
+  $('csvCal').onclick = csvCal; $('csvPts').onclick = csvPts;
 
-  // calendar
+  // ---- live card ----
+  if (!live) $('liveCard').innerHTML = `<h2><span class="dot"></span>${t.liveT}</h2><div class="sub" style="margin:6px 0 0">${t.liveOutside}</div>`;
+  else if (!live.length) $('liveCard').innerHTML = `<h2><span class="dot"></span>${t.liveT}</h2><div class="sub" style="margin:6px 0 0">${t.liveNone}</div>`;
+  else $('liveCard').innerHTML = `<div class="head"><h2><span class="dot"></span>${t.liveN(live.length)}</h2><button class="pill" id="liveShow">${liveOn ? '✕' : '🗺'}</button></div>
+      <ul>${live.slice(0, 4).map(p => `<li>${p[0].toFixed(3)}, ${p[1].toFixed(3)} <span>${p[2].slice(5)} UTC · ${p[3]}</span></li>`).join('')}</ul>`;
+  if ($('liveShow')) $('liveShow').onclick = toggleLive;
+
+  // ---- calendar ----
   const data = [];
-  years.forEach((y, yi) => d3.range(12).forEach(mi => { const v = val(y, mi + 1); if (v === null) return;
+  years.forEach((y, yi) => d3.range(12).forEach(mi => { const v = at(y, mi + 1); if (v === null) return;
     data.push([mi, yi, mode === 'a' ? (med[mi] >= 1 ? Math.round(100 * (v - med[mi]) / med[mi]) : 0) : Math.round(v)]); }));
   const sorted = data.map(d => d[2]).sort((p, q) => p - q), maxN = Math.max(1, sorted[Math.floor(sorted.length * .95)] || 1);
   const vm = { calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:10, itemHeight:140, textStyle:{ color:'#9b938a' } };
   const curCell = [cm - 1, years.indexOf(cy)];
+  charts.cal.getDom().style.height = Math.max(180, 70 + years.length * 15.5) + 'px'; charts.cal.resize();
   charts.cal.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:40, right:6, top:22, bottom:50 },
     tooltip:{ formatter:p => p.seriesType === 'heatmap' ? `<b>${t.mon[p.value[0]]} ${years[p.value[1]]}</b><br>${mode === 'a' ? (p.value[2] > 0 ? '+' : '') + p.value[2] + '% ' + t.toNorm : fmt(p.value[2]) + ' ' + t.fires}` : '' },
     xAxis:{ type:'category', data:t.mon, position:'top', axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
     yAxis:{ type:'category', data:years, inverse:true, axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
-    visualMap: mode === 'a' ? { ...vm, min:-100, max:100, inRange:{ color:['#2b6cb0','#5fa5e6','#24242a','#ff8a4c','#d1380d'] }, text:[t.above, t.below] }
-                            : { ...vm, min:0, max:maxN, inRange:{ color:['#1c1b21','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.many, t.few] },
-    series:[{ type:'heatmap', data, itemStyle:{ borderColor:'#18181d', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
-            { type:'scatter', data:curCell[1] >= 0 ? [curCell] : [], symbol:'rect', symbolSize:[22, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
+    visualMap: mode === 'a' ? { ...vm, min:-100, max:100, inRange:{ color:['#2b6cb0','#5fa5e6','#26262c','#ff8a4c','#d1380d'] }, text:[t.above, t.below] }
+                            : { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.many, t.few] },
+    series:[{ type:'heatmap', data, label:{ show:years.length <= 5, color:'#111', fontSize:10 }, itemStyle:{ borderColor:'#17171c', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
+            { type:'scatter', data:curCell[1] >= 0 && !liveOn ? [curCell] : [], symbol:'rect', symbolSize:[24, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
 
-  // selected year vs normal
-  $('lineT').textContent = t.lineT(cy);
+  // ---- year vs normal ----
+  $('lineT').textContent = t.lineT(cy); $('lineS').textContent = t.lineS(2001, lastY);
   const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
   const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
-  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend, grid:{ left:44, right:8, top:10, bottom:40 },
-    xAxis:{ type:'category', data:t.mon, ...ax }, yAxis:{ type:'value', ...ax },
-    series:[{ name:t.norm, type:'line', smooth:true, symbol:'none', data:med.map(Math.round), lineStyle:{ type:'dashed', width:2 }, color:'#8a8178' },
-            { name:String(cy), type:'line', smooth:true, symbolSize:6, data:d3.range(12).map(m => val(cy, m + 1)), color:'#ff6a1a', lineStyle:{ width:3 }, areaStyle:{ opacity:.12 } }] }, true);
+  const q25 = d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), .25) || 0);
+  const q75 = d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), .75) || 0);
+  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend:{ ...legend, data:[t.norm, String(cy)] }, grid:{ left:48, right:8, top:10, bottom:40 },
+    xAxis:{ type:'category', data:t.mon, ...ax, boundaryGap:false }, yAxis:{ type:'value', ...ax },
+    series:[{ type:'line', data:q25.map(Math.round), stack:'band', lineStyle:{ opacity:0 }, symbol:'none', silent:true, tooltip:{ show:false } },
+            { type:'line', data:q75.map((v, i) => Math.max(0, Math.round(v - q25[i]))), stack:'band', lineStyle:{ opacity:0 }, symbol:'none', areaStyle:{ color:'rgba(255,255,255,.07)' }, silent:true, tooltip:{ show:false } },
+            { name:t.norm, type:'line', smooth:true, symbol:'none', data:med.map(Math.round), lineStyle:{ type:'dashed', width:2 }, color:'#8a8178' },
+            { name:String(cy), type:'line', smooth:true, symbolSize:6, data:d3.range(12).map(m => at(cy, m + 1)), color:'#ff6a1a', lineStyle:{ width:3 }, areaStyle:{ opacity:.12 } }] }, true);
 
-  // harmonization: local (KG data has raw m/v) or world summary
-  const yrs = d3.range(2001, 2025), ysum = (arr, y) => d3.sum(d3.range(12), m => arr[(y - 2001) * 12 + m]);
+  // ---- how it's calculated (lazy: only when open) ----
+  if ($('how').open) renderHow(med);
+  Object.values(charts).forEach(c => c.setOption({ toolbox:{ right:0, top:0, iconStyle:{ borderColor:'#9b938a' }, feature:{ saveAsImage:{ title:'PNG', name:'burnbeat', pixelRatio:2, backgroundColor:'#17171c' } } } }));
+  drawClock(); drawTimeline();
+}
+
+function renderHow(med) {
+  const t = T(), yrs = d3.range(2001, +MONTHS[N-1].slice(0,4) + 1), ysum = (arr, y) => d3.sum(d3.range(12), m => arr[(y - 2001) * 12 + m]);
+  const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
+  const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
   let raw, harm;
   if (sel.src === 'kg') { const m = aggregate('m'), v = aggregate('v'); raw = yrs.map(y => Math.round(ysum(y < 2012 ? m : v, y))); harm = yrs.map(y => Math.round(ysum(series, y)));
     $('harmS').textContent = t.harmLocal; const kv = KGMETA.validation; $('valid').textContent = t.validK(kv.models[kv.best], kv.raw_modis.mae); }
   else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y));
     $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation); }
+  charts.harm.resize();
   charts.harm.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend, grid:{ left:52, right:8, top:10, bottom:40 },
     xAxis:{ type:'category', data:yrs, ...ax }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
     series:[{ name:t.raw, type:'line', step:'middle', symbol:'none', data:raw, color:'#8a8178', lineStyle:{ width:2 } },
             { name:t.harm, type:'line', smooth:true, symbol:'none', data:harm, color:'#ff6a1a', lineStyle:{ width:3 } }] }, true);
-
-  // fire and rain (Kyrgyz presets only)
-  const w = sel.wk && WEATHER[sel.wk];
-  $('wxCard').style.display = w ? '' : 'none';
-  if (w) {
-    const season = med.map((x, i) => [x, i]).sort((p, q) => q[0] - p[0]).slice(0, 5).map(x => x[1] + 1), pts = [], zf = [], zp = [];
-    season.forEach(mo => { const ys = d3.range(2012, 2026).filter(y => w[`${y}-${String(mo).padStart(2,'0')}`]);
-      const f = ys.map(y => series[(y - 2001) * 12 + mo - 1]), p = ys.map(y => w[`${y}-${String(mo).padStart(2,'0')}`][1]), fm = median(f), pm = mean(p);
-      ys.forEach((y, i) => { if (fm >= 3 && pm > 0) pts.push([Math.round(100 * p[i] / pm), Math.min(400, Math.round(100 * (f[i] - fm) / fm)), `${t.mon[mo-1]} ${y}`]); });
-      zf.push(...zs(f.map(Math.log1p))); zp.push(...zs(p)); });
-    const r = +corr(zp, zf).toFixed(2);
-    charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:50, right:10, top:10, bottom:38 },
-      tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
-      xAxis:{ type:'value', name:t.rain, nameLocation:'middle', nameGap:24, nameTextStyle:{ color:'#9b938a' }, ...ax },
-      yAxis:{ type:'value', name:t.fireAnom, nameLocation:'middle', nameGap:36, nameTextStyle:{ color:'#9b938a' }, ...ax },
-      series:[{ type:'scatter', data:pts, symbolSize:8, itemStyle:{ color:'#ff6a1a', opacity:.65 },
-        markLine:{ silent:true, symbol:'none', label:{ show:false }, lineStyle:{ color:'#5f5952', type:'dashed' }, data:[{ xAxis:100 }, { yAxis:0 }] } }] }, true);
-    $('wxNote').textContent = t.wxNote(r);
-  }
-  Object.values(charts).forEach(c => c.setOption({ toolbox:{ right:0, top:0, iconStyle:{ borderColor:'#9b938a' }, feature:{ saveAsImage:{ title:'PNG', name:'burnbeat', pixelRatio:2, backgroundColor:'#18181d' } } } }));
-
-  $('csvPts').disabled = sel.src !== 'kg'; $('csvPts').title = sel.src !== 'kg' ? t.ptsOnlyKg : '';
-  drawClock(); drawTimeline();
+  const wk = sel.pre && sel.pre[3], w = wk && WEATHER[wk];
+  $('wxBox').style.display = w ? '' : 'none';
+  if (!w) return;
+  const season = med.map((x, i) => [x, i]).sort((p, q) => q[0] - p[0]).slice(0, 5).map(x => x[1] + 1), pts = [], zf = [], zp = [];
+  season.forEach(mo => { const ys = d3.range(2012, 2026).filter(y => w[`${y}-${String(mo).padStart(2,'0')}`]);
+    const f = ys.map(y => series[(y - 2001) * 12 + mo - 1]), p = ys.map(y => w[`${y}-${String(mo).padStart(2,'0')}`][1]), fm = median(f), pm = mean(p);
+    ys.forEach((y, i) => { if (fm >= 3 && pm > 0) pts.push([Math.round(100 * p[i] / pm), Math.min(400, Math.round(100 * (f[i] - fm) / fm)), `${t.mon[mo-1]} ${y}`]); });
+    zf.push(...zs(f.map(Math.log1p))); zp.push(...zs(p)); });
+  const r = +corr(zp, zf).toFixed(2);
+  charts.wx.resize();
+  charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:50, right:10, top:10, bottom:38 },
+    tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
+    xAxis:{ type:'value', name:t.rain, nameLocation:'middle', nameGap:24, nameTextStyle:{ color:'#9b938a' }, ...ax },
+    yAxis:{ type:'value', name:t.fireAnom, nameLocation:'middle', nameGap:36, nameTextStyle:{ color:'#9b938a' }, ...ax },
+    series:[{ type:'scatter', data:pts, symbolSize:8, itemStyle:{ color:'#ff6a1a', opacity:.65 },
+      markLine:{ silent:true, symbol:'none', label:{ show:false }, lineStyle:{ color:'#5f5952', type:'dashed' }, data:[{ xAxis:100 }, { yAxis:0 }] } }] }, true);
+  $('wxNote').textContent = t.wxNote(r);
 }
+$('how').addEventListener('toggle', () => { if ($('how').open) render(); });
 
 function drawClock() {
-  const [y, m] = MONTHS[cur].split('-');
-  $('clockM').textContent = `${T().mon[+m-1].toUpperCase()} ${y}`;
-  $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${T().fires} · ${nameOf()}`;
+  const t = T(), [y, m] = MONTHS[cur].split('-'), live = liveOn ? liveInSel() : null;
+  $('clock').classList.toggle('live', liveOn);
+  if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${live ? live.length : LIVE.points.length}</b> ${t.fires} · ${t.liveDays} · ${label()}`; return; }
+  $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`;
+  $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
 }
 function drawTimeline() {
   const c = $('timeline'), r = c.getBoundingClientRect(); c.width = r.width * DPR; c.height = r.height * DPR;
   const g = c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
-  const w = r.width, h = r.height, max = d3.max(series) || 1, x = i => 12 + (w - 24) * i / (N - 1), y = v => h - 18 - (h - 28) * v / max;
+  const [a, b] = viewRange(), n = b - a + 1, w = r.width, h = r.height, max = d3.max(series.subarray(a, b + 1)) || 1;
+  const x = i => 12 + (w - 60) * (i - a) / Math.max(1, n - 1), y = v => h - 18 - (h - 28) * v / max;
   g.clearRect(0,0,w,h);
-  g.beginPath(); series.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))); g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 1.2; g.stroke();
-  g.save(); g.beginPath(); g.rect(0, 0, x(cur), h); g.clip();
-  g.beginPath(); series.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))); g.strokeStyle = '#ff6a1a'; g.lineWidth = 1.8; g.shadowColor = '#ff6a1a'; g.shadowBlur = 8; g.stroke(); g.restore();
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(x(cur), y(series[cur]), 3.5, 0, 7); g.fill();
+  g.beginPath(); for (let i = a; i <= b; i++) i > a ? g.lineTo(x(i), y(series[i])) : g.moveTo(x(i), y(series[i])); g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 1.2; g.stroke();
+  if (!liveOn) { g.save(); g.beginPath(); g.rect(0, 0, x(cur), h); g.clip();
+    g.beginPath(); for (let i = a; i <= b; i++) i > a ? g.lineTo(x(i), y(series[i])) : g.moveTo(x(i), y(series[i])); g.strokeStyle = '#ff6a1a'; g.lineWidth = 1.8; g.shadowColor = '#ff6a1a'; g.shadowBlur = 8; g.stroke(); g.restore();
+    if (cur >= a) { g.fillStyle = '#fff'; g.beginPath(); g.arc(x(cur), y(series[cur]), 3.5, 0, 7); g.fill(); } }
+  // "now" marker at the right end
+  g.fillStyle = liveOn ? '#ff3b30' : 'rgba(255,59,48,.6)'; g.beginPath(); g.arc(w - 30, h / 2 - 6, liveOn ? 5 : 4, 0, 7); g.fill();
+  g.fillStyle = '#9b938a'; g.font = '10px Inter'; g.fillText(T().liveNow, w - 46, h - 4);
   g.fillStyle = '#5f5952'; g.font = '10px JetBrains Mono';
-  MONTHS.forEach((ym, i) => { if (ym.endsWith('-01') && +ym.slice(0,4) % 5 === 0) g.fillText(ym.slice(0,4), x(i) - 13, h - 4); });
+  const step = n > 120 ? 5 : 1;
+  for (let i = a; i <= b; i++) { const ym = MONTHS[i]; if (ym.endsWith('-01') && +ym.slice(0,4) % step === 0) g.fillText(ym.slice(0,4), x(i) - 13, h - 4); }
 }
-$('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); seek(Math.round((e.clientX - r.left - 12) / (r.width - 24) * (N - 1))); });
+$('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(), [a, b] = viewRange(), px = e.clientX - r.left;
+  if (px > r.width - 50) { if (!liveOn) toggleLive(); return; }
+  if (liveOn) toggleLive(false);
+  seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
 function seek(i) { cur = Math.max(0, Math.min(N - 1, i)); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
+function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) { playing = false; $('play').textContent = '▶'; }
+  $('now').classList.toggle('on', liveOn); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
 
-// ---------------- playback ----------------
+// ======================= playback =======================
 let last = 0, acc = 0;
 function tick(now) {
   const dt = Math.min(500, now - (last || now)); last = now;
-  if (playing && (acc += dt) >= 130) { acc = 0;
-    if (cur >= N - 1) { playing = false; $('play').textContent = '▶'; render(); }
+  if (liveOn) { livePhase = (livePhase + dt / 1800) % 1; drawFire(1); }
+  else if (playing && (acc += dt) >= 130) { acc = 0;
+    const [, b] = viewRange();
+    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); }
     else { cur++; drawFire(.55); drawClock(); drawTimeline(); } }
   requestAnimationFrame(tick);
 }
-$('play').onclick = () => { playing = !playing; if (playing && cur >= N - 1) cur = 0; $('play').textContent = playing ? '❚❚' : '▶'; if (!playing) render(); };
+$('play').onclick = () => { if (liveOn) toggleLive(false); playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a; $('play').textContent = playing ? '❚❚' : '▶'; if (!playing) render(); };
+$('now').onclick = () => toggleLive();
 
-// ---------------- controls ----------------
+// ======================= controls =======================
 function applyLang() {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = T()[el.dataset.t]);
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   $('chips').innerHTML = PRESETS.map(p => p[0] === '|' ? '<span class="chip sep">·</span>' : `<button class="chip${p[0] === sel.key ? ' on' : ''}" data-k="${p[0]}">${p[2][lang]}</button>`).join('');
-  if (series) render();
+  if (series) { layout(); render(); }
 }
 $('lang').onclick = e => { const v = e.target.dataset.v; if (!v) return; lang = v; try { localStorage.setItem('bb_lang', v); } catch (e) {} applyLang(); };
 $('chips').onclick = e => { const k = e.target.dataset.k; if (!k) return; const p = PRESETS.find(x => x[0] === k); select({ key:k, bbox:p[1] }); };
 $('mode').onclick = e => { const v = e.target.dataset.v; if (!v) return; mode = v; $('mode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); render(); };
-['y0','y1'].forEach(id => $(id).onchange = render);
+$('period').onclick = e => { const v = e.target.dataset.v; if (!v) return; period = v; $('period').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
+  const [a] = viewRange(); if (cur < a) cur = N - 1; render(); };
 function download(name, text) { const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); el.download = name; el.click(); }
-$('csvCal').onclick = () => { const [a, b] = range(), rows = ['month,hotspots_harmonized'];
+function csvCal() { const [a, b] = viewRange(), rows = ['month,hotspots_harmonized_viirs_equivalent'];
   for (let i = a; i <= b; i++) rows.push(`${MONTHS[i]},${series[i].toFixed(1)}`);
-  download(`burnbeat_${sel.key || 'area'}_calendar.csv`, rows.join('\n')); };
-$('csvPts').onclick = async () => { if (sel.src !== 'kg') return; const [a, b] = range(), A = MONTHS[a], B = MONTHS[b], bb = sel.bbox;
+  download(`burnbeat_${sel.key || 'area'}_calendar.csv`, rows.join('\n')); }
+async function csvPts() { if (sel.src !== 'kg') return; const [a, b] = viewRange(), A = MONTHS[a], B = MONTHS[b], bb = sel.bbox;
   const lines = (await (await fetch('data/points.csv')).text()).trim().split('\n');
   download(`burnbeat_${sel.key || 'area'}_hotspots.csv`, [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const ym = d.slice(0,7);
-    return ym >= A && ym <= B && +la >= bb[0] && +la <= bb[2] && +lo >= bb[1] && +lo <= bb[3]; })].join('\n')); };
+    return ym >= A && ym <= B && (regionMode() ? inRegion(regionOf(+lo, +la)) : +la >= bb[0] && +la <= bb[2] && +lo >= bb[1] && +lo <= bb[3]); })].join('\n')); }
 charts.cal = echarts.init($('cal')); charts.line = echarts.init($('line')); charts.harm = echarts.init($('harm')); charts.wx = echarts.init($('wx'));
-charts.cal.on('click', p => { if (p.seriesType === 'heatmap') { const [a, b] = range(), y0 = +MONTHS[a].slice(0,4); seek((y0 + p.value[1] - 2001) * 12 + p.value[0]); } });
+charts.cal.on('click', p => { if (p.seriesType !== 'heatmap') return; const [a] = viewRange(), y0 = +MONTHS[a].slice(0,4); if (liveOn) toggleLive(false); seek((y0 + p.value[1] - 2001) * 12 + p.value[0]); });
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { Object.values(charts).forEach(c => c.resize()); layout(); drawTimeline(); }, 120); });
 
-// ---------------- load ----------------
+// ======================= load =======================
 applyLang();
 Promise.all([
   fetch('data/global/frames.json').then(r => r.json()), fetch('data/global/summary.json').then(r => r.json()),
   fetch('data/cells.json').then(r => r.json()), fetch('data/meta.json').then(r => r.json()),
   fetch('data/weather.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+  fetch('data/live.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  fetch('data/points.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+  fetch('data/kg_regions.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(r => r.json()),
-]).then(([fr, su, kc, km, wx, topo]) => {
-  MONTHS = su.months; N = MONTHS.length; SUMMARY = su; KGMETA = km; WEATHER = wx;
+]).then(([fr, su, kc, km, wx, lv, pts, kreg, topo]) => {
+  MONTHS = su.months; N = MONTHS.length; SUMMARY = su; KGMETA = km; WEATHER = wx; LIVE = lv;
   world = { land:topojson.feature(topo, topo.objects.land), borders:topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b) };
+  // GeoJSON rings are counter-clockwise; d3 wants clockwise on the sphere, so rewind when the area looks like 'the world minus the region'
+  if (kreg) REGIONS = kreg.features.map(f => { if (d3.geoArea(f) > 2 * Math.PI) { const rv = r => r.slice().reverse(); f.geometry.coordinates = f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(rv) : f.geometry.coordinates.map(p => p.map(rv)); } const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
   gCells = fr.cells.map(c => ({ la:Math.floor(c / 360) - 90 + .5, lo:c % 360 - 180 + .5, h:new Float32Array(N) }));
   fr.frames.forEach((f, i) => { for (let k = 0; k < f.length; k += 2) gCells[f[k]].h[i] = f[k+1]; });
   const mi = new Map(MONTHS.map((m, i) => [m, i]));
   const toArr = o => { const a = new Float32Array(N); for (const [ym, v] of Object.entries(o)) { const i = mi.get(ym); if (i !== undefined) a[i] = v; } return a; };
-  kgCells = kc.map(c => ({ la:c.la, lo:c.lo, h:toArr(c.h), m:toArr(c.m), v:toArr(c.v) }));
+  kgCells = kc.map(c => ({ la:c.la, lo:c.lo, h:toArr(c.h), m:toArr(c.m), v:toArr(c.v), reg:regionOf(c.lo, c.la) }));
+  if (LIVE) LIVE.points.forEach(p => { p[5] = p[0] >= 39 && p[0] <= 43.4 && p[1] >= 69 && p[1] <= 80.5 ? regionOf(p[1], p[0]) : null; });
+  pts.split('\n').slice(1).forEach(l => { const p = l.split(','); if (p.length < 4) return; const ym = p[2].slice(0,7);
+    if (!POINTS.has(ym)) POINTS.set(ym, []); POINTS.get(ym).push([+p[0], +p[1], regionOf(+p[1], +p[0])]); });
   const q99 = cells => { const v = []; cells.forEach(c => c.h.forEach(x => { if (x >= 1) v.push(x); })); v.sort((p, q) => p - q); return v[Math.floor(v.length * .99)] || 10; };
   P99G = q99(gCells); P99K = q99(kgCells);
   LUT = new Uint32Array(256);
   for (let k = 0; k < 256; k++) { const c = d3.rgb(d3.interpolateInferno(.45 + .55 * k / 255)), al = Math.round(60 + 195 * k / 255); LUT[k] = (al << 24) | (c.b << 16) | (c.g << 8) | c.r; }
-  ['y0','y1'].forEach(id => { $(id).min = MONTHS[0]; $(id).max = MONTHS[N - 1]; }); $('y0').value = MONTHS[0]; $('y1').value = MONTHS[N - 1];
+  if (!LIVE) $('now').style.display = 'none';
   cur = N - 1;
   const q = new URLSearchParams(location.search).get('bbox')?.split(',').map(Number);
   const pre = q && PRESETS.find(p => p[1] && p[1].join(',') === q.join(','));
-  if (q?.length === 4 && q.every(isFinite)) select(pre ? { key:pre[0], bbox:pre[1] } : { key:null, bbox:q, name:T().custom });
+  if (q?.length === 4 && q.every(isFinite)) select(pre ? { key:pre[0], bbox:pre[1] } : { key:null, bbox:q });
   else select({ key:'world', bbox:null });
   $('loading').style.opacity = 0; setTimeout(() => $('loading').remove(), 700);
   requestAnimationFrame(tick);
