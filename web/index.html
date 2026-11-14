@@ -244,7 +244,8 @@ Promise.all([fetch('data/cells.json').then(r=>r.json()), fetch('data/meta.json')
   for (let y=f; y<=l; y++) { $('y0').add(new Option('с ' + y, y)); $('y1').add(new Option('по ' + y, y)); }
   $('y0').value = f; $('y1').value = l;
   const v = m.validation;
-  $('valid').textContent = `Проверка на ${v.test.join('–')} (модель обучена на ${v.train.join('–')}): ошибка ${v.mae_harmonized} очага/мес против ${v.mae_raw_modis} у сырого MODIS · корреляция ${v.corr}`;
+  const b = v.models[v.best];
+  $('valid').textContent = `Проверка (каждый год 2012–2019 по очереди скрыт от модели): ошибка ${b.mae} очага/мес против ${v.raw_modis.mae} у сырого MODIS · смещение ${b.bias_pct}% · корреляция ${b.corr}`;
   const q = new URLSearchParams(location.search).get('bbox')?.split(',').map(Number);
   const key = q && Object.keys(REGIONS).find(k => REGIONS[k][1]?.join(',') === q.join(','));
   if (q?.length===4 && q.every(isFinite)) setBox(q, key ? REGIONS[key][0] : 'Своя область', key); else setBox(null, 'Весь Кыргызстан', 'all');
