@@ -66,6 +66,11 @@
   .live li span { color:var(--muted) }
   .vill { margin:6px 0 0; padding:0; list-style:none; counter-reset:v } .vill li { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:7px 0; border-top:1px solid var(--line); cursor:pointer }
   .vill li:hover b { color:var(--fire2) } .vill .bar { grid-column:1 / -1; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--fire), rgba(255,106,26,.15)) } .vill span { color:var(--muted); font-size:12px }
+  .risk { display:flex; align-items:center; gap:12px; margin-top:8px } .risk .lvl { font:800 26px Manrope } .risk .ico { font-size:30px }
+  .lvl.low { color:#58d68d } .lvl.medium { color:#ffb347 } .lvl.high { color:#ff5a4e }
+  .why { color:var(--soft); font-size:13px; margin-top:6px } .days { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px }
+  .day { background:var(--card2); border-radius:10px; padding:8px; text-align:center; font-size:12px; color:var(--muted) } .day b { display:block; font-size:18px; margin:2px 0 }
+  .disc { color:var(--dim); font-size:11px; margin-top:8px }
   #cal { height:460px } #line, #harm, #wx { height:220px }
   .note { color:var(--muted); font-size:12px; margin-top:6px }
   details.card { padding:0 } details.card > summary { list-style:none; cursor:pointer; padding:16px; font:700 15px Manrope; display:flex; justify-content:space-between } details.card > summary::-webkit-details-marker { display:none }
@@ -106,6 +111,7 @@
 
   <aside class="panel">
     <div class="card" id="hero"></div>
+    <div class="card" id="dangerCard"></div>
     <div class="card live" id="liveCard"></div>
     <div class="card" id="villCard"><h2 data-t="villT"></h2><div class="sub" data-t="villS"></div><ol class="vill" id="villList"></ol></div>
     <div class="card">
@@ -149,6 +155,9 @@ const I18N = {
     validK:(b, r) => `Проверка по Кыргызстану: ошибка ${b.mae} очага в месяц против ${r} у сырого MODIS, смещение ${b.bias_pct}%.`,
     rain:'Осадки, % нормы', fireAnom:'Очаги, % к норме', wxNote:r => `r = ${r}: ${r < -0.25 ? 'дождливые месяцы горят заметно меньше.' : 'связь слабая.'}`,
     ptsOnlyKg:'Отдельные очаги — для Кыргызстана', grid:'сетка ≈100 км', gridKg:'сетка ≈25 км · точки — отдельные очаги',
+    dangerT:'Пожарная опасность', dangerS:'Сегодня и на 3 дня вперёд · погода Open-Meteo', levels:{ low:'Низкая', medium:'Средняя', high:'Высокая' },
+    why:{ peak:'пик сезона', season:'пожарный сезон', above:r => `выше нормы в ${ruTimes(r)}`, fires:n => `${n} очагов за сутки`, hot:t => `жарко ${t}°`, dry:h => `сухо, влажность ${h}%`, wind:w => `ветер до ${w} км/ч`, rain:r => `дождь ${r} мм`, calm:'нет факторов риска' },
+    days:['Сегодня','Завтра'], disc:'Оценка условий, а не прогноз пожаров: сезон по истории 2001–2025, свежие очаги и прогноз погоды. Та же формула, что в Telegram-боте.', wxErr:'Прогноз погоды сейчас недоступен.',
     villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', near:(n, km) => `${n} · ${km} км`, villNone:'Очагов рядом с сёлами не было.',
     liveT:'Последние 7 дней', liveNone:'За последние 7 дней спутники не видели очагов в этой области.', liveOutside:'Свежие данные пока есть только для Центральной Азии.',
     liveN:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за 7 дней`, liveNow:'СЕЙЧАС', liveDays:'последние 7 дней', newest:'Последний',
@@ -181,6 +190,9 @@ const I18N = {
     validK:(b, r) => `Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r}, жылыш ${b.bias_pct}%.`,
     rain:'Жаан, нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r => `r = ${r}: ${r < -0.25 ? 'жаандуу айларда өрт байкаларлык азыраак.' : 'байланыш алсыз.'}`,
     ptsOnlyKg:'Өзүнчө очоктор — Кыргызстан үчүн', grid:'тор ≈100 км', gridKg:'тор ≈25 км · чекиттер — өзүнчө очоктор',
+    dangerT:'Өрт коркунучу', dangerS:'Бүгүн жана 3 күнгө алдыга · аба ырайы Open-Meteo', levels:{ low:'Төмөн', medium:'Орточо', high:'Жогору' },
+    why:{ peak:'сезондун чокусу', season:'өрт сезону', above:r => `нормадан ${r < 10 ? r.toFixed(1) : Math.round(r)} эсе жогору`, fires:n => `суткада ${n} очок`, hot:t => `ысык ${t}°`, dry:h => `кургак, нымдуулук ${h}%`, wind:w => `шамал ${w} км/саат`, rain:r => `жаан ${r} мм`, calm:'коркунуч факторлору жок' },
+    days:['Бүгүн','Эртең'], disc:'Бул шарттардын баасы, өрттүн божомолу эмес: тарых боюнча сезон, жаңы очоктор жана аба ырайынын божомолу. Telegram-боттогу формула.', wxErr:'Аба ырайынын божомолу азыр жеткиликсиз.',
     villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', near:(n, km) => `${n} · ${km} км`, villNone:'Айылдардын жанында очок болгон жок.',
     liveT:'Акыркы 7 күн', liveNone:'Акыркы 7 күндө бул аймакта спутниктер очок көргөн жок.', liveOutside:'Жаңы маалымат азырынча Борбор Азия үчүн гана бар.',
     liveN:n => `7 күндө ${n} очок`, liveNow:'АЗЫР', liveDays:'акыркы 7 күн', newest:'Акыркысы',
@@ -214,6 +226,9 @@ const I18N = {
     validK:(b, r) => `Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS, bias ${b.bias_pct}%.`,
     rain:'Rainfall, % of normal', fireAnom:'Hotspots, % vs normal', wxNote:r => `r = ${r}: ${r < -0.25 ? 'wet months burn noticeably less.' : 'weak link.'}`,
     ptsOnlyKg:'Individual hotspots — Kyrgyzstan only', grid:'grid ≈100 km', gridKg:'grid ≈25 km · dots are individual hotspots',
+    dangerT:'Fire danger', dangerS:'Today and the next 3 days · weather: Open-Meteo', levels:{ low:'Low', medium:'Medium', high:'High' },
+    why:{ peak:'peak of the season', season:'fire season', above:r => `${r < 10 ? r.toFixed(1) : Math.round(r)}× above normal`, fires:n => `${n} hotspots in 24 h`, hot:t => `hot ${t}°`, dry:h => `dry, humidity ${h}%`, wind:w => `wind up to ${w} km/h`, rain:r => `rain ${r} mm`, calm:'no risk factors' },
+    days:['Today','Tomorrow'], disc:'A rating of conditions, not a fire forecast: season from 2001–2025 history, fresh detections and the weather forecast. Same formula as the Telegram bot.', wxErr:'Weather forecast is unavailable right now.',
     villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', near:(n, km) => `near ${n}, ${km} km`, villNone:'No hotspots near villages.',
     liveT:'Last 7 days', liveNone:'Satellites saw no hotspots in this area in the last 7 days.', liveOutside:'Fresh data is available for Central Asia only so far.',
     liveN:n => `${n} hotspots in 7 days`, liveNow:'NOW', liveDays:'last 7 days', newest:'Latest',
@@ -459,6 +474,44 @@ function viewRange() {     // indices [a, b] of the months shown, by the period 
   return [Math.max(0, N - 12 * +period), b];
 }
 
+// ======================= fire danger (same rules as the bot) =======================
+const WXCACHE = new Map();
+async function forecast(la, lo) {
+  const key = `${la.toFixed(2)},${lo.toFixed(2)}`; if (WXCACHE.has(key)) return WXCACHE.get(key);
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(3)}&longitude=${lo.toFixed(3)}&daily=temperature_2m_max,relative_humidity_2m_min,wind_speed_10m_max,precipitation_sum&timezone=Asia%2FBishkek&forecast_days=4`;
+  const pr = fetch(url).then(r => r.json()).then(d => d.daily); WXCACHE.set(key, pr); return pr; }
+function riskOf(share, ratio, daily, w) {
+  const t = T().why, why = []; let s = 0;
+  if (share >= .6) { s += 2; why.push(t.peak); } else if (share >= .3) { s += 1; why.push(t.season); }
+  if (ratio !== null && ratio > 1.5) { s += 1; why.push(t.above(ratio)); }
+  if (daily >= 3) { s += 1; why.push(t.fires(daily)); }
+  if (w.t != null && w.t > 25) { s += 1; why.push(t.hot(Math.round(w.t))); }
+  if (w.h != null && w.h < 30) { s += 1; why.push(t.dry(Math.round(w.h))); }
+  if (w.w != null && w.w > 30) { s += 1; why.push(t.wind(Math.round(w.w))); }
+  if (w.r != null && w.r > 2) { s -= 2; why.push(t.rain(Math.round(w.r))); }
+  return { lvl:s <= 1 ? 'low' : s <= 3 ? 'medium' : 'high', why:why.length ? why : [t.calm] }; }
+const ICO = { low:'🟢', medium:'🟠', high:'🔴' };
+let dangerToken = 0;
+async function renderDanger(med, live, liveRatio) {
+  const card = $('dangerCard'), t = T();
+  if (!(sel.src === 'kg' && sel.pre && sel.pre[3])) { card.style.display = 'none'; return; }
+  card.style.display = ''; const token = ++dangerToken;
+  const fs = REGIONS.filter(f => inRegion(f.properties.key)), c = fs.length ? d3.geoCentroid({ type:'FeatureCollection', features:fs }) : [(sel.bbox[1] + sel.bbox[3]) / 2, (sel.bbox[0] + sel.bbox[2]) / 2];
+  card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div><div class="why">…</div>`;
+  let d; try { d = await forecast(c[1], c[0]); } catch (e) { d = null; }
+  if (token !== dangerToken) return;
+  if (!d) { card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.wxErr}</div>`; return; }
+  const max = Math.max(...med) || 1, now = Date.now(), daily = live ? live.filter(p => now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5).length : 0;
+  const days = d.time.map((day, i) => { const m = +day.slice(5, 7) - 1;
+    return { day, ...riskOf(med[m] / max, liveRatio, i === 0 ? daily : 0, { t:d.temperature_2m_max[i], h:d.relative_humidity_2m_min[i], w:d.wind_speed_10m_max[i], r:d.precipitation_sum[i] }) }; });
+  const r0 = days[0], dn = (day, i) => i < 2 ? t.days[i] : new Date(day + 'T00:00').toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU', { weekday:'short', day:'numeric' });
+  card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div>
+    <div class="risk"><span class="ico">${ICO[r0.lvl]}</span><span class="lvl ${r0.lvl}">${t.levels[r0.lvl]}</span></div>
+    <div class="why">${r0.why.join(' · ')}</div>
+    <div class="days">${days.map((x, i) => `<div class="day">${dn(x.day, i)}<b>${ICO[x.lvl]}</b>${Math.round(d.temperature_2m_max[i])}° · ${Math.round(d.wind_speed_10m_max[i])} ${lang === 'en' ? 'km/h' : 'км/ч'}</div>`).join('')}</div>
+    <div class="disc">${t.disc}</div>`;
+}
+
 // ======================= panel =======================
 function render() {
   const t = T(), [a, b] = viewRange(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
@@ -508,6 +561,7 @@ function render() {
         return `<li>${v ? t.near(villName(v[0]), v[1] < 1 ? '<1' : Math.round(v[1])) : `${p[0].toFixed(2)}, ${p[1].toFixed(2)}`} <span>${when}</span></li>`; }).join('')}</ul>`;
   if ($('liveShow')) $('liveShow').onclick = toggleLive;
 
+  renderDanger(med, live, liveHero ? liveHero.r : null);
   // ---- villages near fires (Kyrgyzstan) ----
   $('villCard').style.display = sel.src === 'kg' && VILL.length ? '' : 'none';
   if (sel.src === 'kg' && VILL.length) {
