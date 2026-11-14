@@ -26,6 +26,20 @@ Each year is hidden in turn, the ratio is fitted on the other years, and MODIS o
 | Ratio per calendar month | 31.5 | +1.7 % | 0.929 | 0.728 |
 | **Per cell + month, shrunk (used)** | **27.5** | **−1.6 %** | **0.943** | **0.800** |
 
+## Fire and weather (NASA POWER)
+Monthly air temperature and precipitation per region from NASA POWER (`tools/fetch_weather.py`, 2×2 points per region averaged).
+For the 5 peak months of each region, 2012–2025 (VIIRS era, so no sensor mixing), standardized log(hotspots) vs standardized rainfall:
+
+| Region | r (rain ↔ fires) | r (temperature ↔ fires) |
+|---|---|---|
+| All Kyrgyzstan | −0.46 | +0.22 |
+| Osh | −0.44 | +0.27 |
+| Jalal-Abad | −0.36 | +0.25 |
+| Issyk-Kul | −0.36 | +0.19 |
+| Chui | −0.35 | +0.16 |
+
+n = 70 months per region; |r| > 0.31 is significant at p < 0.01. **Wet months burn less everywhere.** Annual totals give misleading correlations because of the long-term decline in burning, so only within-month anomalies are used.
+
 ## Known limitations (stated honestly)
 - **MODIS drift:** the 2012–2016 model applied to 2021–2025 under-predicts VIIRS by 25 %. This does not affect the output, because VIIRS is used directly from 2012. It is the reason for step 4.
 - **Fit-window sensitivity:** fitting on the full overlap (2012–2025) instead of 2012–2016 raises pre-2012 values by about 10 %. Treat this as the uncertainty of the 2001–2011 part.
