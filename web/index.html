@@ -64,6 +64,8 @@
   .live { border-color:rgba(255,59,48,.3); background:linear-gradient(180deg, rgba(255,59,48,.08), var(--card) 60%) }
   .live ul { list-style:none; padding:0; margin:8px 0 0 } .live li { display:flex; justify-content:space-between; padding:6px 0; border-top:1px solid var(--line); color:var(--soft); font-size:13px }
   .live li span { color:var(--muted) }
+  .vill { margin:6px 0 0; padding:0; list-style:none; counter-reset:v } .vill li { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:7px 0; border-top:1px solid var(--line); cursor:pointer }
+  .vill li:hover b { color:var(--fire2) } .vill .bar { grid-column:1 / -1; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--fire), rgba(255,106,26,.15)) } .vill span { color:var(--muted); font-size:12px }
   #cal { height:460px } #line, #harm, #wx { height:220px }
   .note { color:var(--muted); font-size:12px; margin-top:6px }
   details.card { padding:0 } details.card > summary { list-style:none; cursor:pointer; padding:16px; font:700 15px Manrope; display:flex; justify-content:space-between } details.card > summary::-webkit-details-marker { display:none }
@@ -105,6 +107,7 @@
   <aside class="panel">
     <div class="card" id="hero"></div>
     <div class="card live" id="liveCard"></div>
+    <div class="card" id="villCard"><h2 data-t="villT"></h2><div class="sub" data-t="villS"></div><ol class="vill" id="villList"></ol></div>
     <div class="card">
       <div class="head"><div><h2 data-t="calT"></h2><div class="sub" data-t="calS"></div></div>
         <div class="seg" id="mode"><button data-v="n" class="on" data-t="modeN"></button><button data-v="a" data-t="modeA"></button></div></div>
@@ -145,6 +148,7 @@ const I18N = {
     validK:(b, r) => `Проверка по Кыргызстану: ошибка ${b.mae} очага в месяц против ${r} у сырого MODIS, смещение ${b.bias_pct}%.`,
     rain:'Осадки, % нормы', fireAnom:'Очаги, % к норме', wxNote:r => `r = ${r}: ${r < -0.25 ? 'дождливые месяцы горят заметно меньше.' : 'связь слабая.'}`,
     ptsOnlyKg:'Отдельные очаги — для Кыргызстана', grid:'сетка ≈100 км', gridKg:'сетка ≈25 км · точки — отдельные очаги',
+    villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', near:(n, km) => `${n} · ${km} км`, villNone:'Очагов рядом с сёлами не было.',
     liveT:'Последние 7 дней', liveNone:'За последние 7 дней спутники не видели очагов в этой области.', liveOutside:'Свежие данные пока есть только для Центральной Азии.',
     liveN:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за 7 дней`, liveNow:'СЕЙЧАС', liveDays:'последние 7 дней', newest:'Последний',
     story:s => {
@@ -173,6 +177,7 @@ const I18N = {
     validK:(b, r) => `Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r}, жылыш ${b.bias_pct}%.`,
     rain:'Жаан, нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r => `r = ${r}: ${r < -0.25 ? 'жаандуу айларда өрт байкаларлык азыраак.' : 'байланыш алсыз.'}`,
     ptsOnlyKg:'Өзүнчө очоктор — Кыргызстан үчүн', grid:'тор ≈100 км', gridKg:'тор ≈25 км · чекиттер — өзүнчө очоктор',
+    villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', near:(n, km) => `${n} · ${km} км`, villNone:'Айылдардын жанында очок болгон жок.',
     liveT:'Акыркы 7 күн', liveNone:'Акыркы 7 күндө бул аймакта спутниктер очок көргөн жок.', liveOutside:'Жаңы маалымат азырынча Борбор Азия үчүн гана бар.',
     liveN:n => `7 күндө ${n} очок`, liveNow:'АЗЫР', liveDays:'акыркы 7 күн', newest:'Акыркысы',
     story:s => {
@@ -202,6 +207,7 @@ const I18N = {
     validK:(b, r) => `Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS, bias ${b.bias_pct}%.`,
     rain:'Rainfall, % of normal', fireAnom:'Hotspots, % vs normal', wxNote:r => `r = ${r}: ${r < -0.25 ? 'wet months burn noticeably less.' : 'weak link.'}`,
     ptsOnlyKg:'Individual hotspots — Kyrgyzstan only', grid:'grid ≈100 km', gridKg:'grid ≈25 km · dots are individual hotspots',
+    villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', near:(n, km) => `near ${n}, ${km} km`, villNone:'No hotspots near villages.',
     liveT:'Last 7 days', liveNone:'Satellites saw no hotspots in this area in the last 7 days.', liveOutside:'Fresh data is available for Central Asia only so far.',
     liveN:n => `${n} hotspots in 7 days`, liveNow:'NOW', liveDays:'last 7 days', newest:'Latest',
     story:s => {
@@ -256,7 +262,15 @@ const regionOf = (lo, la) => { for (const f of REGIONS) { const b = f.bb; if (lo
   const g = f.geometry; if (g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la))) return f.properties.key; } return null; };
 const inRegion = reg => sel.pre && sel.pre[3] && (sel.pre[3] === 'kg' ? reg != null : reg === sel.pre[3]);
 const regionMode = () => !!(sel.pre && sel.pre[3] && REGIONS.length);
-let gCells = [], kgCells = [];
+let gCells = [], kgCells = [], VILL = [], VGRID = new Map();
+const vKey = (la, lo) => `${Math.floor(la * 10)}|${Math.floor(lo * 10)}`;
+const kmBetween = (a, b, c, d) => { const x = (d - b) * Math.cos((a + c) / 2 * Math.PI / 180), y = c - a; return 111.2 * Math.sqrt(x * x + y * y); };
+function nearestVillage(la, lo, maxKm = 10) {     // grid index of 0.1° buckets
+  let best = -1, bd = maxKm; const r = Math.ceil(maxKm / 11) + 1, i0 = Math.floor(la * 10), j0 = Math.floor(lo * 10);
+  for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) for (const k of VGRID.get(`${i}|${j}`) || []) {
+    const d = kmBetween(la, lo, VILL[k][2], VILL[k][3]); if (d < bd) { bd = d; best = k; } }
+  return best < 0 ? null : [best, bd]; }
+const villName = k => lang === 'en' ? VILL[k][1] : lang === 'ky' ? (VILL[k][5] || VILL[k][0]) : VILL[k][0];
 let sel = { key:'world', bbox:null, name:null, src:'global' };
 let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
 let globe = true, rot = [-20, -15], spinning = true;
@@ -466,8 +480,22 @@ function render() {
   if (!live) $('liveCard').innerHTML = `<h2><span class="dot"></span>${t.liveT}</h2><div class="sub" style="margin:6px 0 0">${t.liveOutside}</div>`;
   else if (!live.length) $('liveCard').innerHTML = `<h2><span class="dot"></span>${t.liveT}</h2><div class="sub" style="margin:6px 0 0">${t.liveNone}</div>`;
   else $('liveCard').innerHTML = `<div class="head"><h2><span class="dot"></span>${t.liveN(live.length)}</h2><button class="pill" id="liveShow">${liveOn ? '✕' : '🗺'}</button></div>
-      <ul>${live.slice(0, 4).map(p => `<li>${p[0].toFixed(3)}, ${p[1].toFixed(3)} <span>${p[2].slice(5)} UTC · ${p[3]}</span></li>`).join('')}</ul>`;
+      <ul>${live.slice(0, 5).map(p => { const v = p[6], when = new Date(Date.parse(p[2].replace(' ', 'T') + 'Z') + 6 * 36e5).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1');
+        return `<li>${v ? t.near(villName(v[0]), v[1] < 1 ? '<1' : Math.round(v[1])) : `${p[0].toFixed(2)}, ${p[1].toFixed(2)}`} <span>${when}</span></li>`; }).join('')}</ul>`;
   if ($('liveShow')) $('liveShow').onclick = toggleLive;
+
+  // ---- villages near fires (Kyrgyzstan) ----
+  $('villCard').style.display = sel.src === 'kg' && VILL.length ? '' : 'none';
+  if (sel.src === 'kg' && VILL.length) {
+    const cnt = new Map(), bb = sel.bbox;
+    for (let i = a; i <= b; i++) for (const p of POINTS.get(MONTHS[i]) || []) {
+      if (regionMode() ? !inRegion(p[2]) : (p[0] < bb[0] || p[0] > bb[2] || p[1] < bb[1] || p[1] > bb[3])) continue;
+      if (p[3] && p[3][1] <= 3) cnt.set(p[3][0], (cnt.get(p[3][0]) || 0) + 1); }
+    const top = [...cnt].sort((x, y) => y[1] - x[1]).slice(0, 7), mx = top.length ? top[0][1] : 1;
+    $('villList').innerHTML = top.length ? top.map(([k, n]) => `<li data-v="${k}"><b>${villName(k)}</b><span>${fmt(n)} ${firesWord(n, lang)}</span><div class="bar" style="width:${Math.max(4, 100 * n / mx)}%"></div></li>`).join('') : `<li>${t.villNone}</li>`;
+    $('villList').querySelectorAll('li[data-v]').forEach(li => li.onclick = () => { const v = VILL[+li.dataset.v];
+      select({ key:null, bbox:[v[2] - .12, v[3] - .16, v[2] + .12, v[3] + .16].map(x => +x.toFixed(3)), name:villName(+li.dataset.v) }); });
+  }
 
   // ---- calendar ----
   const data = [];
@@ -622,8 +650,10 @@ Promise.all([
   fetch('data/live.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/points.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
   fetch('data/kg_regions.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  fetch('data/villages.json').then(r => r.ok ? r.json() : []).catch(() => []),
   fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(r => r.json()),
-]).then(([fr, su, kc, km, wx, lv, pts, kreg, topo]) => {
+]).then(([fr, su, kc, km, wx, lv, pts, kreg, vill, topo]) => {
+  VILL = vill; VILL.forEach((v, k) => { const key = vKey(v[2], v[3]); if (!VGRID.has(key)) VGRID.set(key, []); VGRID.get(key).push(k); });
   MONTHS = su.months; N = MONTHS.length; SUMMARY = su; KGMETA = km; WEATHER = wx; LIVE = lv;
   world = { land:topojson.feature(topo, topo.objects.land), borders:topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b) };
   const thin = ring => ring.length < 12 ? ring : ring.filter((_, i) => i % 3 === 0 || i === ring.length - 1);
@@ -636,9 +666,9 @@ Promise.all([
   const mi = new Map(MONTHS.map((m, i) => [m, i]));
   const toArr = o => { const a = new Float32Array(N); for (const [ym, v] of Object.entries(o)) { const i = mi.get(ym); if (i !== undefined) a[i] = v; } return a; };
   kgCells = kc.map(c => ({ la:c.la, lo:c.lo, h:toArr(c.h), m:toArr(c.m), v:toArr(c.v), reg:regionOf(c.lo, c.la) }));
-  if (LIVE) LIVE.points.forEach(p => { p[5] = p[0] >= 39 && p[0] <= 43.4 && p[1] >= 69 && p[1] <= 80.5 ? regionOf(p[1], p[0]) : null; });
+  if (LIVE) LIVE.points.forEach(p => { const kg = p[0] >= 39 && p[0] <= 43.4 && p[1] >= 69 && p[1] <= 80.5; p[5] = kg ? regionOf(p[1], p[0]) : null; p[6] = kg ? nearestVillage(p[0], p[1], 15) : null; });
   pts.split('\n').slice(1).forEach(l => { const p = l.split(','); if (p.length < 4) return; const ym = p[2].slice(0,7);
-    if (!POINTS.has(ym)) POINTS.set(ym, []); POINTS.get(ym).push([+p[0], +p[1], regionOf(+p[1], +p[0])]); });
+    if (!POINTS.has(ym)) POINTS.set(ym, []); POINTS.get(ym).push([+p[0], +p[1], regionOf(+p[1], +p[0]), nearestVillage(+p[0], +p[1], 3.5)]); });
   const q99 = cells => { const v = []; cells.forEach(c => c.h.forEach(x => { if (x >= 1) v.push(x); })); v.sort((p, q) => p - q); return v[Math.floor(v.length * .99)] || 10; };
   P99G = q99(gCells); P99K = q99(kgCells);
   LUT = new Uint32Array(256);
