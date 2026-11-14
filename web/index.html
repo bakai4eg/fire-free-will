@@ -2,68 +2,149 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fire Calendar</title>
+<title>BurnBeat</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 12h4l2-6 4 12 3-9 2 3h5' fill='none' stroke='%23e8590c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
-  :root { --bg:#f6f5f2; --card:#fff; --ink:#1d1d1f; --muted:#6b6b70; --line:#e3e1dc; --up:#b2182b; --down:#2166ac; }
-  * { box-sizing:border-box } body { margin:0; font:14px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--ink) }
-  header { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 16px; background:var(--card); border-bottom:1px solid var(--line) }
-  header h1 { font-size:18px; margin:0 12px 0 0 } header input, header select, header button { font:inherit; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:#fff }
-  header button { cursor:pointer } header button.primary { background:var(--ink); color:#fff; border-color:var(--ink) }
-  main { display:grid; grid-template-columns:2fr 1fr; gap:12px; padding:12px 16px; max-width:1400px; margin:auto }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px }
-  .wide { grid-column:1/-1 } #map { height:380px; border-radius:8px }
-  .kpi { margin-bottom:14px } .kpi b { display:block; font-size:26px } .kpi span { color:var(--muted) }
-  .up { color:var(--up) } .down { color:var(--down) } h2 { font-size:15px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center }
-  #cal { height:620px } #line, #harm { height:280px } .note { color:var(--muted); font-size:12px }
-  @media (max-width:800px){ main { grid-template-columns:1fr } #cal { height:700px } }
+  :root {
+    --bg:#f3f1ec; --surface:#fff; --tonal:#f0ebe3; --tonal-2:#e7e0d5; --ink:#1f1b16; --muted:#6f675d; --line:#e4ddd2;
+    --accent:#e8590c; --accent-soft:#fde3d3; --up:#c2410c; --up-soft:#fde4d6; --down:#1d6fa5; --down-soft:#dbeaf5;
+    --r-lg:28px; --r-md:18px; --shadow:0 1px 2px rgba(31,27,22,.04), 0 6px 24px rgba(31,27,22,.05);
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font:15px/1.5 Inter,system-ui,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased }
+  h1,h2,h3,.num { font-family:Manrope,Inter,sans-serif }
+  .wrap { max-width:1280px; margin:auto; padding:0 20px }
+
+  /* top bar */
+  .bar { display:flex; align-items:center; gap:16px; padding:18px 0 10px; flex-wrap:wrap }
+  .logo { display:flex; align-items:center; gap:10px; margin-right:auto }
+  .logo svg { width:38px; height:38px; padding:7px; border-radius:12px; background:var(--accent-soft) }
+  .logo h1 { font-size:22px; margin:0; letter-spacing:-.02em } .logo small { display:block; color:var(--muted); font:500 12px Inter }
+  .pill, select.pill { border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:8px 16px; font:500 14px Inter; cursor:pointer; transition:background .15s }
+  .pill:hover { background:var(--tonal) } .pill.solid { background:var(--ink); color:#fff; border-color:var(--ink) } .pill.solid:hover { background:#3a332b }
+  .tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+
+  /* region chips */
+  .chips { display:flex; gap:8px; overflow-x:auto; padding:6px 0 18px; scrollbar-width:none }
+  .chip { flex:none; border:0; background:var(--tonal); color:var(--ink); border-radius:999px; padding:9px 16px; font:500 14px Inter; cursor:pointer; transition:all .15s }
+  .chip:hover { background:var(--tonal-2) } .chip.on { background:var(--ink); color:#fff }
+
+  /* cards */
+  .grid { display:grid; grid-template-columns:5fr 7fr; gap:16px }
+  .card { background:var(--surface); border-radius:var(--r-lg); padding:24px; box-shadow:var(--shadow) }
+  .full { grid-column:1/-1 }
+  .card h2 { font-size:17px; margin:0; letter-spacing:-.01em } .card .sub { color:var(--muted); font-size:13px; margin:2px 0 14px }
+  .head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap }
+
+  /* hero */
+  .hero .where { color:var(--muted); font-weight:500 } .hero .big { font-size:64px; font-weight:800; line-height:1; letter-spacing:-.03em; margin:14px 0 4px }
+  .hero .big span { font-size:20px; font-weight:700; color:var(--muted); letter-spacing:0 }
+  .badge { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:6px 12px; font:600 14px Inter; margin-top:10px }
+  .badge.up { background:var(--up-soft); color:var(--up) } .badge.down { background:var(--down-soft); color:var(--down) }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:22px }
+  .stat { background:var(--tonal); border-radius:var(--r-md); padding:14px 16px } .stat b { display:block; font:800 22px Manrope } .stat span { color:var(--muted); font-size:13px }
+
+  #map { height:100%; min-height:360px; border-radius:var(--r-md) } .mapcard { padding:10px; display:flex; flex-direction:column }
+  .mapcard .hint { color:var(--muted); font-size:13px; padding:8px 8px 2px }
+  .leaflet-container { font-family:Inter; background:var(--tonal) }
+
+  .seg { display:inline-flex; background:var(--tonal); border-radius:999px; padding:4px }
+  .seg button { border:0; background:none; padding:7px 14px; border-radius:999px; font:500 13px Inter; color:var(--muted); cursor:pointer }
+  .seg button.on { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08) }
+  #pulse { height:150px } #cal { height:640px } #line, #harm { height:290px }
+  .note { color:var(--muted); font-size:13px; margin-top:8px }
+  footer { color:var(--muted); font-size:13px; padding:28px 0 40px; text-align:center }
+  footer a { color:inherit }
+  @media (max-width:860px) { .grid { grid-template-columns:1fr } .hero .big { font-size:52px } #cal { height:720px } .card { padding:18px } }
 </style>
 </head>
 <body>
-<header>
-  <h1>🔥 Календарь горения</h1>
-  <label>Годы <select id="y0"></select>–<select id="y1"></select></label>
-  <input id="bbox" placeholder="lat1, lon1, lat2, lon2" size="24" title="Область: два угла прямоугольника">
-  <button id="apply">Показать</button><button id="reset">Весь регион</button>
-  <button id="csvPts" class="primary">CSV точек</button><button id="csvCal">CSV календаря</button>
-</header>
-<main>
-  <div class="card"><div id="map"></div><div class="note">Нарисуйте прямоугольник (иконка слева) или введите координаты сверху.</div></div>
-  <div class="card" id="kpis"></div>
-  <div class="card wide"><h2>Календарь горения (гармонизированные точки, VIIRS-эквивалент)
-    <select id="mode"><option value="n">Число точек</option><option value="a">Аномалия к медиане, %</option></select></h2><div id="cal"></div></div>
-  <div class="card"><h2>Текущий год vs медиана</h2><div id="line"></div></div>
-  <div class="card"><h2>До / после гармонизации</h2><div id="harm"></div><div class="note" id="valid"></div></div>
-</main>
+<div class="wrap">
+  <div class="bar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#e8590c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><h1>BurnBeat</h1><small>Пульс пожаров Кыргызстана · MODIS + VIIRS</small></div>
+    </div>
+    <div class="tools">
+      <select class="pill" id="y0" aria-label="С года"></select><select class="pill" id="y1" aria-label="По год"></select>
+      <button class="pill" id="csvCal">Календарь CSV</button><button class="pill solid" id="csvPts">Очаги CSV</button>
+    </div>
+  </div>
+  <div class="chips" id="chips"></div>
+
+  <div class="grid">
+    <section class="card hero" id="hero"></section>
+    <section class="card mapcard"><div id="map"></div><div class="hint">Выберите область кнопкой сверху или нарисуйте свою (□ слева на карте)</div></section>
+
+    <section class="card full">
+      <div class="head"><div><h2>Пульс горения</h2><div class="sub">Очаги по месяцам за всю историю — каждый столбик это месяц</div></div></div>
+      <div id="pulse"></div>
+    </section>
+
+    <section class="card full">
+      <div class="head">
+        <div><h2>Календарь горения</h2><div class="sub">Гармонизированные очаги (VIIRS-эквивалент) · наведите на клетку</div></div>
+        <div class="seg" id="mode"><button data-v="n" class="on">Очаги</button><button data-v="a">Аномалия к норме</button></div>
+      </div>
+      <div id="cal"></div>
+    </section>
+
+    <section class="card"><h2>Этот год против нормы</h2><div class="sub">Медиана прошлых лет по месяцам</div><div id="line"></div></section>
+    <section class="card"><h2>Почему нужна гармонизация</h2><div class="sub">Сырой ряд «прыгает» в 2012, когда появился VIIRS</div><div id="harm"></div><div class="note" id="valid"></div></section>
+  </div>
+  <footer>Данные: <a href="https://firms.modaps.eosdis.nasa.gov/">NASA FIRMS</a> (MODIS C6.1, VIIRS S-NPP) · NASA Space Apps 2026</footer>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <script>
 const MON = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-const VIRIDIS = ['#440154','#3b528b','#21918c','#5ec962','#fde725'];
-const DIVERGE = ['#2166ac','#92c5de','#f7f7f7','#f4a582','#b2182b'];
+const MONG = ['январе','феврале','марте','апреле','мае','июне','июле','августе','сентябре','октябре','ноябре','декабре'];
+const FIRE = ['#fbf3dc','#fcd38d','#f9a23f','#e8590c','#b0300f','#5c1a0b'];        // sequential, light→dark
+const DIVERGE = ['#1d6fa5','#9cc8e6','#f7f4ee','#f5a77c','#c2410c'];
+const REGIONS = { all:['Весь Кыргызстан',null], chui:['Чуй',[42.2,72.8,43.3,76.0]], talas:['Талас',[41.9,70.9,42.8,73.2]],
+  issykkul:['Иссык-Куль',[41.6,76.0,43.0,80.3]], naryn:['Нарын',[40.5,73.5,42.3,78.5]], jalalabad:['Джалал-Абад',[40.6,70.6,42.4,74.0]],
+  osh:['Ош',[39.3,72.4,40.9,75.0]], batken:['Баткен',[39.5,69.2,40.4,72.4]] };
 const $ = id => document.getElementById(id);
-let cells = [], meta, bbox = null, layerRect = null, markers;
-const charts = { cal: echarts.init($('cal')), line: echarts.init($('line')), harm: echarts.init($('harm')) };
+const axis = { axisLine:{ lineStyle:{ color:'#e4ddd2' } }, axisLabel:{ color:'#6f675d' }, splitLine:{ lineStyle:{ color:'#efe9df' } } };
+const font = { fontFamily:'Inter' };
+let cells = [], meta, bbox = null, regionName = 'Весь Кыргызстан', markers, mode = 'n';
+const charts = Object.fromEntries(['pulse','cal','line','harm'].map(k => [k, echarts.init($(k))]));
 const median = a => { if (!a.length) return 0; const s = [...a].sort((x,y)=>x-y), k = s.length>>1; return s.length%2 ? s[k] : (s[k-1]+s[k])/2; };
 const inBox = (la, lo) => !bbox || (la>=bbox[0] && la<=bbox[2] && lo>=bbox[1] && lo<=bbox[3]);
+const fmt = n => Math.round(n).toLocaleString('ru-RU');
 
-const map = L.map('map').setView([42.8, 74.6], 8);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
+// map
+const map = L.map('map', { zoomControl:false, attributionControl:true }).setView([41.4, 74.6], 6);
+L.control.zoom({ position:'bottomright' }).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution:'Tiles © Esri', maxZoom:16 }).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom:16 }).addTo(map);
 const drawn = new L.FeatureGroup().addTo(map);
-map.addControl(new L.Control.Draw({ draw:{ polygon:false, polyline:false, circle:false, marker:false, circlemarker:false }, edit:{ featureGroup:drawn, edit:false } }));
-map.on(L.Draw.Event.CREATED, e => { setBox(e.layer.getBounds()); });
+map.addControl(new L.Control.Draw({ position:'topleft', draw:{ polygon:false, polyline:false, circle:false, marker:false, circlemarker:false,
+  rectangle:{ shapeOptions:{ color:'#e8590c', weight:2 } } }, edit:{ featureGroup:drawn, edit:false, remove:false } }));
+map.on(L.Draw.Event.CREATED, e => setBox(boundsToBox(e.layer.getBounds()), 'Своя область'));
+const boundsToBox = b => [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(x => +x.toFixed(3));
 
-function setBox(b) {
+// region chips
+$('chips').innerHTML = Object.entries(REGIONS).map(([k,[n]]) => `<button class="chip" data-k="${k}">${n}</button>`).join('');
+$('chips').onclick = e => { const k = e.target.dataset.k; if (k) setBox(REGIONS[k][1], REGIONS[k][0], k); };
+
+function setBox(b, name, key) {
+  bbox = b; regionName = name;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', key ? c.dataset.k===key : (!b && c.dataset.k==='all')));
   drawn.clearLayers();
-  if (b) { drawn.addLayer(L.rectangle(b, { color:'#b2182b', weight:2, fill:false }));
-    bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]; $('bbox').value = bbox.map(x=>x.toFixed(3)).join(', ');
-  } else { bbox = null; $('bbox').value = ''; }
+  if (b) { const r = L.rectangle([[b[0],b[1]],[b[2],b[3]]], { color:'#e8590c', weight:2, fillOpacity:.04, dashArray:'6 4' }); drawn.addLayer(r); map.fitBounds(r.getBounds(), { padding:[20,20] }); }
+  else map.setView([41.4, 74.6], 6);
+  const u = new URL(location); b ? u.searchParams.set('bbox', b.join(',')) : u.searchParams.delete('bbox'); history.replaceState(null, '', u);
   render();
 }
 
-function aggregate(key) {            // {ym: sum} over selected cells
+function aggregate(key) {
   const out = {};
   for (const c of cells) if (inBox(c.la, c.lo)) for (const [ym, n] of Object.entries(c[key])) out[ym] = (out[ym]||0) + n;
   return out;
@@ -73,85 +154,100 @@ function render() {
   const y0 = +$('y0').value, y1 = +$('y1').value, h = aggregate('h');
   const years = []; for (let y=y0; y<=y1; y++) years.push(y);
   const [ly, lm] = meta.last.split('-').map(Number);
-  const val = (y, m) => { const ym = `${y}-${String(m).padStart(2,'0')}`; return (y>ly || (y===ly && m>lm)) ? null : (h[ym]||0); };
-  // medians per calendar month over selected years, excluding the latest (current) year
+  const val = (y, m) => (y>ly || (y===ly && m>lm)) ? null : (h[`${y}-${String(m).padStart(2,'0')}`]||0);
   const med = MON.map((_, i) => median(years.filter(y=>y<ly).map(y=>val(y,i+1)).filter(v=>v!==null)));
 
-  // KPIs
+  // hero
   const cur = val(ly, lm), m0 = med[lm-1], anom = m0 ? Math.round(100*(cur-m0)/m0) : 0;
-  const avgByMonth = med.map((_, i) => years.map(y=>val(y,i+1)||0).reduce((a,b)=>a+b,0)/years.length);
-  const peak = avgByMonth.indexOf(Math.max(...avgByMonth));
+  const peak = med.indexOf(Math.max(...med));
   const byYear = years.filter(y=>y<ly).map(y => [y, MON.reduce((s,_,i)=>s+(val(y,i+1)||0),0)]);
   const worst = byYear.reduce((a,b)=>b[1]>a[1]?b:a, [0,-1]);
-  $('kpis').innerHTML = `
-    <div class="kpi"><span>${MON[lm-1]} ${ly}</span><b>${Math.round(cur)} точек</b></div>
-    <div class="kpi"><span>Медиана за ${MON[lm-1].toLowerCase()} (${y0}–${Math.min(y1,ly-1)})</span><b>${Math.round(m0)}</b></div>
-    <div class="kpi"><span>Отклонение от нормы</span><b class="${anom>=0?'up':'down'}">${anom>=0?'▲ +':'▼ '}${anom}%</b></div>
-    <div class="kpi"><span>Пик сезона</span><b>${MON[peak]}</b></div>
-    <div class="kpi"><span>Самый горящий год</span><b>${worst[0]} · ${Math.round(worst[1])}</b></div>
-    <div class="note">${bbox ? 'Выбранная область' : 'Весь регион'}</div>`;
+  const toPeak = (peak - (lm-1) + 12) % 12;
+  const phase = toPeak===0 ? 'Сейчас пик сезона' : toPeak<=2 ? `Пик через ${toPeak} мес.` : `Пик сезона в ${MONG[peak]}`;
+  $('hero').innerHTML = `
+    <div class="where">${regionName} · ${MON[lm-1]} ${ly}</div>
+    <div class="big num">${fmt(cur)} <span>очагов</span></div>
+    <div class="badge ${anom>=0?'up':'down'}">${anom>=0?'▲':'▼'} ${anom>=0?'+':''}${anom}% к норме (${fmt(m0)})</div>
+    <div class="stats">
+      <div class="stat"><span>Фаза сезона</span><b>${phase}</b></div>
+      <div class="stat"><span>Самый горящий год</span><b>${worst[0]}</b></div>
+      <div class="stat"><span>Очагов за ${ly-1}</span><b>${fmt(byYear.at(-1)?.[1]||0)}</b></div>
+      <div class="stat"><span>Норма за год</span><b>${fmt(median(byYear.map(x=>x[1])))}</b></div>
+    </div>`;
 
-  // calendar heatmap
-  const anomMode = $('mode').value === 'a', data = [];
+  // pulse
+  const pm = [], pv = [];
+  years.forEach(y => MON.forEach((_, i) => { const v = val(y, i+1); if (v===null) return; pm.push(`${MON[i]} ${y}`); pv.push(Math.round(v)); }));
+  const pmax = Math.max(1, ...pv);
+  charts.pulse.setOption({ textStyle:font, grid:{ left:8, right:8, top:6, bottom:22 }, tooltip:{ trigger:'axis', axisPointer:{ type:'none' } },
+    xAxis:{ type:'category', data:pm, ...axis, axisTick:{ show:false }, axisLabel:{ color:'#6f675d', interval:i => pm[i].startsWith('Янв') && +pm[i].slice(4)%5===0, formatter:s => s.slice(4) } },
+    yAxis:{ show:false }, visualMap:{ show:false, min:0, max:pmax, inRange:{ color:FIRE.slice(1) } },
+    series:[{ type:'bar', data:pv, barCategoryGap:'15%', itemStyle:{ borderRadius:[3,3,0,0] } }] }, true);
+
+  // calendar
+  const data = [];
   years.forEach((y, yi) => MON.forEach((_, mi) => { const v = val(y, mi+1); if (v===null) return;
-    data.push([mi, yi, anomMode ? (med[mi] ? Math.round(100*(v-med[mi])/med[mi]) : 0) : Math.round(v)]); }));
-  const maxN = Math.max(1, ...data.map(d=>d[2]));
-  charts.cal.setOption({
-    tooltip:{ formatter:p => `${MON[p.value[0]]} ${years[p.value[1]]}<br>${anomMode ? (p.value[2]>0?'+':'')+p.value[2]+'% к медиане' : p.value[2]+' точек'}` },
-    grid:{ left:50, right:20, top:10, bottom:70 },
-    xAxis:{ type:'category', data:MON, splitArea:{ show:true } }, yAxis:{ type:'category', data:years, inverse:true },
-    visualMap: anomMode ? { min:-100, max:100, calculable:true, orient:'horizontal', left:'center', bottom:0, inRange:{ color:DIVERGE }, text:['выше нормы','ниже'] }
-                        : { min:0, max:maxN, calculable:true, orient:'horizontal', left:'center', bottom:0, inRange:{ color:VIRIDIS }, text:['больше','меньше'] },
-    series:[{ type:'heatmap', data, label:{ show:years.length<=15, fontSize:10 } }]
-  }, true);
+    data.push([mi, yi, mode==='a' ? (med[mi] ? Math.round(100*(v-med[mi])/med[mi]) : 0) : Math.round(v)]); }));
+  const sorted = data.map(d=>d[2]).sort((a,b)=>a-b), maxN = Math.max(1, sorted[Math.floor(sorted.length*.95)] || 1);   // 95th pct: outliers saturate
+  charts.cal.setOption({ textStyle:font,
+    tooltip:{ formatter:p => `<b>${MON[p.value[0]]} ${years[p.value[1]]}</b><br>${mode==='a' ? (p.value[2]>0?'+':'')+p.value[2]+'% к норме' : fmt(p.value[2])+' очагов'}` },
+    grid:{ left:48, right:8, top:28, bottom:64 },
+    xAxis:{ type:'category', data:MON, position:'top', ...axis, axisTick:{ show:false }, axisLine:{ show:false } },
+    yAxis:{ type:'category', data:years, inverse:true, ...axis, axisTick:{ show:false }, axisLine:{ show:false } },
+    visualMap: mode==='a' ? { min:-100, max:100, calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:12, inRange:{ color:DIVERGE }, text:['выше нормы','ниже нормы'], textStyle:{ color:'#6f675d' } }
+                          : { min:0, max:maxN, calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:12, inRange:{ color:FIRE }, text:['много','мало'], textStyle:{ color:'#6f675d' } },
+    series:[{ type:'heatmap', data, itemStyle:{ borderColor:'#fff', borderWidth:2, borderRadius:6 }, label:{ show:years.length<=12, fontSize:10 },
+      emphasis:{ itemStyle:{ borderColor:'#1f1b16', borderWidth:2 } } }] }, true);
 
-  // current year vs median
-  charts.line.setOption({ tooltip:{ trigger:'axis' }, legend:{ bottom:0 }, grid:{ left:40, right:10, top:10, bottom:50 },
-    xAxis:{ type:'category', data:MON }, yAxis:{ type:'value' },
-    series:[{ name:'Медиана', type:'line', data:med.map(Math.round), lineStyle:{ type:'dashed' }, color:'#6b6b70' },
-            { name:String(ly), type:'line', data:MON.map((_,i)=>val(ly,i+1)), color:'#b2182b', areaStyle:{ opacity:.1 } }] }, true);
+  // this year vs norm
+  charts.line.setOption({ textStyle:font, tooltip:{ trigger:'axis' }, legend:{ bottom:0, icon:'roundRect', textStyle:{ color:'#6f675d' } }, grid:{ left:40, right:10, top:10, bottom:44 },
+    xAxis:{ type:'category', data:MON, ...axis }, yAxis:{ type:'value', ...axis },
+    series:[{ name:'Норма', type:'line', smooth:true, symbol:'none', data:med.map(Math.round), lineStyle:{ type:'dashed', width:2 }, color:'#9b9184' },
+            { name:String(ly), type:'line', smooth:true, symbolSize:7, data:MON.map((_,i)=>val(ly,i+1)), color:'#e8590c', lineStyle:{ width:3 }, areaStyle:{ opacity:.12 } }] }, true);
 
-  // before / after harmonization (annual totals)
+  // harmonization
   const m = aggregate('m'), v = aggregate('v'), allYears = [];
-  for (let y=+meta.first.slice(0,4); y<ly; y++) allYears.push(y);
+  for (let y=+meta.first.slice(0,4)+1; y<ly; y++) allYears.push(y);
   const yr = (o, y) => Object.entries(o).filter(([k])=>+k.slice(0,4)===y).reduce((s,[,n])=>s+n,0);
-  charts.harm.setOption({ tooltip:{ trigger:'axis' }, legend:{ bottom:0 }, grid:{ left:45, right:10, top:10, bottom:50 },
-    xAxis:{ type:'category', data:allYears }, yAxis:{ type:'value' },
-    series:[{ name:'Сырой: MODIS→VIIRS', type:'line', data:allYears.map(y => y<meta.viirs_start ? yr(m,y) : yr(v,y)), color:'#e08214' },
-            { name:'Гармонизированный', type:'line', data:allYears.map(y => Math.round(yr(h,y))), color:'#21918c', lineStyle:{ width:3 } }] }, true);
+  charts.harm.setOption({ textStyle:font, tooltip:{ trigger:'axis' }, legend:{ bottom:0, icon:'roundRect', textStyle:{ color:'#6f675d' } }, grid:{ left:48, right:10, top:10, bottom:44 },
+    xAxis:{ type:'category', data:allYears, ...axis }, yAxis:{ type:'value', ...axis },
+    series:[{ name:'Сырой MODIS → VIIRS', type:'line', step:'middle', symbol:'none', data:allYears.map(y => y<meta.viirs_start ? yr(m,y) : yr(v,y)), color:'#9b9184', lineStyle:{ width:2 } },
+            { name:'Гармонизированный', type:'line', smooth:true, symbol:'none', data:allYears.map(y => Math.round(yr(h,y))), color:'#e8590c', lineStyle:{ width:3 } }],
+    }, true);
 
-  // map markers: cells sized by harmonized total
+  // map dots
   markers && markers.remove(); markers = L.layerGroup().addTo(map);
   const tot = cells.map(c => Object.entries(c.h).filter(([k])=>+k.slice(0,4)>=y0 && +k.slice(0,4)<=y1).reduce((s,[,n])=>s+n,0));
   const mx = Math.max(1, ...tot);
-  cells.forEach((c, i) => tot[i] && L.circleMarker([c.la, c.lo], { radius:3+12*Math.sqrt(tot[i]/mx), color:'#b2182b', weight:1, fillOpacity:.35 })
-    .bindTooltip(`${Math.round(tot[i])} точек`).addTo(markers));
+  cells.forEach((c, i) => { if (!tot[i]) return; const t = Math.sqrt(tot[i]/mx);
+    L.circleMarker([c.la, c.lo], { radius:2+11*t, stroke:false, fillColor:FIRE[1+Math.min(4, Math.floor(t*5))], fillOpacity:inBox(c.la,c.lo)?.85:.25 })
+      .bindTooltip(`${fmt(tot[i])} очагов`).addTo(markers); });
 }
 
 function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); a.download = name; a.click(); }
 $('csvPts').onclick = async () => {
   const y0 = +$('y0').value, y1 = +$('y1').value, lines = (await (await fetch('data/points.csv')).text()).trim().split('\n');
-  download('hotspots.csv', [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const y = +d.slice(0,4); return y>=y0 && y<=y1 && inBox(+la, +lo); })].join('\n'));
+  download('burnbeat_hotspots.csv', [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const y = +d.slice(0,4); return y>=y0 && y<=y1 && inBox(+la, +lo); })].join('\n'));
 };
 $('csvCal').onclick = () => {
   const h = aggregate('h'), y0 = +$('y0').value, y1 = +$('y1').value, rows = ['year,' + MON.map((_,i)=>i+1).join(',')];
   for (let y=y0; y<=y1; y++) rows.push(y + ',' + MON.map((_,i)=>(h[`${y}-${String(i+1).padStart(2,'0')}`]||0).toFixed(1)).join(','));
-  download('fire_calendar.csv', rows.join('\n'));
+  download('burnbeat_calendar.csv', rows.join('\n'));
 };
-$('apply').onclick = () => { const p = $('bbox').value.split(',').map(Number);
-  if (p.length===4 && p.every(isFinite)) { const b = L.latLngBounds([p[0],p[1]],[p[2],p[3]]); setBox(b); map.fitBounds(b); } else render(); };
-$('reset').onclick = () => setBox(null);
-['y0','y1','mode'].forEach(id => $(id).onchange = render);
+$('mode').onclick = e => { const v = e.target.dataset.v; if (!v) return; mode = v; $('mode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v===v)); render(); };
+['y0','y1'].forEach(id => $(id).onchange = render);
 addEventListener('resize', () => Object.values(charts).forEach(c => c.resize()));
 
 Promise.all([fetch('data/cells.json').then(r=>r.json()), fetch('data/meta.json').then(r=>r.json())]).then(([c, m]) => {
   cells = c; meta = m;
-  const f = +m.first.slice(0,4), l = +m.last.slice(0,4);
-  for (let y=f; y<=l; y++) { $('y0').add(new Option(y, y)); $('y1').add(new Option(y, y)); }
+  const f = +m.first.slice(0,4)+1, l = +m.last.slice(0,4);   // first year is a partial stub (Nov 2000)
+  for (let y=f; y<=l; y++) { $('y0').add(new Option('с ' + y, y)); $('y1').add(new Option('по ' + y, y)); }
   $('y0').value = f; $('y1').value = l;
   const v = m.validation;
-  $('valid').textContent = `Проверка (обучение ${v.train.join('–')}, тест ${v.test.join('–')}): ошибка ${v.mae_harmonized} точек/мес против ${v.mae_raw_modis} у сырого MODIS, корреляция ${v.corr}, смещение ${v.bias_pct}%.`;
-  render();
+  $('valid').textContent = `Проверка на ${v.test.join('–')} (модель обучена на ${v.train.join('–')}): ошибка ${v.mae_harmonized} очага/мес против ${v.mae_raw_modis} у сырого MODIS · корреляция ${v.corr}`;
+  const q = new URLSearchParams(location.search).get('bbox')?.split(',').map(Number);
+  const key = q && Object.keys(REGIONS).find(k => REGIONS[k][1]?.join(',') === q.join(','));
+  if (q?.length===4 && q.every(isFinite)) setBox(q, key ? REGIONS[key][0] : 'Своя область', key); else setBox(null, 'Весь Кыргызстан', 'all');
 });
 </script>
 </body>
