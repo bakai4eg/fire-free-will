@@ -540,7 +540,7 @@ function render() {
     liveHero = { n:n20, wk, r, lm, ly, text:t.storyLive({ where:ruWhere, whereKy:kyWhere, whereEn:enWhere.replace(/^The /, 'the '), n:n20, m:lm - 1, norm:wk < 1 ? '<1' : Math.round(wk), ratio:r, peak }) };
   }
   if (liveHero) $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${liveHero.text}</div>
-    <div class="big num" style="color:#ff8a7a">${liveHero.n} <span>${firesWord(liveHero.n, lang)} · ${t.liveDays}</span></div>
+    <div class="big num" style="color:#ff8a7a">${liveHero.n} <span>${firesWord(liveHero.n, lang)} · ${t.liveDays} · NOAA-20</span></div>
     ${liveHero.r === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${liveHero.r >= 1 ? 'up' : 'down'}">${liveHero.r >= 1 ? '▲ ×' + liveHero.r.toFixed(1) : '▼ ×' + liveHero.r.toFixed(1)} ${t.toNorm} (${liveHero.wk.toFixed(1)})</div>`}
     <div class="stats"><div class="stat"><span>${t.phase}</span><b>${t.peakMonth(t.monFull[peak])}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
       <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
@@ -649,7 +649,7 @@ $('how').addEventListener('toggle', () => { if ($('how').open) render(); });
 function drawClock() {
   const t = T(), [y, m] = MONTHS[cur].split('-'), live = liveOn ? liveInSel() : null;
   $('clock').classList.toggle('live', liveOn);
-  if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${live ? live.length : LIVE.points.length}</b> ${t.fires} · ${t.liveDays} · ${label()}`; return; }
+  if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${live ? live.length : LIVE.points.length}</b> ${t.fires} · ${t.liveDays} · NOAA-20 + NOAA-21 · ${label()}`; return; }
   $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`;
   $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
 }
