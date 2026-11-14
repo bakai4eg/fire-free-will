@@ -70,7 +70,8 @@
       <div><h1>BurnBeat</h1><small>Пульс пожаров Кыргызстана · MODIS + VIIRS</small></div>
     </div>
     <div class="tools">
-      <select class="pill" id="y0" aria-label="С года"></select><select class="pill" id="y1" aria-label="По год"></select>
+      <input class="pill" id="coords" placeholder="Координаты: 42.87, 74.59" size="22" title="lat, lon (квадрат ±50 км) или lat1, lon1, lat2, lon2 — Enter">
+      <input type="month" class="pill" id="y0" aria-label="С месяца"><input type="month" class="pill" id="y1" aria-label="По месяц">
       <button class="pill" id="csvCal">Календарь CSV</button><button class="pill solid" id="csvPts">Очаги CSV</button>
     </div>
   </div>
@@ -151,14 +152,14 @@ function aggregate(key) {
 }
 
 function render() {
-  const y0 = +$('y0').value, y1 = +$('y1').value, h = aggregate('h');
+  const a = $('y0').value, b = $('y1').value, y0 = +a.slice(0,4), y1 = +b.slice(0,4), h = aggregate('h');
   const years = []; for (let y=y0; y<=y1; y++) years.push(y);
   const [ly, lm] = meta.last.split('-').map(Number);
-  const val = (y, m) => (y>ly || (y===ly && m>lm)) ? null : (h[`${y}-${String(m).padStart(2,'0')}`]||0);
+  const val = (y, m) => { const ym = `${y}-${String(m).padStart(2,'0')}`; return (ym < a || ym > b || ym > meta.last) ? null : (h[ym]||0); };
   const med = MON.map((_, i) => median(years.filter(y=>y<ly).map(y=>val(y,i+1)).filter(v=>v!==null)));
 
   // hero
-  const cur = val(ly, lm), m0 = med[lm-1], anom = m0 ? Math.round(100*(cur-m0)/m0) : 0;
+  const cur = h[meta.last]||0, m0 = med[lm-1], anom = m0 ? Math.round(100*(cur-m0)/m0) : 0;
   const peak = med.indexOf(Math.max(...med));
   const byYear = years.filter(y=>y<ly).map(y => [y, MON.reduce((s,_,i)=>s+(val(y,i+1)||0),0)]);
   const worst = byYear.reduce((a,b)=>b[1]>a[1]?b:a, [0,-1]);
@@ -217,20 +218,31 @@ function render() {
 
   // map dots
   markers && markers.remove(); markers = L.layerGroup().addTo(map);
-  const tot = cells.map(c => Object.entries(c.h).filter(([k])=>+k.slice(0,4)>=y0 && +k.slice(0,4)<=y1).reduce((s,[,n])=>s+n,0));
+  const tot = cells.map(c => Object.entries(c.h).filter(([k])=>k>=a && k<=b).reduce((s,[,n])=>s+n,0));
   const mx = Math.max(1, ...tot);
   cells.forEach((c, i) => { if (!tot[i]) return; const t = Math.sqrt(tot[i]/mx);
     L.circleMarker([c.la, c.lo], { radius:2+11*t, stroke:false, fillColor:FIRE[1+Math.min(4, Math.floor(t*5))], fillOpacity:inBox(c.la,c.lo)?.85:.25 })
       .bindTooltip(`${fmt(tot[i])} очагов`).addTo(markers); });
+
+  // every chart can be saved as PNG
+  Object.values(charts).forEach(c => c.setOption({ toolbox:{ right:0, top:0, feature:{ saveAsImage:{ title:'PNG', name:'burnbeat', pixelRatio:2, backgroundColor:'#fff' } } } }));
 }
+
+function goCoords() {
+  const p = $('coords').value.split(/[,;\s]+/).filter(Boolean).map(Number);
+  if (!p.every(isFinite)) return;
+  if (p.length === 2) { const d = 0.45; setBox([p[0]-d, p[1]-d*1.3, p[0]+d, p[1]+d*1.3].map(x=>+x.toFixed(3)), `${p[0]}, ${p[1]} ±50 км`); }
+  else if (p.length === 4) setBox([Math.min(p[0],p[2]), Math.min(p[1],p[3]), Math.max(p[0],p[2]), Math.max(p[1],p[3])], 'Своя область');
+}
+$('coords').onkeydown = e => { if (e.key === 'Enter') goCoords(); };
 
 function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); a.download = name; a.click(); }
 $('csvPts').onclick = async () => {
-  const y0 = +$('y0').value, y1 = +$('y1').value, lines = (await (await fetch('data/points.csv')).text()).trim().split('\n');
-  download('burnbeat_hotspots.csv', [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const y = +d.slice(0,4); return y>=y0 && y<=y1 && inBox(+la, +lo); })].join('\n'));
+  const a = $('y0').value, b = $('y1').value, lines = (await (await fetch('data/points.csv')).text()).trim().split('\n');
+  download('burnbeat_hotspots.csv', [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const ym = d.slice(0,7); return ym>=a && ym<=b && inBox(+la, +lo); })].join('\n'));
 };
 $('csvCal').onclick = () => {
-  const h = aggregate('h'), y0 = +$('y0').value, y1 = +$('y1').value, rows = ['year,' + MON.map((_,i)=>i+1).join(',')];
+  const h = aggregate('h'), y0 = +$('y0').value.slice(0,4), y1 = +$('y1').value.slice(0,4), rows = ['year,' + MON.map((_,i)=>i+1).join(',')];
   for (let y=y0; y<=y1; y++) rows.push(y + ',' + MON.map((_,i)=>(h[`${y}-${String(i+1).padStart(2,'0')}`]||0).toFixed(1)).join(','));
   download('burnbeat_calendar.csv', rows.join('\n'));
 };
@@ -241,8 +253,8 @@ addEventListener('resize', () => Object.values(charts).forEach(c => c.resize()))
 Promise.all([fetch('data/cells.json').then(r=>r.json()), fetch('data/meta.json').then(r=>r.json())]).then(([c, m]) => {
   cells = c; meta = m;
   const f = +m.first.slice(0,4)+1, l = +m.last.slice(0,4);   // first year is a partial stub (Nov 2000)
-  for (let y=f; y<=l; y++) { $('y0').add(new Option('с ' + y, y)); $('y1').add(new Option('по ' + y, y)); }
-  $('y0').value = f; $('y1').value = l;
+  ['y0','y1'].forEach(id => { $(id).min = `${f}-01`; $(id).max = m.last; });
+  $('y0').value = `${f}-01`; $('y1').value = m.last;
   const v = m.validation;
   const b = v.models[v.best];
   $('valid').textContent = `Проверка (каждый год 2012–2019 по очереди скрыт от модели): ошибка ${b.mae} очага/мес против ${v.raw_modis.mae} у сырого MODIS · смещение ${b.bias_pct}% · корреляция ${b.corr}`;
