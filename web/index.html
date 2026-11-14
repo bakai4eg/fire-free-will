@@ -704,7 +704,7 @@ Promise.all([
   const pre = q && PRESETS.find(p => p[1] && p[1].join(',') === q.join(','));
   if (q?.length === 4 && q.every(isFinite)) select(pre ? { key:pre[0], bbox:pre[1] } : { key:null, bbox:q });
   else select({ key:'world', bbox:null });
-  $('loading').style.opacity = 0; setTimeout(() => $('loading').remove(), 700);
+  const ld = $('loading'); ld.style.opacity = 0; ld.style.pointerEvents = 'none'; ld.addEventListener('transitionend', () => ld.remove()); setTimeout(() => ld.remove(), 900);
   requestAnimationFrame(tick);
 });
 </script>
