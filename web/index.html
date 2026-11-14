@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BurnBeat</title>
-<meta name="description" content="When and where does it usually burn — and is it worse than usual now? Harmonized NASA MODIS + VIIRS hotspots, 2001 to today.">
+<meta name="description" content="When and where does it usually burn — and is it worse than usual now? Harmonized NASA MODIS + VIIRS hotspots, 2001 to today, for any place on Earth.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 12h4l2-6 4 12 3-9 2 3h5' fill='none' stroke='%23ff6a1a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -14,11 +14,20 @@
   body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased }
   h1,h2,.num { font-family:Manrope,Inter,sans-serif; letter-spacing:-.02em }
   .mono { font-family:'JetBrains Mono',ui-monospace,monospace }
-  button { font:inherit; color:inherit }
+  button, input { font:inherit; color:inherit }
 
-  header { height:58px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--line); background:var(--panel) }
-  .brand { display:flex; align-items:center; gap:9px; color:var(--ink); text-decoration:none; margin-right:auto }
-  .brand svg { width:22px; height:22px } .brand b { font:800 18px Manrope } .brand small { color:var(--muted); font-size:12px; margin-left:4px }
+  header { height:58px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--line); background:var(--panel); position:relative; z-index:20 }
+  .brand { display:flex; align-items:center; gap:9px; color:var(--ink); text-decoration:none }
+  .brand svg { width:22px; height:22px } .brand b { font:800 18px Manrope }
+  .search { position:relative; flex:1; max-width:460px; margin:0 8px }
+  .search input { width:100%; background:var(--card); border:1px solid var(--line); border-radius:999px; padding:9px 14px 9px 36px; outline:none }
+  .search input:focus { border-color:rgba(255,106,26,.5); background:var(--card2) }
+  .search .ic { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none }
+  .drop { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:6px; display:none; box-shadow:0 20px 50px rgba(0,0,0,.5); max-height:60vh; overflow:auto }
+  .drop.on { display:block } .drop .grp { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.08em; padding:8px 10px 4px }
+  .drop button { display:flex; width:100%; justify-content:space-between; gap:10px; text-align:left; background:none; border:0; border-radius:9px; padding:8px 10px; cursor:pointer; color:var(--ink) }
+  .drop button:hover, .drop button.hi { background:var(--card2) } .drop button span { color:var(--muted); font-size:12px }
+  .sp { flex:1 }
   .pill { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 13px; font-weight:500; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-flex; gap:6px; align-items:center; color:var(--ink) }
   .pill:hover { background:var(--card2) } .pill.fire { background:var(--fire); border-color:var(--fire); color:#160800; font-weight:600 } .pill:disabled { opacity:.35; cursor:not-allowed }
   .seg { display:inline-flex; background:var(--card); border-radius:999px; padding:3px; border:1px solid var(--line) }
@@ -27,17 +36,16 @@
 
   .app { display:grid; grid-template-columns:minmax(0,1fr) 450px; height:calc(100vh - 58px) }
   .mapside { position:relative; display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--line) }
-  .chips { display:flex; gap:6px; overflow-x:auto; padding:10px 12px; scrollbar-width:none; border-bottom:1px solid var(--line) }
-  .chip { flex:none; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:6px 12px; cursor:pointer; color:var(--soft) }
-  .chip:hover { background:var(--card2) } .chip.on { background:var(--ink); color:#111; border-color:var(--ink) }
-  .chip.sep { border:0; background:none; color:var(--dim); cursor:default; padding:6px 2px }
+  .crumbs { display:flex; gap:6px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--line); min-height:44px; flex-wrap:wrap }
+  .crumbs button { border:0; background:none; color:var(--muted); cursor:pointer; padding:4px 6px; border-radius:8px } .crumbs button:hover { color:var(--ink); background:var(--card) }
+  .crumbs b { font-weight:600 } .crumbs i { color:var(--dim); font-style:normal }
   #stage { position:relative; flex:1; min-height:300px; cursor:crosshair; touch-action:none; overflow:hidden }
+  #stage.globe { cursor:grab } #stage.globe.drag { cursor:grabbing }
   #stage canvas { position:absolute; inset:0; width:100%; height:100% }
   .hint { position:absolute; left:12px; top:10px; color:var(--muted); font-size:12px; pointer-events:none; background:rgba(11,11,14,.72); padding:4px 9px; border-radius:8px }
   .scale { position:absolute; left:12px; top:36px; color:var(--dim); font-size:11px; pointer-events:none }
-  .zoom { position:absolute; right:12px; top:48px; display:flex; flex-direction:column; gap:6px } .zoom button { width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:rgba(23,23,28,.88); color:var(--ink); font:600 20px Inter; cursor:pointer } .zoom button:hover { background:var(--card2) }
   .view { position:absolute; right:12px; top:10px } .view button { border:1px solid var(--line); background:rgba(23,23,28,.85); color:var(--soft); border-radius:999px; padding:6px 12px; cursor:pointer; font-weight:600; font-size:12px }
-  #stage.globe { cursor:grab } #stage.globe.drag { cursor:grabbing }
+  .zoom { position:absolute; right:12px; top:48px; display:flex; flex-direction:column; gap:6px } .zoom button { width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:rgba(23,23,28,.88); color:var(--ink); font:600 20px Inter; cursor:pointer } .zoom button:hover { background:var(--card2) }
   .clock { position:absolute; left:14px; bottom:12px; pointer-events:none }
   .clock .m { font:800 clamp(28px,4vw,46px)/1 Manrope; letter-spacing:-.03em } .clock .n { color:var(--muted); font-size:12px; margin-top:4px } .clock .n b { color:var(--fire) }
   .clock.live .m { color:var(--live) }
@@ -62,16 +70,16 @@
   .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px }
   .stat { background:var(--card2); border-radius:12px; padding:10px 12px } .stat b { display:block; font:800 17px Manrope } .stat span { color:var(--muted); font-size:12px }
   .dl { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap }
-  .live { border-color:rgba(255,59,48,.3); background:linear-gradient(180deg, rgba(255,59,48,.08), var(--card) 60%) }
-  .live ul { list-style:none; padding:0; margin:8px 0 0 } .live li { display:flex; justify-content:space-between; padding:6px 0; border-top:1px solid var(--line); color:var(--soft); font-size:13px }
-  .live li span { color:var(--muted) }
-  .vill { margin:6px 0 0; padding:0; list-style:none; counter-reset:v } .vill li { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:7px 0; border-top:1px solid var(--line); cursor:pointer }
-  .vill li:hover b { color:var(--fire2) } .vill .bar { grid-column:1 / -1; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--fire), rgba(255,106,26,.15)) } .vill span { color:var(--muted); font-size:12px }
   .risk { display:flex; align-items:center; gap:12px; margin-top:8px } .risk .lvl { font:800 26px Manrope } .risk .ico { font-size:30px }
   .lvl.low { color:#58d68d } .lvl.medium { color:#ffb347 } .lvl.high { color:#ff5a4e }
   .why { color:var(--soft); font-size:13px; margin-top:6px } .days { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px }
   .day { background:var(--card2); border-radius:10px; padding:8px; text-align:center; font-size:12px; color:var(--muted) } .day b { display:block; font-size:18px; margin:2px 0 }
   .disc { color:var(--dim); font-size:11px; margin-top:8px }
+  .live { border-color:rgba(255,59,48,.3); background:linear-gradient(180deg, rgba(255,59,48,.08), var(--card) 60%) }
+  .live ul { list-style:none; padding:0; margin:8px 0 0 } .live li { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--line); color:var(--soft); font-size:13px }
+  .live li span { color:var(--muted); white-space:nowrap }
+  .vill { margin:6px 0 0; padding:0; list-style:none } .vill li { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:7px 0; border-top:1px solid var(--line); cursor:pointer }
+  .vill li:hover b { color:var(--fire2) } .vill .bar { grid-column:1 / -1; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--fire), rgba(255,106,26,.15)) } .vill span { color:var(--muted); font-size:12px }
   #cal { height:460px } #line, #harm, #wx { height:220px }
   .note { color:var(--muted); font-size:12px; margin-top:6px }
   details.card { padding:0 } details.card > summary { list-style:none; cursor:pointer; padding:16px; font:700 15px Manrope; display:flex; justify-content:space-between } details.card > summary::-webkit-details-marker { display:none }
@@ -79,18 +87,20 @@
   details .inner { padding:0 16px 16px } details .inner h3 { font:700 13px Inter; margin:14px 0 2px }
   .src { color:var(--dim); font-size:11px; line-height:1.6 }
   .bot { display:flex; gap:12px; align-items:center } .bot p { margin:0; color:var(--soft); font-size:13px }
-  #loading { position:fixed; inset:0; z-index:9; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
-  @media (max-width:1250px) { .brand small { display:none } }
+  #loading { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
+  @media (max-width:1100px) { .tg-text { display:none } }
   @media (max-width:980px) {
-    .app { display:block; height:auto } .mapside { height:68vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px; row-gap:8px }
-    .panel { overflow:visible } .tg-text { display:none }
+    .app { display:block; height:auto } .mapside { height:70vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px; row-gap:8px }
+    .search { order:9; flex-basis:100%; max-width:none; margin:0 } .panel { overflow:visible }
   }
 </style>
 </head>
 <body>
 <div id="loading" class="mono">BURNBEAT · loading 25 years of fire…</div>
 <header>
-  <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b><small data-t="tagline"></small></a>
+  <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b></a>
+  <div class="search"><span class="ic">⌕</span><input id="q" autocomplete="off" spellcheck="false"><div class="drop" id="drop"></div></div>
+  <div class="sp"></div>
   <div class="seg" id="period"><button data-v="1" data-t="p1"></button><button data-v="5" data-t="p5"></button><button data-v="10" data-t="p10"></button><button data-v="all" class="on" data-t="pall"></button></div>
   <a class="pill fire" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener">✈<span class="tg-text" data-t="tg"></span></a>
   <div class="seg" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
@@ -98,7 +108,7 @@
 
 <div class="app">
   <section class="mapside">
-    <div class="chips" id="chips"></div>
+    <div class="crumbs" id="crumbs"></div>
     <div id="stage">
       <canvas id="land"></canvas><canvas id="fire"></canvas><canvas id="marks"></canvas>
       <div class="hint" id="hint"></div>
@@ -115,13 +125,13 @@
     <div class="card" id="hero"></div>
     <div class="card" id="dangerCard"></div>
     <div class="card live" id="liveCard"></div>
-    <div class="card" id="villCard"><h2 data-t="villT"></h2><div class="sub" data-t="villS"></div><ol class="vill" id="villList"></ol></div>
     <div class="card">
       <div class="head"><div><h2 data-t="calT"></h2><div class="sub" data-t="calS"></div></div>
         <div class="seg" id="mode"><button data-v="n" class="on" data-t="modeN"></button><button data-v="a" data-t="modeA"></button></div></div>
       <div id="cal"></div><div class="note" id="note2001"></div>
     </div>
     <div class="card"><h2 id="lineT"></h2><div class="sub" id="lineS"></div><div id="line"></div></div>
+    <div class="card" id="villCard"><h2 data-t="villT"></h2><div class="sub" data-t="villS"></div><ol class="vill" id="villList"></ol></div>
     <details class="card" id="how"><summary data-t="howT"></summary><div class="inner">
       <p class="note" data-t="howP"></p>
       <h3 data-t="harmT"></h3><div class="sub" id="harmS"></div><div id="harm"></div><div class="note" id="valid"></div>
@@ -136,138 +146,107 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <script>
-// ======================= text (KY needs a native-speaker check) =======================
+// =============================== language ===============================
 const ruPl = (n, one, few, many) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
-const firesWord = (n, l) => l === 'ru' ? ruPl(n, 'очаг', 'очага', 'очагов') : l === 'en' ? (Math.round(n) === 1 ? 'hotspot' : 'hotspots') : 'очок';
 const ruTimes = r => { if (r < 10) { const v = r.toFixed(1).replace('.', ','); return v.endsWith(',0') ? `${v.slice(0, -2)} ${ruPl(+v.slice(0, -2), 'раз', 'раза', 'раз')}` : `${v} раза`; } const n = Math.round(r); return `${n} ${ruPl(n, 'раз', 'раза', 'раз')}`; };
+const x10 = r => r < 10 ? r.toFixed(1) : Math.round(r);
 const MON_LOC_RU = ['январе','феврале','марте','апреле','мае','июне','июле','августе','сентябре','октябре','ноябре','декабре'];
+const firesWord = (n, l) => l === 'ru' ? ruPl(n, 'очаг', 'очага', 'очагов') : l === 'en' ? (Math.round(n) === 1 ? 'hotspot' : 'hotspots') : 'очок';
 const I18N = {
-  ru: { tagline:'когда и где горит · NASA MODIS + VIIRS', p1:'Год', p5:'5 лет', p10:'10 лет', pall:'Все 25 лет', tg:'Сводка в Telegram', nowBtn:'Сейчас',
-    hint:'Колесо или +/− — масштаб · клик — место · протянуть — область', hintG:'Колесо или + — приблизить · тянуть — вращать Землю · клик — место', calT:'Календарь горения', calS:'Каждая клетка — месяц. Клик по клетке — показать этот месяц на карте',
-    modeN:'Очаги', modeA:'К норме', lineT:y => `${y} против нормы`, lineS:(a, b) => `Норма — медиана ${a}–${b} по месяцам`,
+  ru: { search:'Найти место: страна, город, область…', p1:'Год', p5:'5 лет', p10:'10 лет', pall:'Все 25 лет', tg:'Сводка в Telegram', nowBtn:'Сейчас', world:'Весь мир',
+    hint:'Клик — выбрать страну · колесо или +/− — масштаб · протянуть — область', hintIn:'Клик — точка рядом · протянуть — своя область · колесо — масштаб', hintG:'Клик — выбрать страну · тянуть — вращать Землю',
+    sugKg:'Кыргызстан', sugWorld:'Примеры', noRes:'Ничего не найдено', calT:'Календарь горения', calS:'Каждая клетка — месяц. Клик по клетке — показать этот месяц на карте',
+    modeN:'Очаги', modeA:'К норме', lineT:y => `${y} против нормы`, lineS:(a, b) => `Норма — медиана ${a}–${b} по месяцам, серая полоса — обычный разброс`,
     howT:'Как это посчитано', howP:'Два поколения спутников видят огонь по-разному: новый VIIRS замечает в несколько раз больше мелких очагов, чем старый MODIS. Мы пересчитали 25 лет MODIS в шкалу VIIRS, чтобы прошлое и настоящее можно было честно сравнивать.',
     harmT:'Без гармонизации — ложный скачок в 2012', harmWorld:'Весь мир, очагов в год', harmLocal:'Эта область, очагов в год', wxT:'Огонь и дождь', wxS:'Месяцы сезона 2012–2025 · погода NASA POWER', srcT:'Данные',
     botP:'Каждое утро бот @burn_beat_bot присылает службам Кыргызстана оценку пожарной опасности: сезон, отклонение от нормы, погода, свежие очаги.',
-    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, пересчитан), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (последние 7 дней) · погода NASA POWER · только растительные пожары, заводы и вулканы исключены · метод и проверка: docs/METHOD.md',
+    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, пересчитан), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (последние 7 дней) · погода NASA POWER, Open-Meteo · границы Natural Earth, geoBoundaries · города GeoNames · только растительные пожары, заводы, факелы и вулканы исключены · метод и проверка: docs/METHOD.md',
     mon:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'], monFull:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
     fires:'очагов', toNorm:'к норме', normLow:'в это время года тут почти не горит', phase:'Сезон', peakNow:'сейчас пик', peakIn:n => `пик через ${n} мес.`, peakMonth:m => `пик: ${m}`,
     worst:'Худший год', yearNorm:'Обычно за год', lastYear:y => `За ${y} год`, norm:'Норма', raw:'Сырые данные', harm:'Гармонизированные',
-    many:'больше', few:'меньше', above:'выше нормы', below:'ниже нормы', custom:'выбранной области', point:'Точка', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очаги CSV',
+    many:'больше', few:'меньше', above:'выше нормы', below:'ниже нормы', area:'Выбранная область', near:n => `${n} и окрестности`, point:'Точка', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очаги CSV', ptsOnlyKg:'Отдельные очаги архива — для Кыргызстана',
     validW:v => `Проверка: каждый год 2012–2019 по очереди скрывали от модели и сравнивали с тем, что реально увидел VIIRS. Смещение ${v.cell.bias_pct}% (без гармонизации ${v.raw.bias_pct}%), ошибка в месяц в ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} раз меньше.`,
     validK:(b, r) => `Проверка по Кыргызстану: ошибка ${b.mae} очага в месяц против ${r} у сырого MODIS, смещение ${b.bias_pct}%.`,
     rain:'Осадки, % нормы', fireAnom:'Очаги, % к норме', wxNote:r => `r = ${r}: ${r < -0.25 ? 'дождливые месяцы горят заметно меньше.' : 'связь слабая.'}`,
-    ptsOnlyKg:'Отдельные очаги — для Кыргызстана', grid:'сетка ≈100 км', gridKg:'сетка ≈25 км · точки — отдельные очаги',
-    dangerT:'Пожарная опасность', dangerS:'Сегодня и на 3 дня вперёд · погода Open-Meteo', levels:{ low:'Низкая', medium:'Средняя', high:'Высокая' },
-    why:{ peak:'пик сезона', season:'пожарный сезон', above:r => `выше нормы в ${ruTimes(r)}`, fires:n => `${n} очагов за сутки`, hot:t => `жарко ${t}°`, dry:h => `сухо, влажность ${h}%`, wind:w => `ветер до ${w} км/ч`, rain:r => `дождь ${r} мм`, calm:'нет факторов риска' },
-    days:['Сегодня','Завтра'], disc:'Оценка условий, а не прогноз пожаров: сезон по истории 2001–2025, свежие очаги и прогноз погоды. Та же формула, что в Telegram-боте.', wxErr:'Прогноз погоды сейчас недоступен.',
-    villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', near:(n, km) => `${n} · ${km} км`, villNone:'Очагов рядом с сёлами не было.',
-    liveT:'Последние 7 дней', liveNone:'За последние 7 дней спутники не видели очагов в этой области.', liveOutside:'Свежие данные пока есть только для Центральной Азии.',
-    liveN:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за 7 дней`, liveNow:'СЕЙЧАС', liveDays:'последние 7 дней', newest:'Последний',
-    storyLive:s => { const r = s.ratio, cmp = r === null ? '' : r >= 2 ? `, а сейчас <em>в ${ruTimes(r)} больше</em>` : r <= .5 ? `, а сейчас в ${ruTimes(1 / Math.max(r, .01))} меньше` : ' — сейчас около нормы';
-      return `Сейчас в ${s.where}: за последние 7 дней спутник заметил <em>${s.n} ${ruPl(s.n, 'очаг', 'очага', 'очагов')}</em>. Обычно в ${MON_LOC_RU[s.m]} за неделю тут около ${s.norm}${cmp}. Больше всего здесь горит в ${MON_LOC_RU[s.peak]}.`; },
+    grid:'сетка ≈100 км', gridKg:'сетка ≈25 км · точки — отдельные очаги', gridLive:'точки — очаги за последние 7 дней',
+    liveT:'Последние 7 дней', liveNone:'За последние 7 дней спутники не видели очагов в этой области.', liveN:n => `${fmt(n)} ${ruPl(n, 'очаг', 'очага', 'очагов')} за 7 дней`, liveNow:'СЕЙЧАС', liveDays:'последние 7 дней', liveMany:'Слишком большая область для списка — приблизьте карту.',
+    dangerT:'Пожарная опасность', dangerS:'Сегодня и на 3 дня вперёд · погода Open-Meteo в центре области', levels:{ low:'Низкая', medium:'Средняя', high:'Высокая' },
+    why:{ peak:'пик сезона', season:'пожарный сезон', above:r => `выше нормы в ${ruTimes(r)}`, fires:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за сутки`, hot:t => `жарко ${t}°`, dry:h => `сухо, влажность ${h}%`, wind:w => `ветер до ${w} км/ч`, rain:r => `дождь ${r} мм`, calm:'нет факторов риска' },
+    days:['Сегодня','Завтра'], disc:'Оценка условий, а не прогноз пожаров: сезон по истории 2001–2025, свежие очаги и прогноз погоды. Та же формула, что в Telegram-боте.', wxErr:'Прогноз погоды сейчас недоступен.', bigArea:'Для такой большой области опасность не считается — выберите место поменьше.',
+    villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', villNone:'Очагов рядом с сёлами не было.',
     y2001:'2001: первые полгода работал один спутник — оценка менее точная',
-    story:s => {
-      const peak = s.peak2 !== null ? `<em>${MON_LOC_RU[s.peak]}</em> и <em>${MON_LOC_RU[s.peak2]}</em>` : `<em>${MON_LOC_RU[s.peak]}</em>`;
-      let cmp;
-      if (s.ratio === null) cmp = 'в это время года тут почти не горит';
-      else if (s.ratio >= 2) cmp = `<em>в ${ruTimes(s.ratio)} больше нормы</em>`;
-      else if (s.ratio <= .5 && s.ratio > 0) cmp = `в ${ruTimes(1 / s.ratio)} меньше нормы`;
-      else if (s.ratio === 0) cmp = 'ни одного очага';
-      else if (Math.abs(s.anom) < 15) cmp = 'около нормы';
-      else cmp = s.anom > 0 ? `<em>на ${s.anom}% больше нормы</em>` : `на ${-s.anom}% меньше нормы`;
-      const live = s.live === null ? '' : s.live > 0 ? ` <span class="lv">За последние 7 дней спутники заметили ${s.live} ${ruPl(s.live, 'очаг', 'очага', 'очагов')}.</span>` : ' За последние 7 дней очагов не было.';
-      return `${s.where === 'мир' ? 'На планете' : 'В ' + s.where} больше всего горит в ${peak}. В ${MON_LOC_RU[s.m]} ${s.y} — ${s.n} ${ruPl(s.nRaw, 'очаг', 'очага', 'очагов')}, ${cmp}.${live}`; } },
-  ky: { tagline:'качан жана кайда күйөт · NASA MODIS + VIIRS', p1:'Жыл', p5:'5 жыл', p10:'10 жыл', pall:'25 жыл', tg:'Telegram сводка', nowBtn:'Азыр',
-    hint:'Дөңгөлөк же +/− — масштаб · басуу — жер · тартуу — аймак', hintG:'Дөңгөлөк же + — жакындатуу · тартуу — Жерди айлантуу · басуу — жер', calT:'Күйүү календары', calS:'Ар бир уяча — бир ай. Уячаны бассаңыз, ошол ай картада көрүнөт',
-    modeN:'Очоктор', modeA:'Нормага', lineT:y => `${y} жана норма`, lineS:(a, b) => `Норма — ${a}–${b} айлык медианасы`,
+    story:s => { const peak = s.peak2 !== null ? `<em>${MON_LOC_RU[s.peak]}</em> и <em>${MON_LOC_RU[s.peak2]}</em>` : `<em>${MON_LOC_RU[s.peak]}</em>`;
+      let cmp; if (s.ratio === null) cmp = 'в это время года тут почти не горит'; else if (s.ratio === 0) cmp = 'ни одного очага';
+      else if (s.ratio >= 2) cmp = `<em>в ${ruTimes(s.ratio)} больше нормы</em>`; else if (s.ratio <= .5) cmp = `в ${ruTimes(1 / s.ratio)} меньше нормы`;
+      else if (Math.abs(s.anom) < 15) cmp = 'около нормы'; else cmp = s.anom > 0 ? `<em>на ${s.anom}% больше нормы</em>` : `на ${-s.anom}% меньше нормы`;
+      return `Больше всего здесь горит в ${peak}. В ${MON_LOC_RU[s.m]} ${s.y} — ${s.n} ${ruPl(s.nRaw, 'очаг', 'очага', 'очагов')}, ${cmp}.`; },
+    storyLive:s => { const r = s.ratio, cmp = r === null ? '' : r === 0 ? '' : r >= 2 ? `, а сейчас <em>в ${ruTimes(r)} больше</em>` : r <= .5 ? `, а сейчас в ${ruTimes(1 / r)} меньше` : ' — сейчас около нормы';
+      return `За последние 7 дней спутник заметил здесь <em>${fmt(s.n)} ${ruPl(s.n, 'очаг', 'очага', 'очагов')}</em>. Обычно в ${MON_LOC_RU[s.m]} за неделю около ${s.norm}${cmp}. Больше всего здесь горит в ${MON_LOC_RU[s.peak]}.`; } },
+  ky: { search:'Жер издөө: өлкө, шаар, облус…', p1:'Жыл', p5:'5 жыл', p10:'10 жыл', pall:'25 жыл', tg:'Telegram сводка', nowBtn:'Азыр', world:'Бүт дүйнө',
+    hint:'Басуу — өлкөнү тандоо · дөңгөлөк же +/− — масштаб · тартуу — аймак', hintIn:'Басуу — жакынкы чекит · тартуу — өз аймагыңыз · дөңгөлөк — масштаб', hintG:'Басуу — өлкөнү тандоо · тартуу — Жерди айлантуу',
+    sugKg:'Кыргызстан', sugWorld:'Мисалдар', noRes:'Эч нерсе табылган жок', calT:'Күйүү календары', calS:'Ар бир уяча — бир ай. Уячаны бассаңыз, ошол ай картада көрүнөт',
+    modeN:'Очоктор', modeA:'Нормага', lineT:y => `${y} жана норма`, lineS:(a, b) => `Норма — ${a}–${b} айлык медианасы, боз тилке — кадимки чачыроо`,
     howT:'Бул кантип эсептелген', howP:'Спутниктердин эки мууну өрттү ар башкача көрөт: жаңы VIIRS эски MODISке караганда майда очокторду бир нече эсе көп байкайт. Биз 25 жылдык MODISти VIIRS шкаласына которуп, өткөн менен азыркыны чынчыл салыштырууга мүмкүнчүлүк бердик.',
     harmT:'Гармонизациясыз — 2012-жылы жалган секирик', harmWorld:'Бүт дүйнө, жылына очоктор', harmLocal:'Бул аймак, жылына очоктор', wxT:'Өрт жана жаан', wxS:'2012–2025 сезон айлары · аба ырайы NASA POWER', srcT:'Маалымат',
     botP:'Ар күнү эртең менен @burn_beat_bot Кыргызстандын кызматтарына өрт коркунучун жөнөтөт: сезон, нормадан четтөө, аба ырайы, жаңы очоктор.',
-    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, кайра эсептелген), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (акыркы 7 күн) · аба ырайы NASA POWER · өсүмдүк өрттөрү гана, заводдор жана вулкандар алынып салынган',
+    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, кайра эсептелген), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (акыркы 7 күн) · аба ырайы NASA POWER, Open-Meteo · чек аралар Natural Earth, geoBoundaries · шаарлар GeoNames · өсүмдүк өрттөрү гана',
     mon:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'], monFull:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
     fires:'очок', toNorm:'нормага карата', normLow:'жылдын бул маалында дээрлик күйбөйт', phase:'Сезон', peakNow:'азыр чокусу', peakIn:n => `чокуга ${n} ай`, peakMonth:m => `чокусу: ${m}`,
     worst:'Эң оор жыл', yearNorm:'Адатта жылына', lastYear:y => `${y}-жылы`, norm:'Норма', raw:'Чийки маалымат', harm:'Гармонизацияланган',
-    many:'көп', few:'аз', above:'нормадан жогору', below:'нормадан төмөн', custom:'тандалган аймак', point:'Чекит', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очоктор CSV',
+    many:'көп', few:'аз', above:'нормадан жогору', below:'нормадан төмөн', area:'Тандалган аймак', near:n => `${n} жана айланасы`, point:'Чекит', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очоктор CSV', ptsOnlyKg:'Архивдин өзүнчө очоктору — Кыргызстан үчүн',
     validW:v => `Текшерүү: 2012–2019-жылдардын ар бири моделден кезек менен жашырылып, VIIRS көргөнү менен салыштырылды. Жылыш ${v.cell.bias_pct}% (гармонизациясыз ${v.raw.bias_pct}%), айлык ката ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} эсе аз.`,
     validK:(b, r) => `Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r}, жылыш ${b.bias_pct}%.`,
     rain:'Жаан, нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r => `r = ${r}: ${r < -0.25 ? 'жаандуу айларда өрт байкаларлык азыраак.' : 'байланыш алсыз.'}`,
-    ptsOnlyKg:'Өзүнчө очоктор — Кыргызстан үчүн', grid:'тор ≈100 км', gridKg:'тор ≈25 км · чекиттер — өзүнчө очоктор',
-    dangerT:'Өрт коркунучу', dangerS:'Бүгүн жана 3 күнгө алдыга · аба ырайы Open-Meteo', levels:{ low:'Төмөн', medium:'Орточо', high:'Жогору' },
-    why:{ peak:'сезондун чокусу', season:'өрт сезону', above:r => `нормадан ${r < 10 ? r.toFixed(1) : Math.round(r)} эсе жогору`, fires:n => `суткада ${n} очок`, hot:t => `ысык ${t}°`, dry:h => `кургак, нымдуулук ${h}%`, wind:w => `шамал ${w} км/саат`, rain:r => `жаан ${r} мм`, calm:'коркунуч факторлору жок' },
-    days:['Бүгүн','Эртең'], disc:'Бул шарттардын баасы, өрттүн божомолу эмес: тарых боюнча сезон, жаңы очоктор жана аба ырайынын божомолу. Telegram-боттогу формула.', wxErr:'Аба ырайынын божомолу азыр жеткиликсиз.',
-    villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', near:(n, km) => `${n} · ${km} км`, villNone:'Айылдардын жанында очок болгон жок.',
-    liveT:'Акыркы 7 күн', liveNone:'Акыркы 7 күндө бул аймакта спутниктер очок көргөн жок.', liveOutside:'Жаңы маалымат азырынча Борбор Азия үчүн гана бар.',
-    liveN:n => `7 күндө ${n} очок`, liveNow:'АЗЫР', liveDays:'акыркы 7 күн', newest:'Акыркысы',
-    storyLive:s => { const r = s.ratio, M = I18N.ky.monFull, cmp = r === null ? '' : r >= 2 ? `, азыр <em>${r < 10 ? r.toFixed(1) : Math.round(r)} эсе көп</em>` : r <= .5 ? `, азыр ${(1 / Math.max(r, .01)).toFixed(1)} эсе аз` : ', азыр нормага жакын';
-      return `Азыр ${s.whereKy}: акыркы 7 күндө спутник <em>${s.n} очок</em> байкады. Адатта ${M[s.m]} айында бир жумада болжол менен ${s.norm}${cmp}. Бул жерде эң көп ${M[s.peak]} айында күйөт.`; },
+    grid:'тор ≈100 км', gridKg:'тор ≈25 км · чекиттер — өзүнчө очоктор', gridLive:'чекиттер — акыркы 7 күндөгү очоктор',
+    liveT:'Акыркы 7 күн', liveNone:'Акыркы 7 күндө бул аймакта спутниктер очок көргөн жок.', liveN:n => `7 күндө ${fmt(n)} очок`, liveNow:'АЗЫР', liveDays:'акыркы 7 күн', liveMany:'Тизме үчүн аймак өтө чоң — картаны жакындатыңыз.',
+    dangerT:'Өрт коркунучу', dangerS:'Бүгүн жана 3 күнгө алдыга · аймактын борборундагы аба ырайы, Open-Meteo', levels:{ low:'Төмөн', medium:'Орточо', high:'Жогору' },
+    why:{ peak:'сезондун чокусу', season:'өрт сезону', above:r => `нормадан ${x10(r)} эсе жогору`, fires:n => `суткада ${n} очок`, hot:t => `ысык ${t}°`, dry:h => `кургак, нымдуулук ${h}%`, wind:w => `шамал ${w} км/саат`, rain:r => `жаан ${r} мм`, calm:'коркунуч факторлору жок' },
+    days:['Бүгүн','Эртең'], disc:'Бул шарттардын баасы, өрттүн божомолу эмес: тарых боюнча сезон, жаңы очоктор жана аба ырайынын божомолу. Telegram-боттогу формула.', wxErr:'Аба ырайынын божомолу азыр жеткиликсиз.', bigArea:'Мынчалык чоң аймак үчүн коркунуч эсептелбейт — кичирээк жерди тандаңыз.',
+    villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', villNone:'Айылдардын жанында очок болгон жок.',
     y2001:'2001: алгачкы жарым жылда бир гана спутник иштеген — баа так эмес',
-    story:s => {
-      const mo = i => `<em>${I18N.ky.monFull[i]}</em>`;
-      const peak = s.peak2 !== null ? `${mo(s.peak)} жана ${mo(s.peak2)} айларында` : `${mo(s.peak)} айында`;
-      let cmp;
-      if (s.ratio === null) cmp = 'жылдын бул маалында дээрлик күйбөйт';
-      else if (s.ratio >= 2) cmp = `<em>нормадан ${s.ratio < 10 ? s.ratio.toFixed(1) : Math.round(s.ratio)} эсе көп</em>`;
-      else if (s.ratio <= .5 && s.ratio > 0) cmp = `нормадан ${(1 / s.ratio).toFixed(1)} эсе аз`;
-      else if (s.ratio === 0) cmp = 'бир да очок жок';
-      else if (Math.abs(s.anom) < 15) cmp = 'нормага жакын';
-      else cmp = s.anom > 0 ? `<em>нормадан ${s.anom}% көп</em>` : `нормадан ${-s.anom}% аз`;
-      const live = s.live === null ? '' : s.live > 0 ? ` <span class="lv">Акыркы 7 күндө спутниктер ${s.live} очок байкады.</span>` : ' Акыркы 7 күндө очок болгон жок.';
-      return `${s.whereKy} эң көп ${peak} күйөт. ${s.y}-жылдын ${I18N.ky.monFull[s.m]} айында — ${s.n} очок, ${cmp}.${live}`; } },
-  en: { tagline:'when and where it burns · NASA MODIS + VIIRS', p1:'Year', p5:'5 years', p10:'10 years', pall:'All 25 years', tg:'Telegram brief', nowBtn:'Now',
-    hint:'Wheel or +/− — zoom · click — place · drag — area', hintG:'Wheel or + — zoom in · drag — spin the Earth · click — place', calT:'Burning calendar', calS:'Each cell is a month. Click a cell to show that month on the map',
-    modeN:'Hotspots', modeA:'vs normal', lineT:y => `${y} vs normal`, lineS:(a, b) => `Normal = monthly median ${a}–${b}`,
+    story:s => { const M = I18N.ky.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> жана <em>${M[s.peak2]}</em> айларында` : `<em>${M[s.peak]}</em> айында`;
+      let cmp; if (s.ratio === null) cmp = 'жылдын бул маалында дээрлик күйбөйт'; else if (s.ratio === 0) cmp = 'бир да очок жок';
+      else if (s.ratio >= 2) cmp = `<em>нормадан ${x10(s.ratio)} эсе көп</em>`; else if (s.ratio <= .5) cmp = `нормадан ${x10(1 / s.ratio)} эсе аз`;
+      else if (Math.abs(s.anom) < 15) cmp = 'нормага жакын'; else cmp = s.anom > 0 ? `<em>нормадан ${s.anom}% көп</em>` : `нормадан ${-s.anom}% аз`;
+      return `Бул жерде эң көп ${peak} күйөт. ${s.y}-жылдын ${M[s.m]} айында — ${s.n} очок, ${cmp}.`; },
+    storyLive:s => { const r = s.ratio, M = I18N.ky.monFull, cmp = r === null || r === 0 ? '' : r >= 2 ? `, азыр <em>${x10(r)} эсе көп</em>` : r <= .5 ? `, азыр ${x10(1 / r)} эсе аз` : ', азыр нормага жакын';
+      return `Акыркы 7 күндө спутник бул жерде <em>${fmt(s.n)} очок</em> байкады. Адатта ${M[s.m]} айында бир жумада болжол менен ${s.norm}${cmp}. Бул жерде эң көп ${M[s.peak]} айында күйөт.`; } },
+  en: { search:'Find a place: country, city, region…', p1:'Year', p5:'5 years', p10:'10 years', pall:'All 25 years', tg:'Telegram brief', nowBtn:'Now', world:'World',
+    hint:'Click — pick a country · wheel or +/− — zoom · drag — area', hintIn:'Click — nearby point · drag — your own area · wheel — zoom', hintG:'Click — pick a country · drag — spin the Earth',
+    sugKg:'Kyrgyzstan', sugWorld:'Examples', noRes:'Nothing found', calT:'Burning calendar', calS:'Each cell is a month. Click a cell to show that month on the map',
+    modeN:'Hotspots', modeA:'vs normal', lineT:y => `${y} vs normal`, lineS:(a, b) => `Normal = monthly median ${a}–${b}; grey band = the usual range`,
     howT:'How it is calculated', howP:'Two generations of satellites see fire differently: the new VIIRS spots several times more small fires than the old MODIS. We converted 25 years of MODIS to the VIIRS scale so that the past and the present can be compared honestly.',
     harmT:'Without harmonization: a false jump in 2012', harmWorld:'Whole world, hotspots per year', harmLocal:'This area, hotspots per year', wxT:'Fire and rain', wxS:'Fire-season months 2012–2025 · weather: NASA POWER', srcT:'Data',
     botP:'Every morning @burn_beat_bot sends Kyrgyz services a fire-danger rating: season, anomaly vs normal, weather and fresh detections.',
-    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, converted), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (last 7 days) · weather NASA POWER · vegetation fires only, factories and volcanoes removed · method and validation: docs/METHOD.md',
+    footer:'NASA FIRMS: MODIS C6.1 (2001–2011, converted), VIIRS S-NPP (2012–2025), VIIRS NOAA-20/21 (last 7 days) · weather NASA POWER, Open-Meteo · borders Natural Earth, geoBoundaries · cities GeoNames · vegetation fires only, factories, gas flares and volcanoes removed · method and validation: docs/METHOD.md',
     mon:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], monFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
     fires:'hotspots', toNorm:'vs normal', normLow:'it hardly burns here at this time of year', phase:'Season', peakNow:'peak now', peakIn:n => `peak in ${n} mo.`, peakMonth:m => `peak: ${m}`,
     worst:'Worst year', yearNorm:'Usually per year', lastYear:y => `In ${y}`, norm:'Normal', raw:'Raw data', harm:'Harmonized',
-    many:'more', few:'fewer', above:'above normal', below:'below normal', custom:'the selected area', point:'Point', csvCal:'⬇ Calendar CSV', csvPts:'⬇ Hotspots CSV',
+    many:'more', few:'fewer', above:'above normal', below:'below normal', area:'Selected area', near:n => `${n} area`, point:'Point', csvCal:'⬇ Calendar CSV', csvPts:'⬇ Hotspots CSV', ptsOnlyKg:'Archive hotspots — Kyrgyzstan only',
     validW:v => `Validation: each year 2012–2019 was hidden from the model in turn and compared with what VIIRS really saw. Bias ${v.cell.bias_pct}% (${v.raw.bias_pct}% without harmonization), monthly error ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)}× smaller.`,
     validK:(b, r) => `Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS, bias ${b.bias_pct}%.`,
     rain:'Rainfall, % of normal', fireAnom:'Hotspots, % vs normal', wxNote:r => `r = ${r}: ${r < -0.25 ? 'wet months burn noticeably less.' : 'weak link.'}`,
-    ptsOnlyKg:'Individual hotspots — Kyrgyzstan only', grid:'grid ≈100 km', gridKg:'grid ≈25 km · dots are individual hotspots',
-    dangerT:'Fire danger', dangerS:'Today and the next 3 days · weather: Open-Meteo', levels:{ low:'Low', medium:'Medium', high:'High' },
-    why:{ peak:'peak of the season', season:'fire season', above:r => `${r < 10 ? r.toFixed(1) : Math.round(r)}× above normal`, fires:n => `${n} hotspots in 24 h`, hot:t => `hot ${t}°`, dry:h => `dry, humidity ${h}%`, wind:w => `wind up to ${w} km/h`, rain:r => `rain ${r} mm`, calm:'no risk factors' },
-    days:['Today','Tomorrow'], disc:'A rating of conditions, not a fire forecast: season from 2001–2025 history, fresh detections and the weather forecast. Same formula as the Telegram bot.', wxErr:'Weather forecast is unavailable right now.',
-    villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', near:(n, km) => `near ${n}, ${km} km`, villNone:'No hotspots near villages.',
-    liveT:'Last 7 days', liveNone:'Satellites saw no hotspots in this area in the last 7 days.', liveOutside:'Fresh data is available for Central Asia only so far.',
-    liveN:n => `${n} hotspots in 7 days`, liveNow:'NOW', liveDays:'last 7 days', newest:'Latest',
-    storyLive:s => { const r = s.ratio, M = I18N.en.monFull, cmp = r === null ? '' : r >= 2 ? `; right now it is <em>${r < 10 ? r.toFixed(1) : Math.round(r)}× that</em>` : r <= .5 ? `; right now ${(1 / Math.max(r, .01)).toFixed(1)}× less` : '; right now about normal';
-      return `Right now in ${s.whereEn}: the satellite spotted <em>${s.n} ${s.n === 1 ? 'hotspot' : 'hotspots'}</em> in the last 7 days. A normal ${M[s.m]} week here has about ${s.norm}${cmp}. It burns most in ${M[s.peak]}.`; },
+    grid:'grid ≈100 km', gridKg:'grid ≈25 km · dots are individual hotspots', gridLive:'dots are hotspots of the last 7 days',
+    liveT:'Last 7 days', liveNone:'Satellites saw no hotspots in this area in the last 7 days.', liveN:n => `${fmt(n)} ${n === 1 ? 'hotspot' : 'hotspots'} in 7 days`, liveNow:'NOW', liveDays:'last 7 days', liveMany:'The area is too large for a list — zoom in.',
+    dangerT:'Fire danger', dangerS:'Today and the next 3 days · Open-Meteo weather at the centre of the area', levels:{ low:'Low', medium:'Medium', high:'High' },
+    why:{ peak:'peak of the season', season:'fire season', above:r => `${x10(r)}× above normal`, fires:n => `${n} hotspots in 24 h`, hot:t => `hot ${t}°`, dry:h => `dry, humidity ${h}%`, wind:w => `wind up to ${w} km/h`, rain:r => `rain ${r} mm`, calm:'no risk factors' },
+    days:['Today','Tomorrow'], disc:'A rating of conditions, not a fire forecast: season from 2001–2025 history, fresh detections and the weather forecast. Same formula as the Telegram bot.', wxErr:'Weather forecast is unavailable right now.', bigArea:'Danger is not rated for such a large area — pick a smaller place.',
+    villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', villNone:'No hotspots near villages.',
     y2001:'2001: only one satellite for the first half of the year — a rougher estimate',
-    story:s => {
-      const M = I18N.en.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> and <em>${M[s.peak2]}</em>` : `<em>${M[s.peak]}</em>`;
-      let cmp;
-      if (s.ratio === null) cmp = 'it hardly burns here at this time of year';
-      else if (s.ratio >= 2) cmp = `<em>${s.ratio < 10 ? s.ratio.toFixed(1) : Math.round(s.ratio)}× the normal</em>`;
-      else if (s.ratio <= .5 && s.ratio > 0) cmp = `${(1 / s.ratio).toFixed(1)}× below normal`;
-      else if (s.ratio === 0) cmp = 'not a single hotspot';
-      else if (Math.abs(s.anom) < 15) cmp = 'about normal';
-      else cmp = s.anom > 0 ? `<em>${s.anom}% above normal</em>` : `${-s.anom}% below normal`;
-      const live = s.live === null ? '' : s.live > 0 ? ` <span class="lv">Satellites spotted ${s.live} ${s.live === 1 ? 'hotspot' : 'hotspots'} in the last 7 days.</span>` : ' No hotspots in the last 7 days.';
-      return `${s.whereEn} burns most in ${peak}. ${M[s.m]} ${s.y}: ${s.n} ${s.nRaw === 1 ? 'hotspot' : 'hotspots'}, ${cmp}.${live}`; } },
+    story:s => { const M = I18N.en.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> and <em>${M[s.peak2]}</em>` : `<em>${M[s.peak]}</em>`;
+      let cmp; if (s.ratio === null) cmp = 'it hardly burns here at this time of year'; else if (s.ratio === 0) cmp = 'not a single hotspot';
+      else if (s.ratio >= 2) cmp = `<em>${x10(s.ratio)}× the normal</em>`; else if (s.ratio <= .5) cmp = `${x10(1 / s.ratio)}× below normal`;
+      else if (Math.abs(s.anom) < 15) cmp = 'about normal'; else cmp = s.anom > 0 ? `<em>${s.anom}% above normal</em>` : `${-s.anom}% below normal`;
+      return `It burns most here in ${peak}. ${M[s.m]} ${s.y}: ${s.n} ${s.nRaw === 1 ? 'hotspot' : 'hotspots'}, ${cmp}.`; },
+    storyLive:s => { const r = s.ratio, M = I18N.en.monFull, cmp = r === null || r === 0 ? '' : r >= 2 ? `; right now it is <em>${x10(r)}× that</em>` : r <= .5 ? `; right now ${x10(1 / r)}× less` : '; right now about normal';
+      return `The satellite spotted <em>${fmt(s.n)} ${s.n === 1 ? 'hotspot' : 'hotspots'}</em> here in the last 7 days. A normal ${M[s.m]} week has about ${s.norm}${cmp}. It burns most here in ${M[s.peak]}.`; } },
 };
-// presets: key, bbox [S, W, N, E], names, weather key, RU locative, KY "в ..." form, EN name in sentence
-const PRESETS = [
-  ['world', null, { ru:'Весь мир', ky:'Бүт дүйнө', en:'World' }, null, 'мир', 'Дүйнөдө', 'The planet'],
-  ['amazon', [-15,-70,0,-45], { ru:'Амазония', ky:'Амазония', en:'Amazon' }, null, 'Амазонии', 'Амазонияда', 'The Amazon'],
-  ['sahel', [4,-18,14,35], { ru:'Сахель', ky:'Сахель', en:'Sahel' }, null, 'Сахеле', 'Сахелде', 'The Sahel'],
-  ['siberia', [50,90,70,140], { ru:'Сибирь', ky:'Сибирь', en:'Siberia' }, null, 'Сибири', 'Сибирде', 'Siberia'],
-  ['australia', [-40,112,-10,155], { ru:'Австралия', ky:'Австралия', en:'Australia' }, null, 'Австралии', 'Австралияда', 'Australia'],
-  ['casia', [35,46,56,88], { ru:'Центральная Азия', ky:'Борбор Азия', en:'Central Asia' }, null, 'Центральной Азии', 'Борбор Азияда', 'Central Asia'],
-  ['|'],
-  ['kg', [39.1,69.2,43.3,80.3], { ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyrgyzstan' }, 'kg', 'Кыргызстане', 'Кыргызстанда', 'Kyrgyzstan'],
-  ['chui', [42.2,72.8,43.3,76.0], { ru:'Чуй', ky:'Чүй', en:'Chui' }, 'chui', 'Чуйской области', 'Чүй облусунда', 'Chui region'],
-  ['talas', [41.9,70.9,42.8,73.2], { ru:'Талас', ky:'Талас', en:'Talas' }, 'talas', 'Таласской области', 'Талас облусунда', 'Talas region'],
-  ['issykkul', [41.6,76.0,43.0,80.3], { ru:'Иссык-Куль', ky:'Ысык-Көл', en:'Issyk-Kul' }, 'issykkul', 'Иссык-Кульской области', 'Ысык-Көл облусунда', 'Issyk-Kul region'],
-  ['naryn', [40.5,73.5,42.3,78.5], { ru:'Нарын', ky:'Нарын', en:'Naryn' }, 'naryn', 'Нарынской области', 'Нарын облусунда', 'Naryn region'],
-  ['jalalabad', [40.6,70.6,42.4,74.0], { ru:'Джалал-Абад', ky:'Жалал-Абад', en:'Jalal-Abad' }, 'jalalabad', 'Джалал-Абадской области', 'Жалал-Абад облусунда', 'Jalal-Abad region'],
-  ['osh', [39.3,72.4,40.9,75.0], { ru:'Ош', ky:'Ош', en:'Osh' }, 'osh', 'Ошской области', 'Ош облусунда', 'Osh region'],
-  ['batken', [39.5,69.2,40.4,72.4], { ru:'Баткен', ky:'Баткен', en:'Batken' }, 'batken', 'Баткенской области', 'Баткен облусунда', 'Batken region'],
-];
-const KG_EXTENT = [39.1,69.2,43.3,80.3];
+const KGR = { kg:{ ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyrgyzstan' }, chui:{ ru:'Чуйская область', ky:'Чүй облусу', en:'Chui region' }, talas:{ ru:'Таласская область', ky:'Талас облусу', en:'Talas region' },
+  issykkul:{ ru:'Иссык-Кульская область', ky:'Ысык-Көл облусу', en:'Issyk-Kul region' }, naryn:{ ru:'Нарынская область', ky:'Нарын облусу', en:'Naryn region' },
+  jalalabad:{ ru:'Джалал-Абадская область', ky:'Жалал-Абад облусу', en:'Jalal-Abad region' }, osh:{ ru:'Ошская область', ky:'Ош облусу', en:'Osh region' }, batken:{ ru:'Баткенская область', ky:'Баткен облусу', en:'Batken region' } };
+const EXAMPLES = [['amazon', [-15,-70,0,-45], { ru:'Амазония', ky:'Амазония', en:'Amazon' }], ['sahel', [4,-18,14,35], { ru:'Сахель', ky:'Сахель', en:'Sahel' }],
+  ['siberia', [50,90,70,140], { ru:'Сибирь', ky:'Сибирь', en:'Siberia' }], ['australia', [-40,112,-10,155], { ru:'Австралия', ky:'Австралия', en:'Australia' }], ['casia', [35,46,56,88], { ru:'Центральная Азия', ky:'Борбор Азия', en:'Central Asia' }]];
+const KG_EXTENT = [39.1,69.2,43.3,80.3], KG_NUM = '417';
 
 let lang = 'ru'; try { lang = localStorage.getItem('bb_lang') || 'ru'; } catch (e) {}
 const T = () => I18N[lang];
@@ -278,46 +257,57 @@ const median = a => { a = a.filter(v => v != null).sort((x, y) => x - y); if (!a
 const mean = a => a.reduce((s, x) => s + x, 0) / (a.length || 1);
 const corr = (a, b) => { const ma = mean(a), mb = mean(b); let n = 0, da = 0, db = 0; a.forEach((x, i) => { n += (x-ma)*(b[i]-mb); da += (x-ma)**2; db += (b[i]-mb)**2; }); return da && db ? n / Math.sqrt(da*db) : 0; };
 const zs = a => { const m = mean(a), s = Math.sqrt(mean(a.map(x => (x-m)**2))) || 1; return a.map(x => (x-m)/s); };
+const rewind = f => { if (d3.geoArea(f) > 2 * Math.PI) { const rv = r => r.slice().reverse(); f.geometry.coordinates = f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(rv) : f.geometry.coordinates.map(p => p.map(rv)); } return f; };
 
-// ======================= state =======================
-let MONTHS, N, SUMMARY, KGMETA, WEATHER, LIVE, world, REGIONS = [], POINTS = new Map();
-// fast planar point-in-polygon (small regions, lon/lat), with a bounding-box pre-check per region
+// =============================== state ===============================
+let MONTHS, N, SUMMARY, KGMETA, WEATHER, LSUM, world, COUNTRIES = [], NUM2A2 = {}, REGIONS = [], POINTS = new Map();
+let gCells = [], kgCells = [], VILL = [], VGRID = new Map(), CITIES = null, CGRID = null, TILES = new Map();
+let sel = { kind:'world' }, selCells = null, liveCellsSel = null, livePts = null;
+let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
+let globe = true, rot = [-20, -15], spinning = true;
+const charts = {};
+const isGlobe = () => globe && sel.kind === 'world';
+
+let DN = {};
+const countryName = f => { const a2 = NUM2A2[f.id]; try { if (a2) { DN[lang] = DN[lang] || new Intl.DisplayNames([lang], { type:'region' }); const n = DN[lang].of(a2); if (n && n !== a2) return n; } } catch (e) {} return f.properties.name; };
+function label() {
+  if (sel.kind === 'world') return T().world;
+  if (sel.kind === 'kg') return KGR[sel.key][lang];
+  if (sel.kind === 'country') return countryName(sel.f);
+  return sel.name ? sel.name[lang] || sel.name.ru : T().area;
+}
+
 const ringHas = (ring, x, y) => { let k = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j];
   if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) k = !k; } return k; };
 const polyHas = (poly, x, y) => ringHas(poly[0], x, y) && !poly.slice(1).some(h => ringHas(h, x, y));
+const featHas = (f, lo, la) => { const b = f.bb; if (b[0] <= b[2] ? (lo < b[0] || lo > b[2]) : (lo < b[0] && lo > b[2])) return false; if (la < b[1] || la > b[3]) return false; return d3.geoContains(f, [lo, la]); };
 const regionOf = (lo, la) => { for (const f of REGIONS) { const b = f.bb; if (lo < b[0] || lo > b[2] || la < b[1] || la > b[3]) continue;
   const g = f.geometry; if (g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la))) return f.properties.key; } return null; };
-const inRegion = reg => sel.pre && sel.pre[3] && (sel.pre[3] === 'kg' ? reg != null : reg === sel.pre[3]);
-const regionMode = () => !!(sel.pre && sel.pre[3] && REGIONS.length);
-let gCells = [], kgCells = [], VILL = [], VGRID = new Map();
-const vKey = (la, lo) => `${Math.floor(la * 10)}|${Math.floor(lo * 10)}`;
+const inKgKey = (reg, key) => key === 'kg' ? reg != null : reg === key;
+
 const kmBetween = (a, b, c, d) => { const x = (d - b) * Math.cos((a + c) / 2 * Math.PI / 180), y = c - a; return 111.2 * Math.sqrt(x * x + y * y); };
-function nearestVillage(la, lo, maxKm = 10) {     // grid index of 0.1° buckets
-  let best = -1, bd = maxKm; const r = Math.ceil(maxKm / 11) + 1, i0 = Math.floor(la * 10), j0 = Math.floor(lo * 10);
-  for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) for (const k of VGRID.get(`${i}|${j}`) || []) {
-    const d = kmBetween(la, lo, VILL[k][2], VILL[k][3]); if (d < bd) { bd = d; best = k; } }
+function nearestIn(list, grid, la, lo, maxKm) { let best = -1, bd = maxKm; const r = Math.ceil(maxKm / 11) + 1, i0 = Math.floor(la * 10), j0 = Math.floor(lo * 10);
+  for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) for (const k of grid.get(`${i}|${j}`) || []) { const d = kmBetween(la, lo, list[k][2], list[k][3]); if (d < bd) { bd = d; best = k; } }
   return best < 0 ? null : [best, bd]; }
 const villName = k => lang === 'en' ? VILL[k][1] : lang === 'ky' ? (VILL[k][5] || VILL[k][0]) : VILL[k][0];
-let sel = { key:'world', bbox:null, name:null, src:'global' };
-let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
-let globe = true, rot = [-20, -15], spinning = true;
-const isGlobe = () => globe && !sel.bbox;
-const charts = {};
+const cityName = k => lang === 'en' || !CITIES[k][1] ? CITIES[k][0] : CITIES[k][1];
+async function ensureCities() { if (CITIES) return; const c = await fetch('data/cities.json').then(r => r.json()).catch(() => []); CGRID = new Map();
+  c.forEach((x, k) => { const key = `${Math.floor(x[2] * 10)}|${Math.floor(x[3] * 10)}`; if (!CGRID.has(key)) CGRID.set(key, []); CGRID.get(key).push(k); }); CITIES = c; }
+function placeName(la, lo) {
+  if (VILL.length && la > 39 && la < 43.5 && lo > 69 && lo < 80.5) { const v = nearestIn(VILL, VGRID, la, lo, 15); if (v) return [villName(v[0]), v[1]]; }
+  if (CITIES) { const c = nearestIn(CITIES, CGRID, la, lo, 80); if (c) return [cityName(c[0]), c[1]]; }
+  return null; }
 
-// ======================= map =======================
+// =============================== map ===============================
 const C = { land:$('land'), fire:$('fire'), marks:$('marks') };
 const ctx = Object.fromEntries(Object.entries(C).map(([k, c]) => [k, c.getContext('2d')]));
-let proj, path, W, H, ptsG = [], ptsK = [];
+let proj, path, W, H, ptsG = [];
 const sprite = document.createElement('canvas'); sprite.width = sprite.height = 64;
 { const g = sprite.getContext('2d'), r = g.createRadialGradient(32,32,0,32,32,32);
-  r.addColorStop(0,'rgba(255,240,200,1)'); r.addColorStop(.2,'rgba(255,160,50,.85)'); r.addColorStop(.5,'rgba(255,80,20,.3)'); r.addColorStop(1,'rgba(255,60,0,0)');
-  g.fillStyle = r; g.fillRect(0,0,64,64); }
-let GRID = 3, offB, offBCtx; let off, offCtx, img, buf, pix, LUT, P99G, P99K;
+  r.addColorStop(0,'rgba(255,240,200,1)'); r.addColorStop(.2,'rgba(255,160,50,.85)'); r.addColorStop(.5,'rgba(255,80,20,.3)'); r.addColorStop(1,'rgba(255,60,0,0)'); g.fillStyle = r; g.fillRect(0,0,64,64); }
+let GRID = 3, off, offCtx, img, buf, pix, offB, offBCtx, LUT, LUTLIVE, P99G, P99K, XYZ = null, LCELLS;
 const heat = d3.scaleSequential(t => d3.interpolateInferno(.25 + .75 * t)).clamp(true);
-
-function boxGeo(b) { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8;
-  pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); }
-  return { type:'MultiPoint', coordinates:pts }; }
+const boxGeo = b => { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); } return { type:'MultiPoint', coordinates:pts }; };
 const zoomed = () => proj.scale() > 600;
 
 function layout() {
@@ -325,16 +315,17 @@ function layout() {
   Object.values(C).forEach(c => { c.width = W * DPR; c.height = H * DPR; });
   Object.values(ctx).forEach(g => g.setTransform(DPR,0,0,DPR,0,0));
   proj = d3.geoEqualEarth();
-  if (sel.bbox) { const b = sel.bbox, pad = Math.max(1, (b[2]-b[0]) * .3);
-    proj.rotate([-(b[1] + b[3]) / 2, 0]).fitExtent([[20, 44], [W - 20, H - 74]], boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3])); }
+  if (sel.kind !== 'world') { const b = sel.bbox, pad = Math.max(.6, (b[2]-b[0]) * .18), lon0 = sel.center ? sel.center[0] : (b[1] + b[3]) / 2;
+    proj.rotate([-lon0, 0]).fitExtent([[20, 44], [W - 20, H - 74]], sel.geo || boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3])); }
   else if (isGlobe()) proj = d3.geoOrthographic().rotate(rot).fitExtent([[20, 50], [W - 20, H - 70]], { type:'Sphere' });
   else proj.fitExtent([[10, 44], [W - 10, H - 64]], { type:'Sphere' });
-  $('stage').classList.toggle('globe', isGlobe()); $('hint').textContent = isGlobe() ? T().hintG : T().hint; $('viewBtn').textContent = sel.bbox ? '' : (globe ? '🗺 2D' : '🌍 3D'); $('viewBtn').style.display = sel.bbox ? 'none' : '';
+  $('stage').classList.toggle('globe', isGlobe());
+  $('hint').textContent = isGlobe() ? T().hintG : sel.kind === 'world' ? T().hint : T().hintIn;
+  $('viewBtn').textContent = globe ? '🗺 2D' : '🌍 3D'; $('viewBtn').parentElement.style.display = sel.kind === 'world' ? '' : 'none';
   drawBase();
-  if (isGlobe()) { ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks(); return; }
-  ptsG = gCells.map(c => proj([c.lo, c.la])); ptsK = kgCells.map(c => proj([c.lo, c.la]));
-  buildPix();
-  $('scaleNote').textContent = zoomed() ? (sel.src === 'kg' ? T().gridKg : T().grid) : '';
+  ptsG = isGlobe() ? [] : gCells.map(c => proj([c.lo, c.la]));
+  if (!isGlobe()) buildPix();
+  $('scaleNote').textContent = liveOn && zoomed() ? T().gridLive : zoomed() ? (selSrc() === 'kg' ? T().gridKg : T().grid) : '';
   ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks();
 }
 function drawBase() {
@@ -345,315 +336,329 @@ function drawBase() {
   g.beginPath(); path({ type:'Sphere' }); g.fillStyle = '#08080b'; g.fill();
   if (!isGlobe()) { g.beginPath(); path(d3.geoGraticule10()); g.strokeStyle = 'rgba(255,255,255,.03)'; g.lineWidth = .6; g.stroke(); }
   g.beginPath(); path(isGlobe() && spinning ? world.landLite : world.land); g.fillStyle = '#1c1b21'; g.fill();
-  if (!isGlobe() || !spinning) { g.beginPath(); path(world.borders); } g.strokeStyle = sel.bbox ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)'; g.lineWidth = sel.bbox ? 1 : .6; g.stroke();
-  if (sel.src === 'kg' && REGIONS.length) { g.beginPath(); REGIONS.forEach(f => path(f)); g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = .8; g.stroke(); }
+  if (!isGlobe() || !spinning) { g.beginPath(); path(world.borders); g.strokeStyle = sel.kind !== 'world' ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)'; g.lineWidth = sel.kind !== 'world' ? 1 : .6; g.stroke(); }
+  if (selSrc() === 'kg' && REGIONS.length) { g.beginPath(); REGIONS.forEach(f => path(f)); g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = .8; g.stroke(); }
 }
-// globe: visibility by dot product with the view centre (cheap), project only the front hemisphere
-let XYZ = null;
+function buildPix() {
+  GRID = 3; const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
+  off = document.createElement('canvas'); off.width = gw; off.height = gh; offCtx = off.getContext('2d'); img = offCtx.createImageData(gw, gh); buf = new Uint32Array(img.data.buffer);
+  pix = new Int32Array(ptsG.length).fill(-1);
+  ptsG.forEach((p, i) => { if (!p) return; const x = Math.round(p[0]/GRID), y = Math.round(p[1]/GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y*gw + x; });
+}
 function globePix() {
-  GRID = Math.max(3, Math.round(proj.scale() * Math.PI / 180));        // one pixel ≈ one 1° cell at the globe centre
+  GRID = Math.max(3, Math.round(proj.scale() * Math.PI / 180));
   if (!XYZ) { XYZ = new Float32Array(gCells.length * 3); gCells.forEach((c, i) => { const la = c.la * Math.PI / 180, lo = c.lo * Math.PI / 180;
     XYZ[i*3] = Math.cos(la) * Math.cos(lo); XYZ[i*3+1] = Math.cos(la) * Math.sin(lo); XYZ[i*3+2] = Math.sin(la); }); }
   const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
   if (!buf || off.width !== gw || off.height !== gh) { off = document.createElement('canvas'); off.width = gw; off.height = gh; offCtx = off.getContext('2d'); img = offCtx.createImageData(gw, gh); buf = new Uint32Array(img.data.buffer); }
   if (!pix || pix.length !== gCells.length) pix = new Int32Array(gCells.length);
   const la0 = -rot[1] * Math.PI / 180, lo0 = -rot[0] * Math.PI / 180, cx = Math.cos(la0) * Math.cos(lo0), cy = Math.cos(la0) * Math.sin(lo0), cz = Math.sin(la0);
-  // orthographic: east unit e = (-sin lo0, cos lo0, 0), north n = (-sin la0 cos lo0, -sin la0 sin lo0, cos la0)
-  const ex = -Math.sin(lo0), ey = Math.cos(lo0), nx = -Math.sin(la0) * Math.cos(lo0), ny = -Math.sin(la0) * Math.sin(lo0), nz = Math.cos(la0);
-  const [tx, ty] = proj.translate(), R = proj.scale();
+  const ex = -Math.sin(lo0), ey = Math.cos(lo0), nx = -Math.sin(la0) * Math.cos(lo0), ny = -Math.sin(la0) * Math.sin(lo0), nz = Math.cos(la0), [tx, ty] = proj.translate(), R = proj.scale();
   for (let i = 0; i < gCells.length; i++) { pix[i] = -1; const X = XYZ[i*3], Y = XYZ[i*3+1], Z = XYZ[i*3+2]; if (X * cx + Y * cy + Z * cz < .06) continue;
     const x = Math.round((tx + R * (X * ex + Y * ey)) / GRID), y = Math.round((ty - R * (X * nx + Y * ny + Z * nz)) / GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y * gw + x; }
 }
-function buildPix() {
-  GRID = 3;
-  const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
-  off = document.createElement('canvas'); off.width = gw; off.height = gh; offCtx = off.getContext('2d');
-  img = offCtx.createImageData(gw, gh); buf = new Uint32Array(img.data.buffer);
-  pix = new Int32Array(ptsG.length).fill(-1);
-  const ctr = isGlobe() ? [-rot[0], -rot[1]] : null;
-  ptsG.forEach((p, i) => { if (ctr && d3.geoDistance([gCells[i].lo, gCells[i].la], ctr) > 1.5) return; if (!p) return; const x = Math.round(p[0]/GRID), y = Math.round(p[1]/GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y*gw + x; });
+function paintGrid(getV, lut, lmax) {
+  const g = ctx.fire; buf.fill(0);
+  for (let i = 0; i < gCells.length; i++) { const q = pix[i], n = getV(i); if (q < 0 || !n) continue;
+    const v = Math.min(255, Math.round(255 * Math.log1p(n) / lmax)); if (buf[q] >>> 0 < lut[v] >>> 0) buf[q] = lut[v]; }
+  offCtx.putImageData(img, 0, 0); g.globalCompositeOperation = 'lighter';
+  if (isGlobe()) {
+    if (!offB || offB.width !== off.width || offB.height !== off.height) { offB = document.createElement('canvas'); offB.width = off.width; offB.height = off.height; offBCtx = offB.getContext('2d'); }
+    offBCtx.clearRect(0, 0, offB.width, offB.height); offBCtx.filter = 'blur(1.2px)'; offBCtx.drawImage(off, 0, 0); offBCtx.filter = 'none';
+    g.imageSmoothingEnabled = true; g.globalAlpha = 1; g.drawImage(offB, 0, 0, off.width * GRID, off.height * GRID); g.globalAlpha = .55; g.drawImage(off, 0, 0, off.width * GRID, off.height * GRID);
+  } else { g.filter = 'blur(4px)'; g.globalAlpha = .9; g.drawImage(off, 0, 0, W, H); g.filter = 'none'; g.globalAlpha = .6; g.drawImage(off, 0, 0, W, H); }
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
 }
-
-// cell square on screen (crisp, honest about the 1° / 0.25° grid)
 function cellRect(la, lo, d) { const a = proj([lo - d, la + d]), b = proj([lo + d, la - d]); return a && b ? [a[0], a[1], b[0] - a[0], b[1] - a[1]] : null; }
-
+let livePhase = 0;
 function drawFire(fade) {
   const g = ctx.fire;
-  if (isGlobe() && !liveOn) { globePix(); fade = 1; }
-  if (liveOn) { g.clearRect(0,0,W,H); drawLive(); return; }
-  g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade})`; g.fillRect(0,0,W,H);
+  if (isGlobe()) globePix();
+  if (liveOn) { g.clearRect(0,0,W,H); if (!zoomed()) paintGrid(i => LCELLS[i], LUTLIVE, Math.log1p(40)); drawLivePoints(); return; }
+  g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${isGlobe() ? 1 : fade})`; g.fillRect(0,0,W,H); g.globalCompositeOperation = 'source-over';
   if (zoomed()) {
-    g.globalCompositeOperation = 'source-over'; g.clearRect(0,0,W,H);
-    const kg = sel.src === 'kg', cells = kg ? kgCells : gCells, d = kg ? .125 : .5, lm = Math.log1p(kg ? P99K : P99G);
+    g.clearRect(0,0,W,H);
+    const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, d = kg ? .125 : .5, lm = Math.log1p(kg ? P99K : P99G);
     cells.forEach(c => { const n = c.h[cur]; if (n < .5) return; const r = cellRect(c.la, c.lo, d); if (!r || r[0] > W || r[1] > H || r[0] + r[2] < 0 || r[1] + r[3] < 0) return;
       const v = Math.min(1, Math.log1p(n) / lm); g.fillStyle = heat(v); g.globalAlpha = .25 + .55 * v; g.fillRect(r[0] + .5, r[1] + .5, Math.max(1, r[2] - 1), Math.max(1, r[3] - 1)); });
     g.globalAlpha = 1;
-    if (kg) {                                         // individual hotspots of this month on top
-      const pts = (POINTS.get(MONTHS[cur]) || []).filter(p => !regionMode() || inRegion(p[2]));
-      g.globalCompositeOperation = 'lighter';
-      for (const [la, lo] of pts) { const p = proj([lo, la]); if (!p) continue; g.globalAlpha = .55; g.drawImage(sprite, p[0] - 6, p[1] - 6, 12, 12); }
-      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.fillStyle = '#fff4e0';
-      for (const [la, lo] of pts) { const p = proj([lo, la]); if (p) { g.beginPath(); g.arc(p[0], p[1], 1.4, 0, 7); g.fill(); } }
-    }
+    if (kg) { const pts = (POINTS.get(MONTHS[cur]) || []).filter(p => sel.contains(p[1], p[0]));
+      g.globalCompositeOperation = 'lighter'; for (const [la, lo] of pts) { const p = proj([lo, la]); if (p) { g.globalAlpha = .55; g.drawImage(sprite, p[0] - 6, p[1] - 6, 12, 12); } }
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.fillStyle = '#fff4e0'; for (const [la, lo] of pts) { const p = proj([lo, la]); if (p) { g.beginPath(); g.arc(p[0], p[1], 1.4, 0, 7); g.fill(); } } }
     return;
   }
-  g.globalCompositeOperation = 'lighter';
-  buf.fill(0); const lm = Math.log1p(P99G);
-  gCells.forEach((c, i) => { const q = pix[i], n = c.h[cur]; if (q < 0 || n < 2) return;
-    const v = Math.min(255, Math.round(255 * Math.log1p(n) / lm)); if (buf[q] >>> 0 < LUT[v] >>> 0) buf[q] = LUT[v]; });
-  offCtx.putImageData(img, 0, 0);
-  if (isGlobe()) {      // blur the small image (cheap), then scale both layers up
-    if (!offB || offB.width !== off.width || offB.height !== off.height) { offB = document.createElement('canvas'); offB.width = off.width; offB.height = off.height; offBCtx = offB.getContext('2d'); }
-    offBCtx.clearRect(0, 0, offB.width, offB.height); offBCtx.filter = 'blur(1.2px)'; offBCtx.drawImage(off, 0, 0); offBCtx.filter = 'none';
-    g.imageSmoothingEnabled = true; g.globalAlpha = 1; g.drawImage(offB, 0, 0, off.width * GRID, off.height * GRID); g.globalAlpha = .55; g.drawImage(off, 0, 0, off.width * GRID, off.height * GRID); }
-  else { g.filter = 'blur(4px)'; g.globalAlpha = .9; g.drawImage(off, 0, 0, W, H);
-  g.filter = 'none'; g.globalAlpha = .6; g.drawImage(off, 0, 0, W, H); }
-  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  paintGrid(i => { const n = gCells[i].h[cur]; return n >= 2 ? n : 0; }, LUT, Math.log1p(P99G));
 }
-
-let livePhase = 0;
-function drawLive() {
-  const g = ctx.fire, t = livePhase, z = zoomed();
-  const ctr = isGlobe() ? [-rot[0], -rot[1]] : null;
-  for (const p of LIVE.points) { if (ctr && d3.geoDistance([p[1], p[0]], ctr) > 1.5) continue; const xy = proj([p[1], p[0]]); if (!xy || xy[0] < 0 || xy[1] < 0 || xy[0] > W || xy[1] > H) continue;
-    const ageH = (Date.now() - Date.parse(p[2].replace(' ', 'T') + 'Z')) / 36e5, fresh = ageH < 24;
-    const r = z ? 4 : 2.2;
-    if (fresh) { const k = (t + (p[0] * 7 % 1)) % 1; g.strokeStyle = `rgba(255,59,48,${.7 * (1 - k)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(xy[0], xy[1], r + 14 * k, 0, 7); g.stroke(); }
+function drawLivePoints() {
+  if (!livePts || !zoomed()) return;
+  const g = ctx.fire, now = Date.now();
+  for (const p of livePts) { const xy = proj([p[1], p[0]]); if (!xy || xy[0] < 0 || xy[1] < 0 || xy[0] > W || xy[1] > H) continue;
+    const fresh = now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5, r = 4;
+    if (fresh) { const k = (livePhase + (p[0] * 7 % 1)) % 1; g.strokeStyle = `rgba(255,59,48,${.7 * (1 - k)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(xy[0], xy[1], r + 14 * k, 0, 7); g.stroke(); }
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = fresh ? .9 : .5; g.drawImage(sprite, xy[0] - r * 3, xy[1] - r * 3, r * 6, r * 6);
-    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = fresh ? '#ffffff' : '#ffb36b'; g.beginPath(); g.arc(xy[0], xy[1], r * .45, 0, 7); g.fill(); }
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = fresh ? '#fff' : '#ffb36b'; g.beginPath(); g.arc(xy[0], xy[1], 1.8, 0, 7); g.fill(); }
 }
-
 function drawMarks(drag) {
   const g = ctx.marks; g.clearRect(0,0,W,H);
-  if (!drag && regionMode()) { const pth = d3.geoPath(proj, g), fs = REGIONS.filter(f => inRegion(f.properties.key));
-    g.beginPath(); fs.forEach(f => pth(f)); g.strokeStyle = '#ffd2b0'; g.lineWidth = 1.8; g.stroke(); return; }
-  const b = drag || sel.bbox; if (!b) return;
-  const ring = [[b[1],b[0]],[b[3],b[0]],[b[3],b[2]],[b[1],b[2]]];
-  g.beginPath();
+  if (!drag && (sel.kind === 'country' || sel.kind === 'kg')) { const pth = d3.geoPath(proj, g); g.beginPath();
+    (sel.kind === 'kg' ? REGIONS.filter(f => inKgKey(f.properties.key, sel.key)) : [sel.f]).forEach(f => pth(f)); g.strokeStyle = '#ffd2b0'; g.lineWidth = 1.8; g.stroke(); return; }
+  const b = drag || (sel.kind === 'box' ? sel.bbox : null); if (!b) return;
+  const ring = [[b[1],b[0]],[b[3],b[0]],[b[3],b[2]],[b[1],b[2]]]; g.beginPath();
   ring.forEach((p, i) => { const q = ring[(i+1) % 4]; for (let t = 0; t <= 1.0001; t += .1) { const xy = proj([p[0] + (q[0]-p[0])*t, p[1] + (q[1]-p[1])*t]); if (xy) (i || t) ? g.lineTo(...xy) : g.moveTo(...xy); } });
   g.closePath(); g.setLineDash([6,4]); g.strokeStyle = '#ffd2b0'; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]);
 }
 
 let down = null;
-$('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player')) return; const r = $('stage').getBoundingClientRect(); down = [e.clientX - r.left, e.clientY - r.top]; });
+const countryAt = (lo, la) => COUNTRIES.find(f => featHas(f, lo, la));
+$('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player,.zoom,.view')) return; const r = $('stage').getBoundingClientRect(); down = [e.clientX - r.left, e.clientY - r.top]; });
 $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top];
   if (isGlobe()) { if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 4) { spinning = false; $('stage').classList.add('drag'); const k = 90 / proj.scale();
-      rot = [rot[0] + (p[0] - (down.lx ?? down[0])) * k * 1.4, Math.max(-60, Math.min(60, rot[1] - (p[1] - (down.ly ?? down[1])) * k * 1.4))]; down.lx = p[0]; down.ly = p[1]; down.moved = true; proj.rotate(rot); drawBase(); drawFire(1); } return; }
+      rot = [rot[0] + (p[0] - (down.lx ?? down[0])) * k, Math.max(-60, Math.min(60, rot[1] - (p[1] - (down.ly ?? down[1])) * k))]; down.lx = p[0]; down.ly = p[1]; down.moved = true; proj.rotate(rot); drawBase(); drawFire(1); } return; }
   if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 6) { const a = proj.invert(down), c = proj.invert(p); if (a && c) drawMarks([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); } });
 addEventListener('pointerup', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top], d0 = down; down = null;
   $('stage').classList.remove('drag'); if (d0.moved) return;
   const a = proj.invert(d0); if (!a || !isFinite(a[0])) return;
-  if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) { const la = a[1], lo = a[0], d = zoomed() ? .5 : 1;
-    select({ key:null, bbox:[la-d, lo-d*1.3, la+d, lo+d*1.3].map(x => +x.toFixed(2)), name:`${T().point} ${la.toFixed(1)}°, ${lo.toFixed(1)}°` }); }
-  else { const c = proj.invert(p); if (!c) return;
-    select({ key:null, bbox:[Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])].map(x => +x.toFixed(2)), name:null }); }
+  if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) {
+    const [lo, la] = a, inside = sel.kind !== 'world' && sel.kind !== 'box' && sel.contains(lo, la);
+    if (!inside) { const c = countryAt(lo, la); if (c) return selectCountry(c); }
+    const d = .5; selectBox([la - d, lo - d * 1.3, la + d, lo + d * 1.3], null, [lo, la]);
+  } else { const c = proj.invert(p); if (!c) return; selectBox([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); }
 });
 
-// ======================= selection & data =======================
-const inside = (b, o) => b[0] >= o[0] && b[1] >= o[1] && b[2] <= o[2] && b[3] <= o[3];
-function select(s) {
-  const pre = PRESETS.find(p => p[0] === s.key);
-  sel = { key:s.key, bbox:s.bbox, name:s.name, pre, src:s.bbox && inside(s.bbox, KG_EXTENT) ? 'kg' : 'global' };
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.k === sel.key));
-  const u = new URL(location); sel.bbox ? u.searchParams.set('bbox', sel.bbox.join(',')) : u.searchParams.delete('bbox'); history.replaceState(null, '', u);
-  series = aggregate('h');
-  liveOn = !!(LIVE && sel.pre && sel.pre[3] && liveInSel()); $('now').classList.toggle('on', liveOn); if (liveOn) { playing = false; $('play').textContent = '▶'; }
-  layout(); render();
+// =============================== selection ===============================
+// detailed Kyrgyz data (0.25°, individual hotspots) when the area is in Kyrgyzstan and not larger than the country
+const selSrc = () => sel.kind === 'kg' || (sel.kind === 'box' && sel.kgBox) ? 'kg' : 'global';
+function selectWorld() { apply({ kind:'world', contains:() => true, bbox:[-90,-180,90,180] }); }
+function selectCountry(f) {
+  if (f.id === KG_NUM && REGIONS.length) return selectKg('kg');
+  const b = d3.geoBounds(f), bbox = [b[0][1], b[0][0], b[1][1], b[1][0] < b[0][0] ? b[1][0] + 360 : b[1][0]];
+  apply({ kind:'country', f, contains:(lo, la) => featHas(f, lo, la), bbox, geo:f, center:d3.geoCentroid(f) });
 }
-function aggregate(key) {
-  if (!sel.bbox) return key === 'h' ? Float32Array.from(SUMMARY.harmonized) : null;
-  const cells = sel.src === 'kg' ? kgCells : gCells, b = sel.bbox, out = new Float32Array(N);
-  if (regionMode()) { for (const c of kgCells) if (inRegion(c.reg) && c[key]) { const a = c[key]; for (let i = 0; i < N; i++) out[i] += a[i]; } return out; }
-  for (const c of cells) if (c.la >= b[0] && c.la <= b[2] && c.lo >= b[1] && c.lo <= b[3] && c[key]) { const a = c[key]; for (let i = 0; i < N; i++) out[i] += a[i]; }
-  return out;
+function selectKg(key) {
+  const fs = REGIONS.filter(f => inKgKey(f.properties.key, key)), fc = { type:'FeatureCollection', features:fs }, b = d3.geoBounds(fc);
+  apply({ kind:'kg', key, contains:(lo, la) => inKgKey(regionOf(lo, la), key), bbox:[b[0][1], b[0][0], b[1][1], b[1][0]], geo:fc, center:d3.geoCentroid(fc) });
 }
-const label = () => sel.pre ? sel.pre[2][lang] : sel.name || ({ ru:'Выбранная область', ky:'Тандалган аймак', en:'Selected area' })[lang];
-const liveInSel = () => { if (!LIVE) return null; const b = sel.bbox || [-90,-180,90,180], L = LIVE.box;
-  const covered = b[0] >= L[0] && b[1] >= L[1] && b[2] <= L[2] && b[3] <= L[3];
-  if (!covered) return null; if (regionMode()) return LIVE.points.filter(p => inRegion(p[5])); return LIVE.points.filter(p => p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]); };
-function viewRange() {     // indices [a, b] of the months shown, by the period buttons
-  const b = N - 1; if (period === 'all') return [0, b];
-  return [Math.max(0, N - 12 * +period), b];
+async function selectBox(bbox, name, at) {
+  bbox = bbox.map(x => +x.toFixed(3));
+  const s = { kind:'box', bbox, name, contains:(lo, la) => la >= bbox[0] && la <= bbox[2] && lo >= bbox[1] && lo <= bbox[3] };
+  s.kgBox = REGIONS.length > 0 && (bbox[2] - bbox[0]) <= 5 && (bbox[3] - bbox[1]) <= 12 && regionOf((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2) != null;
+  if (!name) { await ensureCities(); const c = at || [(bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2], pn = placeName(c[1], c[0]);
+    if (pn && (bbox[2] - bbox[0]) < 6) s.name = { ru:I18N.ru.near(pn[0]), ky:I18N.ky.near(pn[0]), en:I18N.en.near(pn[0]) }; }
+  apply(s);
+}
+async function apply(s) {
+  sel = s; playing = false; $('play').textContent = '▶';
+  if (sel.kind === 'world') { series = Float32Array.from(SUMMARY.harmonized); selCells = []; }
+  else { const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, out = new Float32Array(N); selCells = [];
+    cells.forEach((c, i) => { const ok = sel.kind === 'kg' ? inKgKey(c.reg, sel.key) : sel.contains(c.lo, c.la); if (!ok) return; selCells.push(i); for (let m = 0; m < N; m++) out[m] += c.h[m]; });
+    series = out; }
+  liveCellsSel = { n20:0, all:0 };
+  if (LSUM) for (const [c, n20, all] of LSUM.cells) { const la = Math.floor(c / 360) - 90 + .5, lo = c % 360 - 180 + .5;
+    const ok = sel.kind === 'world' ? true : sel.kind === 'kg' ? null : sel.contains(lo, la);
+    if (ok) { liveCellsSel.n20 += n20; liveCellsSel.all += all; } }
+  livePts = null; liveOn = sel.kind !== 'world' && !!LSUM; $('now').classList.toggle('on', liveOn);
+  const u = new URL(location); ['bbox', 'c', 'kg'].forEach(k => u.searchParams.delete(k));
+  if (sel.kind === 'box') u.searchParams.set('bbox', sel.bbox.join(',')); if (sel.kind === 'country') u.searchParams.set('c', sel.f.id); if (sel.kind === 'kg') u.searchParams.set('kg', sel.key);
+  history.replaceState(null, '', u);
+  drawCrumbs(); layout(); render();
+  if (sel.kind !== 'world') await loadLivePoints();
+}
+async function loadLivePoints() {
+  const b = sel.bbox, s = sel; if (!LSUM || (b[2] - b[0]) * (b[3] - b[1]) > 900) { livePts = []; render(); return; }
+  const need = []; for (let a = Math.floor(b[0] / 10); a <= Math.floor(b[2] / 10); a++) for (let o = Math.floor(b[1] / 10); o <= Math.floor(b[3] / 10); o++) need.push(`${a}_${((o + 18) % 36 + 36) % 36 - 18}`);
+  const parts = await Promise.all(need.map(k => TILES.has(k) ? TILES.get(k) : fetch(`data/live/t_${k}.json`).then(r => r.ok ? r.json() : []).catch(() => []).then(v => (TILES.set(k, v), v))));
+  if (s !== sel) return;
+  if (selSrc() !== 'kg') await ensureCities();
+  livePts = parts.flat().filter(p => sel.contains(p[1], p[0])).sort((x, y) => x[2] < y[2] ? 1 : -1);
+  if (sel.kind === 'kg') liveCellsSel = { n20:livePts.filter(p => p[3] === 20).length, all:livePts.length };   // exact borders for Kyrgyz regions
+  render(); if (liveOn) { ctx.fire.clearRect(0,0,W,H); drawFire(1); }
 }
 
-// ======================= fire danger (same rules as the bot) =======================
+// =============================== search ===============================
+let searchT = 0, searchSeq = 0, hiIdx = -1, results = [];
+function suggestions() {
+  const t = T(); return [{ grp:t.sugKg }, ...Object.keys(KGR).map(k => ({ label:KGR[k][lang], sub:'', act:() => selectKg(k) })),
+    { grp:t.sugWorld }, { label:t.world, sub:'', act:selectWorld }, ...EXAMPLES.map(e => ({ label:e[2][lang], sub:'', act:() => selectBox(e[1], e[2]) }))]; }
+function showDrop(items) { results = items.filter(i => !i.grp); hiIdx = -1;
+  $('drop').innerHTML = items.length ? items.map(i => i.grp ? `<div class="grp">${i.grp}</div>` : `<button data-i="${results.indexOf(i)}">${i.label}<span>${i.sub || ''}</span></button>`).join('') : `<div class="grp">${T().noRes}</div>`;
+  $('drop').classList.add('on'); }
+const hideDrop = () => $('drop').classList.remove('on');
+const pick = it => { hideDrop(); $('q').value = ''; $('q').blur(); it.act(); };
+$('drop').addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (!b) return; e.preventDefault(); pick(results[+b.dataset.i]); });
+$('q').addEventListener('focus', () => { if (!$('q').value) showDrop(suggestions()); });
+$('q').addEventListener('blur', () => setTimeout(hideDrop, 150));
+$('q').addEventListener('keydown', e => { const bs = [...$('drop').querySelectorAll('button')];
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); hiIdx = Math.max(0, Math.min(bs.length - 1, hiIdx + (e.key === 'ArrowDown' ? 1 : -1))); bs.forEach((b, i) => b.classList.toggle('hi', i === hiIdx)); }
+  if (e.key === 'Enter') { const b = bs[Math.max(0, hiIdx)]; if (b) pick(results[+b.dataset.i]); }
+  if (e.key === 'Escape') { hideDrop(); $('q').blur(); } });
+$('q').addEventListener('input', () => { clearTimeout(searchT); const q = $('q').value.trim(); if (!q) return showDrop(suggestions());
+  searchT = setTimeout(async () => { const seq = ++searchSeq, ql = q.toLowerCase();
+    const local = Object.keys(KGR).filter(k => Object.values(KGR[k]).some(n => n.toLowerCase().includes(ql))).map(k => ({ label:KGR[k][lang], sub:'', act:() => selectKg(k) }));
+    const ctry = COUNTRIES.filter(f => [countryName(f), f.properties.name].some(n => n && n.toLowerCase().startsWith(ql))).slice(0, 4).map(f => ({ label:countryName(f), sub:'', act:() => selectCountry(f) }));
+    let geo = [];
+    try { const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${lang === 'en' ? 'en' : 'ru'}`).then(r => r.json());
+      geo = (r.results || []).filter(g => !(g.feature_code || '').startsWith('PCL')).map(g => { const fc = g.feature_code || '', d = fc.startsWith('ADM1') ? 1.6 : fc.startsWith('ADM') ? .8 : .45;
+        return { label:g.name, sub:[g.admin1, g.country].filter(Boolean).join(', '), act:() => selectBox([g.latitude - d, g.longitude - d * 1.3, g.latitude + d, g.longitude + d * 1.3], { ru:g.name, ky:g.name, en:g.name }, [g.longitude, g.latitude]) }; }); } catch (e) {}
+    if (seq === searchSeq) showDrop([...local, ...ctry, ...geo]); }, 250); });
+
+function drawCrumbs() {
+  const t = T(), parts = [`<button data-a="world">🌍 ${t.world}</button>`];
+  if ((sel.kind === 'kg' && sel.key !== 'kg') || (sel.kind === 'box' && selSrc() === 'kg')) parts.push(`<i>›</i><button data-a="kg">${KGR.kg[lang]}</button>`);
+  if (sel.kind !== 'world') parts.push(`<i>›</i><b>${label()}</b>`);
+  $('crumbs').innerHTML = parts.join('');
+  $('crumbs').querySelectorAll('button').forEach(b => b.onclick = () => b.dataset.a === 'world' ? selectWorld() : selectKg('kg'));
+}
+
+// =============================== fire danger ===============================
 const WXCACHE = new Map();
-async function forecast(la, lo) {
-  const key = `${la.toFixed(2)},${lo.toFixed(2)}`; if (WXCACHE.has(key)) return WXCACHE.get(key);
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(3)}&longitude=${lo.toFixed(3)}&daily=temperature_2m_max,relative_humidity_2m_min,wind_speed_10m_max,precipitation_sum&timezone=Asia%2FBishkek&forecast_days=4`;
-  const pr = fetch(url).then(r => r.json()).then(d => d.daily); WXCACHE.set(key, pr); return pr; }
-function riskOf(share, ratio, daily, w) {
-  const t = T().why, why = []; let s = 0;
+function forecast(la, lo) { const key = `${la.toFixed(2)},${lo.toFixed(2)}`; if (WXCACHE.has(key)) return WXCACHE.get(key);
+  const pr = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(3)}&longitude=${lo.toFixed(3)}&daily=temperature_2m_max,relative_humidity_2m_min,wind_speed_10m_max,precipitation_sum&timezone=auto&forecast_days=4`).then(r => r.json()).then(d => d.daily);
+  WXCACHE.set(key, pr); return pr; }
+function riskOf(share, ratio, daily, w) { const t = T().why, why = []; let s = 0;
   if (share >= .6) { s += 2; why.push(t.peak); } else if (share >= .3) { s += 1; why.push(t.season); }
   if (ratio !== null && ratio > 1.5) { s += 1; why.push(t.above(ratio)); }
   if (daily >= 3) { s += 1; why.push(t.fires(daily)); }
-  if (w.t != null && w.t > 25) { s += 1; why.push(t.hot(Math.round(w.t))); }
-  if (w.h != null && w.h < 30) { s += 1; why.push(t.dry(Math.round(w.h))); }
-  if (w.w != null && w.w > 30) { s += 1; why.push(t.wind(Math.round(w.w))); }
-  if (w.r != null && w.r > 2) { s -= 2; why.push(t.rain(Math.round(w.r))); }
+  if (w.t != null && w.t > 25) { s += 1; why.push(t.hot(Math.round(w.t))); } if (w.h != null && w.h < 30) { s += 1; why.push(t.dry(Math.round(w.h))); }
+  if (w.w != null && w.w > 30) { s += 1; why.push(t.wind(Math.round(w.w))); } if (w.r != null && w.r > 2) { s -= 2; why.push(t.rain(Math.round(w.r))); }
   return { lvl:s <= 1 ? 'low' : s <= 3 ? 'medium' : 'high', why:why.length ? why : [t.calm] }; }
 const ICO = { low:'🟢', medium:'🟠', high:'🔴' };
 let dangerToken = 0;
-async function renderDanger(med, live, liveRatio) {
+async function renderDanger(med, liveRatio) {
   const card = $('dangerCard'), t = T();
-  if (!(sel.src === 'kg' && sel.pre && sel.pre[3])) { card.style.display = 'none'; return; }
-  card.style.display = ''; const token = ++dangerToken;
-  const fs = REGIONS.filter(f => inRegion(f.properties.key)), c = fs.length ? d3.geoCentroid({ type:'FeatureCollection', features:fs }) : [(sel.bbox[1] + sel.bbox[3]) / 2, (sel.bbox[0] + sel.bbox[2]) / 2];
+  if (sel.kind === 'world') { card.style.display = 'none'; return; }
+  card.style.display = '';
+  const b = sel.bbox; if ((b[2] - b[0]) > 14 || (b[3] - b[1]) > 22) { card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub" style="margin:6px 0 0">${t.bigArea}</div>`; return; }
+  const token = ++dangerToken, c = sel.center || [(b[1] + b[3]) / 2, (b[0] + b[2]) / 2];
   card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div><div class="why">…</div>`;
   let d; try { d = await forecast(c[1], c[0]); } catch (e) { d = null; }
   if (token !== dangerToken) return;
   if (!d) { card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.wxErr}</div>`; return; }
-  const max = Math.max(...med) || 1, now = Date.now(), daily = live ? live.filter(p => now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5).length : 0;
-  const days = d.time.map((day, i) => { const m = +day.slice(5, 7) - 1;
-    return { day, ...riskOf(med[m] / max, liveRatio, i === 0 ? daily : 0, { t:d.temperature_2m_max[i], h:d.relative_humidity_2m_min[i], w:d.wind_speed_10m_max[i], r:d.precipitation_sum[i] }) }; });
+  const max = Math.max(...med) || 1, now = Date.now(), daily = livePts ? livePts.filter(p => now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5).length : 0;
+  const days = d.time.map((day, i) => ({ day, ...riskOf(med[+day.slice(5, 7) - 1] / max, liveRatio, i === 0 ? daily : 0, { t:d.temperature_2m_max[i], h:d.relative_humidity_2m_min[i], w:d.wind_speed_10m_max[i], r:d.precipitation_sum[i] }) }));
   const r0 = days[0], dn = (day, i) => i < 2 ? t.days[i] : new Date(day + 'T00:00').toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU', { weekday:'short', day:'numeric' });
   card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div>
-    <div class="risk"><span class="ico">${ICO[r0.lvl]}</span><span class="lvl ${r0.lvl}">${t.levels[r0.lvl]}</span></div>
-    <div class="why">${r0.why.join(' · ')}</div>
+    <div class="risk"><span class="ico">${ICO[r0.lvl]}</span><span class="lvl ${r0.lvl}">${t.levels[r0.lvl]}</span></div><div class="why">${r0.why.join(' · ')}</div>
     <div class="days">${days.map((x, i) => `<div class="day">${dn(x.day, i)}<b>${ICO[x.lvl]}</b>${Math.round(d.temperature_2m_max[i])}° · ${Math.round(d.wind_speed_10m_max[i])} ${lang === 'en' ? 'km/h' : 'км/ч'}</div>`).join('')}</div>
     <div class="disc">${t.disc}</div>`;
 }
 
-// ======================= panel =======================
+// =============================== panel ===============================
+const viewRange = () => period === 'all' ? [0, N - 1] : [Math.max(0, N - 12 * +period), N - 1];
 function render() {
   const t = T(), [a, b] = viewRange(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
   const lastY = +MONTHS[N-1].slice(0,4), years = d3.range(+MONTHS[a].slice(0,4), lastY + 1);
   const at = (y, m) => { const i = (y - 2001) * 12 + m - 1; return i < 0 || i >= N ? null : series[i]; };
-  const normYears = d3.range(2001, lastY + 1).filter(y => y !== cy);           // norm always from the whole record
+  const normYears = d3.range(2001, lastY + 1).filter(y => y !== cy);
   const med = d3.range(12).map(m => median(normYears.map(y => at(y, m + 1))));
-
-  // ---- hero ----
-  const now = series[cur], m0 = med[cm-1];
-  const anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null, ratio = m0 >= 3 ? now / m0 : null;
   const order = med.map((v, i) => [v, i]).sort((p, q) => q[0] - p[0]), peak = order[0][1];
   const second = order.slice(1).find(([v, i]) => v >= .55 * order[0][0] && Math.min(Math.abs(i - peak), 12 - Math.abs(i - peak)) >= 3);
-  const toPeak = (peak - (cm - 1) + 12) % 12;
-  const phase = toPeak === 0 ? t.peakNow : toPeak <= 2 ? t.peakIn(toPeak) : t.peakMonth(t.monFull[peak]);
-  const full = d3.range(2001, lastY + 1).map(y => [y, d3.sum(d3.range(12), m => at(y, m + 1) || 0)]);
-  const worst = d3.greatest(full, d => d[1]);
-  const live = liveInSel();
-  const ruWhere = sel.pre ? sel.pre[4] : t.custom, kyWhere = sel.pre ? sel.pre[5] : 'Тандалган аймакта', enWhere = sel.pre ? sel.pre[6] : 'The selected area';
-  const story = t.story({ where:ruWhere, whereKy:kyWhere, whereEn:enWhere, peak, peak2:second ? second[1] : null, m:cm - 1, y:cy, n:fmt(now), nRaw:Math.round(now), anom, ratio, live:live ? live.length : null });
-  let liveHero = null;
-  if (liveOn && live) {        // "now vs normal": NOAA-20 only (single satellite, like the S-NPP-based norm), 7 days vs a pro-rated weekly norm
-    const newest = live.length ? live[0][2] : LIVE.updated, lm = +newest.slice(5, 7), ly = +newest.slice(0, 4);
-    const n20 = live.filter(p => p[3] === 'NOAA-20').length, dim = new Date(ly, lm, 0).getDate(), wk = med[lm - 1] * 7 / dim;
-    const r = med[lm - 1] >= 3 ? n20 / Math.max(wk, .1) : null;
-    liveHero = { n:n20, wk, r, lm, ly, text:t.storyLive({ where:ruWhere, whereKy:kyWhere, whereEn:enWhere.replace(/^The /, 'the '), n:n20, m:lm - 1, norm:wk < 1 ? '<1' : Math.round(wk), ratio:r, peak }) };
+  const full = d3.range(2001, lastY + 1).map(y => [y, d3.sum(d3.range(12), m => at(y, m + 1) || 0)]), worst = d3.greatest(full.filter(d => d[0] > 2001), d => d[1]);
+  const statsHtml = ph => `<div class="stats"><div class="stat"><span>${t.phase}</span><b>${ph}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
+      <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
+    <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${selSrc() !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
+
+  let liveRatio = null;
+  if (liveOn && sel.kind !== 'world' && LSUM) {
+    const lm = +LSUM.newest.slice(5, 7), ly = +LSUM.newest.slice(0, 4), dim = new Date(ly, lm, 0).getDate(), wk = med[lm - 1] * 7 / dim, n20 = liveCellsSel.n20;
+    liveRatio = med[lm - 1] >= 3 ? n20 / Math.max(wk, .1) : null;
+    $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${t.storyLive({ n:n20, m:lm - 1, norm:wk < 1 ? '<1' : fmt(wk), ratio:liveRatio, peak })}</div>
+      <div class="big num" style="color:#ff8a7a">${fmt(n20)} <span>${firesWord(n20, lang)} · ${t.liveDays} · NOAA-20</span></div>
+      ${liveRatio === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${liveRatio >= 1 ? 'up' : 'down'}">${liveRatio >= 1 ? '▲' : '▼'} ×${liveRatio.toFixed(1)} ${t.toNorm} (${wk < 10 ? wk.toFixed(1) : fmt(wk)})</div>`}
+      ${statsHtml(t.peakMonth(t.monFull[peak]))}`;
+  } else {
+    const now = series[cur], m0 = med[cm-1], anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null, ratio = m0 >= 3 ? now / m0 : null;
+    const toPeak = (peak - (cm - 1) + 12) % 12, phase = toPeak === 0 ? t.peakNow : toPeak <= 2 ? t.peakIn(toPeak) : t.peakMonth(t.monFull[peak]);
+    let st = t.story({ peak, peak2:second ? second[1] : null, m:cm - 1, y:cy, n:fmt(now), nRaw:Math.round(now), anom, ratio });
+    if (sel.kind === 'world') st = st.replace('Больше всего здесь горит', 'На планете больше всего горит').replace('It burns most here', 'The planet burns most').replace('Бул жерде эң көп', 'Дүйнөдө эң көп');
+    $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${st}</div>
+      <div class="big num">${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span></div>
+      ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
+      ${statsHtml(phase)}`;
   }
-  if (liveHero) $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${liveHero.text}</div>
-    <div class="big num" style="color:#ff8a7a">${liveHero.n} <span>${firesWord(liveHero.n, lang)} · ${t.liveDays} · NOAA-20</span></div>
-    ${liveHero.r === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${liveHero.r >= 1 ? 'up' : 'down'}">${liveHero.r >= 1 ? '▲ ×' + liveHero.r.toFixed(1) : '▼ ×' + liveHero.r.toFixed(1)} ${t.toNorm} (${liveHero.wk.toFixed(1)})</div>`}
-    <div class="stats"><div class="stat"><span>${t.phase}</span><b>${t.peakMonth(t.monFull[peak])}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
-      <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
-    <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${sel.src !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
-  else $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${story}</div>
-    <div class="big num">${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span></div>
-    ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
-    <div class="stats"><div class="stat"><span>${t.phase}</span><b>${phase}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
-      <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
-    <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${sel.src !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
   $('csvCal').onclick = csvCal; $('csvPts').onclick = csvPts;
+  renderDanger(med, liveRatio);
 
-  // ---- live card ----
-  if (!live) $('liveCard').innerHTML = `<h2><span class="dot"></span>${t.liveT}</h2><div class="sub" style="margin:6px 0 0">${t.liveOutside}</div>`;
-  else if (!live.length) $('liveCard').innerHTML = `<h2><span class="dot"></span>${t.liveT}</h2><div class="sub" style="margin:6px 0 0">${t.liveNone}</div>`;
-  else $('liveCard').innerHTML = `<div class="head"><h2><span class="dot"></span>${t.liveN(live.length)}</h2><button class="pill" id="liveShow">${liveOn ? '✕' : '🗺'}</button></div>
-      <ul>${live.slice(0, 5).map(p => { const v = p[6], when = new Date(Date.parse(p[2].replace(' ', 'T') + 'Z') + 6 * 36e5).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1');
-        return `<li>${v ? t.near(villName(v[0]), v[1] < 1 ? '<1' : Math.round(v[1])) : `${p[0].toFixed(2)}, ${p[1].toFixed(2)}`} <span>${when}</span></li>`; }).join('')}</ul>`;
-  if ($('liveShow')) $('liveShow').onclick = toggleLive;
+  const lc = $('liveCard'); lc.style.display = sel.kind === 'world' || !LSUM ? 'none' : '';
+  if (sel.kind !== 'world' && LSUM) {
+    const all = liveCellsSel.all;
+    const head = `<div class="head"><h2><span class="dot"></span>${all ? t.liveN(all) : t.liveT}</h2>${all ? `<button class="pill" id="liveShow">${liveOn ? '✕' : '🗺'}</button>` : ''}</div>`;
+    let body;
+    if (!all && livePts !== null) body = `<div class="sub" style="margin:6px 0 0">${t.liveNone}</div>`;
+    else if (livePts === null) body = `<div class="sub" style="margin:6px 0 0">…</div>`;
+    else if (!livePts.length) body = `<div class="sub" style="margin:6px 0 0">${t.liveMany}</div>`;
+    else body = `<ul>${livePts.slice(0, 6).map(p => { const pn = placeName(p[0], p[1]), when = new Date(Date.parse(p[2].replace(' ', 'T') + 'Z')).toLocaleString(lang === 'en' ? 'en-GB' : 'ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `<li>${pn ? `${pn[0]} · ${pn[1] < 1 ? '<1' : Math.round(pn[1])} ${lang === 'en' ? 'km' : 'км'}` : `${p[0].toFixed(2)}, ${p[1].toFixed(2)}`}<span>${when}</span></li>`; }).join('')}</ul>`;
+    lc.innerHTML = head + body; if ($('liveShow')) $('liveShow').onclick = () => toggleLive();
+  }
 
-  renderDanger(med, live, liveHero ? liveHero.r : null);
-  // ---- villages near fires (Kyrgyzstan) ----
-  $('villCard').style.display = sel.src === 'kg' && VILL.length ? '' : 'none';
-  if (sel.src === 'kg' && VILL.length) {
-    const cnt = new Map(), bb = sel.bbox;
-    for (let i = a; i <= b; i++) for (const p of POINTS.get(MONTHS[i]) || []) {
-      if (regionMode() ? !inRegion(p[2]) : (p[0] < bb[0] || p[0] > bb[2] || p[1] < bb[1] || p[1] > bb[3])) continue;
-      if (p[3] && p[3][1] <= 3) cnt.set(p[3][0], (cnt.get(p[3][0]) || 0) + 1); }
+  $('villCard').style.display = selSrc() === 'kg' && VILL.length ? '' : 'none';
+  if (selSrc() === 'kg' && VILL.length) {
+    const cnt = new Map();
+    for (let i = a; i <= b; i++) for (const p of POINTS.get(MONTHS[i]) || []) { if (!(sel.kind === 'kg' ? inKgKey(p[2], sel.key) : sel.contains(p[1], p[0]))) continue; if (p[3] && p[3][1] <= 3) cnt.set(p[3][0], (cnt.get(p[3][0]) || 0) + 1); }
     const top = [...cnt].sort((x, y) => y[1] - x[1]).slice(0, 7), mx = top.length ? top[0][1] : 1;
     $('villList').innerHTML = top.length ? top.map(([k, n]) => `<li data-v="${k}"><b>${villName(k)}</b><span>${fmt(n)} ${firesWord(n, lang)}</span><div class="bar" style="width:${Math.max(4, 100 * n / mx)}%"></div></li>`).join('') : `<li>${t.villNone}</li>`;
-    $('villList').querySelectorAll('li[data-v]').forEach(li => li.onclick = () => { const v = VILL[+li.dataset.v];
-      select({ key:null, bbox:[v[2] - .12, v[3] - .16, v[2] + .12, v[3] + .16].map(x => +x.toFixed(3)), name:villName(+li.dataset.v) }); });
+    $('villList').querySelectorAll('li[data-v]').forEach(li => li.onclick = () => { const k = +li.dataset.v, v = VILL[k]; selectBox([v[2] - .12, v[3] - .16, v[2] + .12, v[3] + .16], { ru:v[0], ky:v[5] || v[0], en:v[1] }); });
   }
 
-  // ---- calendar ----
   const data = [];
-  years.forEach((y, yi) => d3.range(12).forEach(mi => { const v = at(y, mi + 1); if (v === null) return;
-    data.push([mi, yi, mode === 'a' ? (med[mi] >= 1 ? Math.round(100 * (v - med[mi]) / med[mi]) : 0) : Math.round(v)]); }));
+  years.forEach((y, yi) => d3.range(12).forEach(mi => { const v = at(y, mi + 1); if (v === null) return; data.push([mi, yi, mode === 'a' ? (med[mi] >= 1 ? Math.round(100 * (v - med[mi]) / med[mi]) : 0) : Math.round(v)]); }));
   const sorted = data.map(d => d[2]).sort((p, q) => p - q), maxN = Math.max(1, sorted[Math.floor(sorted.length * .95)] || 1);
   const vm = { calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:10, itemHeight:140, textStyle:{ color:'#9b938a' } };
   const curCell = [cm - 1, years.indexOf(cy)];
   charts.cal.getDom().style.height = Math.max(180, 70 + years.length * 15.5) + 'px'; charts.cal.resize();
   charts.cal.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:40, right:6, top:22, bottom:50 },
-    tooltip:{ formatter:p => p.seriesType === 'heatmap' ? `<b>${t.mon[p.value[0]]} ${years[p.value[1]]}</b><br>${mode === 'a' ? (p.value[2] > 0 ? '+' : '') + p.value[2] + '% ' + t.toNorm : fmt(p.value[2]) + ' ' + t.fires}` : '' },
+    tooltip:{ formatter:p => p.seriesType === 'heatmap' ? `<b>${t.mon[p.value[0]]} ${years[p.value[1]]}</b><br>${mode === 'a' ? (p.value[2] > 0 ? '+' : '') + p.value[2] + '% ' + t.toNorm : fmt(p.value[2]) + ' ' + firesWord(p.value[2], lang)}` : '' },
     xAxis:{ type:'category', data:t.mon, position:'top', axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
     yAxis:{ type:'category', data:years, inverse:true, axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
     visualMap: mode === 'a' ? { ...vm, min:-100, max:100, inRange:{ color:['#2b6cb0','#5fa5e6','#26262c','#ff8a4c','#d1380d'] }, text:[t.above, t.below] }
                             : { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.many, t.few] },
     series:[{ type:'heatmap', data, label:{ show:years.length <= 5, color:'#111', fontSize:10 }, itemStyle:{ borderColor:'#17171c', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
             { type:'scatter', data:curCell[1] >= 0 && !liveOn ? [curCell] : [], symbol:'rect', symbolSize:[24, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
-
   $('note2001').textContent = years[0] <= 2001 ? t.y2001 : '';
-  // ---- year vs normal ----
+
   $('lineT').textContent = t.lineT(cy); $('lineS').textContent = t.lineS(2001, lastY);
   const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
   const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
-  const q25 = d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), .25) || 0);
-  const q75 = d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), .75) || 0);
-  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend:{ ...legend, data:[t.norm, String(cy)] }, grid:{ left:48, right:8, top:10, bottom:40 },
-    xAxis:{ type:'category', data:t.mon, ...ax, boundaryGap:false }, yAxis:{ type:'value', ...ax },
+  const qn = q => d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), q) || 0), q25 = qn(.25), q75 = qn(.75);
+  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend:{ ...legend, data:[t.norm, String(cy)] }, grid:{ left:52, right:8, top:10, bottom:40 },
+    xAxis:{ type:'category', data:t.mon, ...ax, boundaryGap:false }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
     series:[{ type:'line', data:q25.map(Math.round), stack:'band', lineStyle:{ opacity:0 }, symbol:'none', silent:true, tooltip:{ show:false } },
             { type:'line', data:q75.map((v, i) => Math.max(0, Math.round(v - q25[i]))), stack:'band', lineStyle:{ opacity:0 }, symbol:'none', areaStyle:{ color:'rgba(255,255,255,.07)' }, silent:true, tooltip:{ show:false } },
             { name:t.norm, type:'line', smooth:true, symbol:'none', data:med.map(Math.round), lineStyle:{ type:'dashed', width:2 }, color:'#8a8178' },
             { name:String(cy), type:'line', smooth:true, symbolSize:6, data:d3.range(12).map(m => at(cy, m + 1)), color:'#ff6a1a', lineStyle:{ width:3 }, areaStyle:{ opacity:.12 } }] }, true);
 
-  // ---- how it's calculated (lazy: only when open) ----
   if ($('how').open) renderHow(med);
   Object.values(charts).forEach(c => c.setOption({ toolbox:{ right:0, top:0, iconStyle:{ borderColor:'#9b938a' }, feature:{ saveAsImage:{ title:'PNG', name:'burnbeat', pixelRatio:2, backgroundColor:'#17171c' } } } }));
   drawClock(); drawTimeline();
 }
-
 function renderHow(med) {
   const t = T(), yrs = d3.range(2001, +MONTHS[N-1].slice(0,4) + 1), ysum = (arr, y) => d3.sum(d3.range(12), m => arr[(y - 2001) * 12 + m]);
-  const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
-  const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
+  const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } }, legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
   let raw, harm;
-  if (sel.src === 'kg') { const m = aggregate('m'), v = aggregate('v'); raw = yrs.map(y => Math.round(ysum(y < 2012 ? m : v, y))); harm = yrs.map(y => Math.round(ysum(series, y)));
-    $('harmS').textContent = t.harmLocal; const kv = KGMETA.validation; $('valid').textContent = t.validK(kv.models[kv.best], kv.raw_modis.mae); }
-  else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y));
-    $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation); }
+  if (selSrc() === 'kg') { const m = new Float32Array(N), v = new Float32Array(N); selCells.forEach(i => { for (let k = 0; k < N; k++) { m[k] += kgCells[i].m[k]; v[k] += kgCells[i].v[k]; } });
+    raw = yrs.map(y => Math.round(ysum(y < 2012 ? m : v, y))); harm = yrs.map(y => Math.round(ysum(series, y))); $('harmS').textContent = t.harmLocal; const kv = KGMETA.validation; $('valid').textContent = t.validK(kv.models[kv.best], kv.raw_modis.mae); }
+  else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y)); $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation); }
   charts.harm.resize();
   charts.harm.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend, grid:{ left:52, right:8, top:10, bottom:40 },
     xAxis:{ type:'category', data:yrs, ...ax }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
-    series:[{ name:t.raw, type:'line', step:'middle', symbol:'none', data:raw, color:'#8a8178', lineStyle:{ width:2 } },
-            { name:t.harm, type:'line', smooth:true, symbol:'none', data:harm, color:'#ff6a1a', lineStyle:{ width:3 } }] }, true);
-  const wk = sel.pre && sel.pre[3], w = wk && WEATHER[wk];
-  $('wxBox').style.display = w ? '' : 'none';
-  if (!w) return;
+    series:[{ name:t.raw, type:'line', step:'middle', symbol:'none', data:raw, color:'#8a8178', lineStyle:{ width:2 } }, { name:t.harm, type:'line', smooth:true, symbol:'none', data:harm, color:'#ff6a1a', lineStyle:{ width:3 } }] }, true);
+  const w = sel.kind === 'kg' && WEATHER[sel.key]; $('wxBox').style.display = w ? '' : 'none'; if (!w) return;
   const season = med.map((x, i) => [x, i]).sort((p, q) => q[0] - p[0]).slice(0, 5).map(x => x[1] + 1), pts = [], zf = [], zp = [];
   season.forEach(mo => { const ys = d3.range(2012, 2026).filter(y => w[`${y}-${String(mo).padStart(2,'0')}`]);
     const f = ys.map(y => series[(y - 2001) * 12 + mo - 1]), p = ys.map(y => w[`${y}-${String(mo).padStart(2,'0')}`][1]), fm = median(f), pm = mean(p);
-    ys.forEach((y, i) => { if (fm >= 3 && pm > 0) pts.push([Math.round(100 * p[i] / pm), Math.min(400, Math.round(100 * (f[i] - fm) / fm)), `${t.mon[mo-1]} ${y}`]); });
-    zf.push(...zs(f.map(Math.log1p))); zp.push(...zs(p)); });
-  const r = +corr(zp, zf).toFixed(2);
+    ys.forEach((y, i) => { if (fm >= 3 && pm > 0) pts.push([Math.round(100 * p[i] / pm), Math.min(400, Math.round(100 * (f[i] - fm) / fm)), `${t.mon[mo-1]} ${y}`]); }); zf.push(...zs(f.map(Math.log1p))); zp.push(...zs(p)); });
   charts.wx.resize();
-  charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:50, right:10, top:10, bottom:38 },
-    tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
-    xAxis:{ type:'value', name:t.rain, nameLocation:'middle', nameGap:24, nameTextStyle:{ color:'#9b938a' }, ...ax },
-    yAxis:{ type:'value', name:t.fireAnom, nameLocation:'middle', nameGap:36, nameTextStyle:{ color:'#9b938a' }, ...ax },
-    series:[{ type:'scatter', data:pts, symbolSize:8, itemStyle:{ color:'#ff6a1a', opacity:.65 },
-      markLine:{ silent:true, symbol:'none', label:{ show:false }, lineStyle:{ color:'#5f5952', type:'dashed' }, data:[{ xAxis:100 }, { yAxis:0 }] } }] }, true);
-  $('wxNote').textContent = t.wxNote(r);
+  charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:50, right:10, top:10, bottom:38 }, tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
+    xAxis:{ type:'value', name:t.rain, nameLocation:'middle', nameGap:24, nameTextStyle:{ color:'#9b938a' }, ...ax }, yAxis:{ type:'value', name:t.fireAnom, nameLocation:'middle', nameGap:36, nameTextStyle:{ color:'#9b938a' }, ...ax },
+    series:[{ type:'scatter', data:pts, symbolSize:8, itemStyle:{ color:'#ff6a1a', opacity:.65 }, markLine:{ silent:true, symbol:'none', label:{ show:false }, lineStyle:{ color:'#5f5952', type:'dashed' }, data:[{ xAxis:100 }, { yAxis:0 }] } }] }, true);
+  $('wxNote').textContent = t.wxNote(+corr(zp, zf).toFixed(2));
 }
 $('how').addEventListener('toggle', () => { if ($('how').open) render(); });
 
 function drawClock() {
-  const t = T(), [y, m] = MONTHS[cur].split('-'), live = liveOn ? liveInSel() : null;
-  $('clock').classList.toggle('live', liveOn);
-  if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${live ? live.length : LIVE.points.length}</b> ${t.fires} · ${t.liveDays} · NOAA-20 + NOAA-21 · ${label()}`; return; }
-  $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`;
-  $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
+  const t = T(), [y, m] = MONTHS[cur].split('-'); $('clock').classList.toggle('live', liveOn);
+  if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${fmt(sel.kind === 'world' ? LSUM.cells.reduce((s, c) => s + c[2], 0) : liveCellsSel.all)}</b> ${t.fires} · ${t.liveDays} · NOAA-20 + NOAA-21`; return; }
+  $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`; $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
 }
 function drawTimeline() {
   const c = $('timeline'), r = c.getBoundingClientRect(); c.width = r.width * DPR; c.height = r.height * DPR;
@@ -665,120 +670,102 @@ function drawTimeline() {
   if (!liveOn) { g.save(); g.beginPath(); g.rect(0, 0, x(cur), h); g.clip();
     g.beginPath(); for (let i = a; i <= b; i++) i > a ? g.lineTo(x(i), y(series[i])) : g.moveTo(x(i), y(series[i])); g.strokeStyle = '#ff6a1a'; g.lineWidth = 1.8; g.shadowColor = '#ff6a1a'; g.shadowBlur = 8; g.stroke(); g.restore();
     if (cur >= a) { g.fillStyle = '#fff'; g.beginPath(); g.arc(x(cur), y(series[cur]), 3.5, 0, 7); g.fill(); } }
-  // "now" marker at the right end
   g.fillStyle = liveOn ? '#ff3b30' : 'rgba(255,59,48,.6)'; g.beginPath(); g.arc(w - 30, h / 2 - 6, liveOn ? 5 : 4, 0, 7); g.fill();
   g.fillStyle = '#9b938a'; g.font = '10px Inter'; g.fillText(T().liveNow, w - 46, h - 4);
-  g.fillStyle = '#5f5952'; g.font = '10px JetBrains Mono';
-  const step = n > 120 ? 5 : 1;
+  g.fillStyle = '#5f5952'; g.font = '10px JetBrains Mono'; const step = n > 120 ? 5 : 1;
   for (let i = a; i <= b; i++) { const ym = MONTHS[i]; if (ym.endsWith('-01') && +ym.slice(0,4) % step === 0) g.fillText(ym.slice(0,4), x(i) - 13, h - 4); }
 }
 $('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(), [a, b] = viewRange(), px = e.clientX - r.left;
-  if (px > r.width - 50) { if (!liveOn) toggleLive(); return; }
-  if (liveOn) toggleLive(false);
-  seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
+  if (px > r.width - 50) { if (!liveOn) toggleLive(true); return; } if (liveOn) toggleLive(false); seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
 function seek(i) { cur = Math.max(0, Math.min(N - 1, i)); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
-function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) { playing = false; $('play').textContent = '▶'; }
-  $('now').classList.toggle('on', liveOn); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
+function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) { playing = false; $('play').textContent = '▶'; } $('now').classList.toggle('on', liveOn); layout(); render(); }
 
-// ======================= playback =======================
 let last = 0, acc = 0, globeAcc = 0;
 function tick(now) {
   const dt = Math.min(500, now - (last || now)); last = now;
-  if (isGlobe() && spinning && !down && (globeAcc += dt) > 45) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); if (!playing && !liveOn) drawFire(1); }
-  if (liveOn) { livePhase = (livePhase + dt / 1800) % 1; drawFire(1); }
-  else if (playing && (acc += dt) >= 130) { acc = 0;
-    const [, b] = viewRange();
-    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); }
-    else { cur++; drawFire(.55); drawClock(); drawTimeline(); } }
+  if (isGlobe() && spinning && !down && (globeAcc += dt) > 45) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); if (!playing) drawFire(1); }
+  if (liveOn && zoomed()) { livePhase = (livePhase + dt / 1800) % 1; drawFire(1); }
+  else if (playing && (acc += dt) >= 130) { acc = 0; const [, b] = viewRange();
+    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; drawFire(.55); drawClock(); drawTimeline(); } }
   requestAnimationFrame(tick);
 }
-$('play').onclick = () => { if (liveOn) toggleLive(false); playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a; $('play').textContent = playing ? '❚❚' : '▶'; if (!playing) render(); };
+$('play').onclick = () => { if (liveOn) { liveOn = false; $('now').classList.remove('on'); layout(); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a; $('play').textContent = playing ? '❚❚' : '▶'; if (!playing) render(); };
 $('now').onclick = () => toggleLive();
-// zoom: scale the selected area around a point; zooming out past ~120° of latitude returns to the whole world
+$('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
 function zoomBy(k, at) {
-  let b = sel.bbox;
-  if (!b) { if (k >= 1) return; const c = at || [-rot[0], -rot[1]], h = 40;           // from the world: open a 80°-tall window
-    b = [c[1] - h, c[0] - h * 1.4, c[1] + h, c[0] + h * 1.4]; k = 1; }
+  let b = sel.kind === 'world' ? null : sel.bbox;
+  if (!b) { if (k >= 1) return; const c = at || [-rot[0], -rot[1]], h = 40; b = [c[1] - h, c[0] - h * 1.4, c[1] + h, c[0] + h * 1.4]; k = 1; }
   const cy = at ? at[1] : (b[0] + b[2]) / 2, cx = at ? at[0] : (b[1] + b[3]) / 2;
-  let nb = [cy - (cy - b[0]) * k, cx - (cx - b[1]) * k, cy + (b[2] - cy) * k, cx + (b[3] - cx) * k];
-  if (nb[2] - nb[0] > 120) return select({ key:'world', bbox:null });
-  if (nb[2] - nb[0] < .2) return;
-  nb = [Math.max(-89, nb[0]), nb[1], Math.min(89, nb[2]), nb[3]].map(x => +x.toFixed(3));
-  select({ key:null, bbox:nb, name:null });
+  const nb = [cy - (cy - b[0]) * k, cx - (cx - b[1]) * k, cy + (b[2] - cy) * k, cx + (b[3] - cx) * k];
+  if (nb[2] - nb[0] > 120) return selectWorld(); if (nb[2] - nb[0] < .2) return;
+  selectBox([Math.max(-89, nb[0]), nb[1], Math.min(89, nb[2]), nb[3]], null);
 }
-$('zin').onclick = e => { e.stopPropagation(); zoomBy(.55); };
-$('zout').onclick = e => { e.stopPropagation(); zoomBy(1.8); };
-['zin', 'zout'].forEach(id => $(id).onpointerdown = e => e.stopPropagation());
+$('zin').onclick = () => zoomBy(.55); $('zout').onclick = () => zoomBy(1.8);
 let wheelT = 0;
 $('stage').addEventListener('wheel', e => { e.preventDefault(); const now = performance.now(); if (now - wheelT < 250) return; wheelT = now;
-  const r = $('stage').getBoundingClientRect(), at = proj.invert([e.clientX - r.left, e.clientY - r.top]);
-  zoomBy(e.deltaY < 0 ? .6 : 1.7, at && isFinite(at[0]) ? at : null); }, { passive:false });
-$('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
-$('viewBtn').onpointerdown = e => e.stopPropagation();
+  const r = $('stage').getBoundingClientRect(), at = proj.invert([e.clientX - r.left, e.clientY - r.top]); zoomBy(e.deltaY < 0 ? .6 : 1.7, at && isFinite(at[0]) ? at : null); }, { passive:false });
 
-// ======================= controls =======================
 function applyLang() {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = T()[el.dataset.t]);
+  $('q').placeholder = T().search;
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
-  $('chips').innerHTML = PRESETS.map(p => p[0] === '|' ? '<span class="chip sep">·</span>' : `<button class="chip${p[0] === sel.key ? ' on' : ''}" data-k="${p[0]}">${p[2][lang]}</button>`).join('');
-  if (series) { layout(); render(); }
+  if (series) { drawCrumbs(); layout(); render(); }
 }
 $('lang').onclick = e => { const v = e.target.dataset.v; if (!v) return; lang = v; try { localStorage.setItem('bb_lang', v); } catch (e) {} applyLang(); };
-$('chips').onclick = e => { const k = e.target.dataset.k; if (!k) return; const p = PRESETS.find(x => x[0] === k); select({ key:k, bbox:p[1] }); };
 $('mode').onclick = e => { const v = e.target.dataset.v; if (!v) return; mode = v; $('mode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); render(); };
-$('period').onclick = e => { const v = e.target.dataset.v; if (!v) return; period = v; $('period').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
-  const [a] = viewRange(); if (cur < a) cur = N - 1; render(); };
+$('period').onclick = e => { const v = e.target.dataset.v; if (!v) return; period = v; $('period').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); const [a] = viewRange(); if (cur < a) cur = N - 1; render(); };
 function download(name, text) { const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); el.download = name; el.click(); }
-function csvCal() { const [a, b] = viewRange(), rows = ['month,hotspots_harmonized_viirs_equivalent'];
-  for (let i = a; i <= b; i++) rows.push(`${MONTHS[i]},${series[i].toFixed(1)}`);
-  download(`burnbeat_${sel.key || 'area'}_calendar.csv`, rows.join('\n')); }
-async function csvPts() { if (sel.src !== 'kg') return; const [a, b] = viewRange(), A = MONTHS[a], B = MONTHS[b], bb = sel.bbox;
+function csvCal() { const [a, b] = viewRange(), rows = ['month,hotspots_harmonized_viirs_equivalent']; for (let i = a; i <= b; i++) rows.push(`${MONTHS[i]},${series[i].toFixed(1)}`); download('burnbeat_calendar.csv', rows.join('\n')); }
+async function csvPts() { if (selSrc() !== 'kg') return; const [a, b] = viewRange(), A = MONTHS[a], B = MONTHS[b];
   const lines = (await (await fetch('data/points.csv')).text()).trim().split('\n');
-  download(`burnbeat_${sel.key || 'area'}_hotspots.csv`, [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const ym = d.slice(0,7);
-    return ym >= A && ym <= B && (regionMode() ? inRegion(regionOf(+lo, +la)) : +la >= bb[0] && +la <= bb[2] && +lo >= bb[1] && +lo <= bb[3]); })].join('\n')); }
+  download('burnbeat_hotspots.csv', [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const ym = d.slice(0,7); return ym >= A && ym <= B && sel.contains(+lo, +la); })].join('\n')); }
 charts.cal = echarts.init($('cal')); charts.line = echarts.init($('line')); charts.harm = echarts.init($('harm')); charts.wx = echarts.init($('wx'));
-charts.cal.on('click', p => { if (p.seriesType !== 'heatmap') return; const [a] = viewRange(), y0 = +MONTHS[a].slice(0,4); if (liveOn) toggleLive(false); seek((y0 + p.value[1] - 2001) * 12 + p.value[0]); });
+charts.cal.on('click', p => { if (p.seriesType !== 'heatmap') return; const [a] = viewRange(), y0 = +MONTHS[a].slice(0,4); if (liveOn) { liveOn = false; $('now').classList.remove('on'); layout(); } seek((y0 + p.value[1] - 2001) * 12 + p.value[0]); });
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { Object.values(charts).forEach(c => c.resize()); layout(); drawTimeline(); }, 120); });
 
-// ======================= load =======================
 applyLang();
 Promise.all([
   fetch('data/global/frames.json').then(r => r.json()), fetch('data/global/summary.json').then(r => r.json()),
   fetch('data/cells.json').then(r => r.json()), fetch('data/meta.json').then(r => r.json()),
   fetch('data/weather.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
-  fetch('data/live.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  fetch('data/live/summary.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/points.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
   fetch('data/kg_regions.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/villages.json').then(r => r.ok ? r.json() : []).catch(() => []),
+  fetch('https://cdn.jsdelivr.net/npm/i18n-iso-countries@7.11.3/codes.json').then(r => r.json()).catch(() => []),
   fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(r => r.json()),
-]).then(([fr, su, kc, km, wx, lv, pts, kreg, vill, topo]) => {
-  VILL = vill; VILL.forEach((v, k) => { const key = vKey(v[2], v[3]); if (!VGRID.has(key)) VGRID.set(key, []); VGRID.get(key).push(k); });
-  MONTHS = su.months; N = MONTHS.length; SUMMARY = su; KGMETA = km; WEATHER = wx; LIVE = lv;
+]).then(([fr, su, kc, km, wx, ls, pts, kreg, vill, codes, topo]) => {
+  MONTHS = su.months; N = MONTHS.length; SUMMARY = su; KGMETA = km; WEATHER = wx; LSUM = ls; VILL = vill;
+  codes.forEach(c => { NUM2A2[c[2]] = c[0]; });
+  VILL.forEach((v, k) => { const key = `${Math.floor(v[2] * 10)}|${Math.floor(v[3] * 10)}`; if (!VGRID.has(key)) VGRID.set(key, []); VGRID.get(key).push(k); });
   world = { land:topojson.feature(topo, topo.objects.land), borders:topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b) };
   const thin = ring => ring.length < 12 ? ring : ring.filter((_, i) => i % 3 === 0 || i === ring.length - 1);
-  world.landLite = { type:'FeatureCollection', features:world.land.features.map(f => ({ type:'Feature', geometry:{ type:f.geometry.type,
-    coordinates:f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(thin) : f.geometry.coordinates.map(p => p.map(thin)) } })) };
-  // GeoJSON rings are counter-clockwise; d3 wants clockwise on the sphere, so rewind when the area looks like 'the world minus the region'
-  if (kreg) REGIONS = kreg.features.map(f => { if (d3.geoArea(f) > 2 * Math.PI) { const rv = r => r.slice().reverse(); f.geometry.coordinates = f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(rv) : f.geometry.coordinates.map(p => p.map(rv)); } const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
+  world.landLite = { type:'FeatureCollection', features:world.land.features.map(f => ({ type:'Feature', geometry:{ type:f.geometry.type, coordinates:f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(thin) : f.geometry.coordinates.map(p => p.map(thin)) } })) };
+  COUNTRIES = topojson.feature(topo, topo.objects.countries).features.filter(f => f.id).map(f => { const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
+  if (kreg) REGIONS = kreg.features.map(f => { rewind(f); const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
   gCells = fr.cells.map(c => ({ la:Math.floor(c / 360) - 90 + .5, lo:c % 360 - 180 + .5, h:new Float32Array(N) }));
   fr.frames.forEach((f, i) => { for (let k = 0; k < f.length; k += 2) gCells[f[k]].h[i] = f[k+1]; });
+  const cellIndex = new Map(fr.cells.map((c, i) => [c, i]));
+  LCELLS = new Float32Array(gCells.length); if (LSUM) LSUM.cells.forEach(([c, , all]) => { const i = cellIndex.get(c); if (i !== undefined) LCELLS[i] = all; });
   const mi = new Map(MONTHS.map((m, i) => [m, i]));
   const toArr = o => { const a = new Float32Array(N); for (const [ym, v] of Object.entries(o)) { const i = mi.get(ym); if (i !== undefined) a[i] = v; } return a; };
   kgCells = kc.map(c => ({ la:c.la, lo:c.lo, h:toArr(c.h), m:toArr(c.m), v:toArr(c.v), reg:regionOf(c.lo, c.la) }));
-  if (LIVE) LIVE.points.forEach(p => { const kg = p[0] >= 39 && p[0] <= 43.4 && p[1] >= 69 && p[1] <= 80.5; p[5] = kg ? regionOf(p[1], p[0]) : null; p[6] = kg ? nearestVillage(p[0], p[1], 15) : null; });
-  pts.split('\n').slice(1).forEach(l => { const p = l.split(','); if (p.length < 4) return; const ym = p[2].slice(0,7);
-    if (!POINTS.has(ym)) POINTS.set(ym, []); POINTS.get(ym).push([+p[0], +p[1], regionOf(+p[1], +p[0]), nearestVillage(+p[0], +p[1], 3.5)]); });
+  pts.split('\n').slice(1).forEach(l => { const p = l.split(','); if (p.length < 4) return; const ym = p[2].slice(0,7); if (!POINTS.has(ym)) POINTS.set(ym, []);
+    POINTS.get(ym).push([+p[0], +p[1], regionOf(+p[1], +p[0]), nearestIn(VILL, VGRID, +p[0], +p[1], 3.5)]); });
   const q99 = cells => { const v = []; cells.forEach(c => c.h.forEach(x => { if (x >= 1) v.push(x); })); v.sort((p, q) => p - q); return v[Math.floor(v.length * .99)] || 10; };
   P99G = q99(gCells); P99K = q99(kgCells);
-  LUT = new Uint32Array(256);
-  for (let k = 0; k < 256; k++) { const c = d3.rgb(d3.interpolateInferno(.45 + .55 * k / 255)), al = Math.round(60 + 195 * k / 255); LUT[k] = (al << 24) | (c.b << 16) | (c.g << 8) | c.r; }
-  if (!LIVE) $('now').style.display = 'none';
+  const mk = f => { const L = new Uint32Array(256); for (let k = 0; k < 256; k++) { const c = d3.rgb(f(k / 255)), al = Math.round(60 + 195 * k / 255); L[k] = (al << 24) | (c.b << 16) | (c.g << 8) | c.r; } return L; };
+  LUT = mk(t => d3.interpolateInferno(.45 + .55 * t)); LUTLIVE = mk(t => d3.interpolateRgb('#7a1010', '#ff4d3a')(t));
+  if (!LSUM) $('now').style.display = 'none';
   cur = N - 1;
-  const q = new URLSearchParams(location.search).get('bbox')?.split(',').map(Number);
-  const pre = q && PRESETS.find(p => p[1] && p[1].join(',') === q.join(','));
-  if (q?.length === 4 && q.every(isFinite)) select(pre ? { key:pre[0], bbox:pre[1] } : { key:null, bbox:q });
-  else select({ key:'world', bbox:null });
+  const q = new URLSearchParams(location.search), bb = q.get('bbox')?.split(',').map(Number), cId = q.get('c'), kgk = q.get('kg');
+  const OLD = { '42.2,72.8,43.3,76':'chui', '41.9,70.9,42.8,73.2':'talas', '41.6,76,43,80.3':'issykkul', '40.5,73.5,42.3,78.5':'naryn', '40.6,70.6,42.4,74':'jalalabad', '39.3,72.4,40.9,75':'osh', '39.5,69.2,40.4,72.4':'batken', '39.1,69.2,43.3,80.3':'kg' };
+  if (kgk && KGR[kgk]) selectKg(kgk);
+  else if (bb && OLD[bb.join(',')]) selectKg(OLD[bb.join(',')]);
+  else if (bb?.length === 4 && bb.every(isFinite)) selectBox(bb, null);
+  else if (cId && COUNTRIES.find(f => f.id === cId)) selectCountry(COUNTRIES.find(f => f.id === cId));
+  else selectWorld();
   const ld = $('loading'); ld.style.opacity = 0; ld.style.pointerEvents = 'none'; ld.addEventListener('transitionend', () => ld.remove()); setTimeout(() => ld.remove(), 900);
   requestAnimationFrame(tick);
 });
