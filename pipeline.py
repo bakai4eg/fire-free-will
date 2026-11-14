@@ -146,6 +146,50 @@ def harmonize(counts, ratio, tf):
         cells.append({"la": (cell[0] + .5) * CELL, "lo": (cell[1] + .5) * CELL, "m": m, "v": v, "h": h})
     return cells
 
+SITE = "https://bakai4eg.github.io/fire-free-will/"
+MON_RU = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"]
+
+def write_api(cells, meta):
+    """Static JSON API for the bot: web/api/regions.json, web/api/summary/<id>.json, web/api/all.json"""
+    regions = json.load(open(os.path.join(ROOT, "data", "regions.json"), encoding="utf-8"))
+    last = meta["last"]; ly, lm = int(last[:4]), int(last[5:])
+    first_year = int(meta["first"][:4]) + 1                     # first year is a stub
+    api = os.path.join(OUT, "..", "api"); os.makedirs(os.path.join(api, "summary"), exist_ok=True)
+    out = {}
+    for rid, r in regions.items():
+        s, w, n, e = r["bbox"]
+        h = defaultdict(float)
+        for c in cells:
+            if s <= c["la"] <= n and w <= c["lo"] <= e:
+                for ym, x in c["h"].items():
+                    h[ym] += x
+        get = lambda y, m: h.get(f"{y}-{m:02d}", 0.0)
+        past = range(first_year, ly)                             # complete past years only
+        med = {m: statistics.median([get(y, m) for y in past]) for m in range(1, 13)}
+        anom = lambda v, m: round(100 * (v - med[m]) / med[m]) if med[m] >= 3 else None   # too few fires to compare
+        peak = max(med, key=med.get)
+        to_peak = (peak - lm) % 12
+        phase = "пик" if to_peak == 0 else "до пика" if to_peak <= 3 else "спад" if (lm - peak) % 12 <= 3 else "межсезонье"
+        yearly = {y: round(sum(get(y, m) for m in range(1, 13))) for y in range(first_year, ly + 1)}
+        last12 = []
+        for k in range(11, -1, -1):
+            y, m = (ly, lm - k) if lm - k > 0 else (ly - 1, lm - k + 12)
+            v = get(y, m); last12.append({"month": f"{y}-{m:02d}", "count": round(v), "median": round(med[m]), "anomaly_pct": anom(v, m)})
+        worst = max((y for y in past), key=lambda y: yearly[y])
+        out[rid] = {
+            "id": rid, "name": r["name"], "bbox": r["bbox"], "data_until": last,
+            "current": {"month": last, "count": round(get(ly, lm)), "median": round(med[lm]), "anomaly_pct": anom(get(ly, lm), lm)},
+            "season": {"peak_month": peak, "peak_month_name": MON_RU[peak - 1], "phase": phase, "months_to_peak": to_peak},
+            "median_by_month": {f"{m:02d}": round(med[m], 1) for m in range(1, 13)},
+            "last_12_months": last12,
+            "yearly": yearly, "yearly_median": round(statistics.median([yearly[y] for y in past])), "worst_year": worst,
+            "site_url": SITE + "?bbox=" + ",".join("%g" % x for x in r["bbox"]),
+        }
+        json.dump(out[rid], open(os.path.join(api, "summary", f"{rid}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump({k: {"name": v["name"], "bbox": v["bbox"]} for k, v in regions.items()},
+              open(os.path.join(api, "regions.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump({"data_until": last, "regions": out}, open(os.path.join(api, "all.json"), "w", encoding="utf-8"), ensure_ascii=False)
+
 def main():
     counts, points = load()
     if not points:
@@ -168,6 +212,7 @@ def main():
     json.dump(meta, open(os.path.join(OUT, "meta.json"), "w"), indent=1)
     with open(os.path.join(OUT, "points.csv"), "w", newline="") as f:
         w = csv.writer(f); w.writerow(["latitude", "longitude", "acq_date", "sensor"]); w.writerows(points)
+    write_api(cells, meta)
     print(f"{len(points)} hotspots, {len(cells)} cells, {meta['first']}..{meta['last']}")
     print(json.dumps({k: meta[k] for k in ("ratio_by_year", "backcast_sensitivity_pct", "validation")}, indent=1))
 

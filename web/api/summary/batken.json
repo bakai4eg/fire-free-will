@@ -1,0 +1,141 @@
+{
+ "id": "batken",
+ "name": "Баткенская",
+ "bbox": [
+  39.5,
+  69.2,
+  40.4,
+  72.4
+ ],
+ "data_until": "2025-12",
+ "current": {
+  "month": "2025-12",
+  "count": 0,
+  "median": 0,
+  "anomaly_pct": null
+ },
+ "season": {
+  "peak_month": 8,
+  "peak_month_name": "август",
+  "phase": "межсезонье",
+  "months_to_peak": 8
+ },
+ "median_by_month": {
+  "01": 0.0,
+  "02": 0.0,
+  "03": 2.5,
+  "04": 2.0,
+  "05": 0.5,
+  "06": 4.0,
+  "07": 2.9,
+  "08": 5.2,
+  "09": 5.0,
+  "10": 1.6,
+  "11": 0.0,
+  "12": 0.0
+ },
+ "last_12_months": [
+  {
+   "month": "2025-01",
+   "count": 0,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-02",
+   "count": 0,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-03",
+   "count": 5,
+   "median": 2,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-04",
+   "count": 2,
+   "median": 2,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-05",
+   "count": 2,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-06",
+   "count": 2,
+   "median": 4,
+   "anomaly_pct": -50
+  },
+  {
+   "month": "2025-07",
+   "count": 2,
+   "median": 3,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-08",
+   "count": 9,
+   "median": 5,
+   "anomaly_pct": 73
+  },
+  {
+   "month": "2025-09",
+   "count": 1,
+   "median": 5,
+   "anomaly_pct": -80
+  },
+  {
+   "month": "2025-10",
+   "count": 0,
+   "median": 2,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-11",
+   "count": 2,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-12",
+   "count": 0,
+   "median": 0,
+   "anomaly_pct": null
+  }
+ ],
+ "yearly": {
+  "2001": 4,
+  "2002": 86,
+  "2003": 155,
+  "2004": 32,
+  "2005": 30,
+  "2006": 46,
+  "2007": 19,
+  "2008": 6,
+  "2009": 44,
+  "2010": 24,
+  "2011": 34,
+  "2012": 457,
+  "2013": 28,
+  "2014": 27,
+  "2015": 64,
+  "2016": 147,
+  "2017": 84,
+  "2018": 46,
+  "2019": 53,
+  "2020": 114,
+  "2021": 31,
+  "2022": 37,
+  "2023": 16,
+  "2024": 10,
+  "2025": 25
+ },
+ "yearly_median": 36,
+ "worst_year": 2012,
+ "site_url": "https://bakai4eg.github.io/fire-free-will/?bbox=39.5,69.2,40.4,72.4"
+}

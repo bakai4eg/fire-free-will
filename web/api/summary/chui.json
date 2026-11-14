@@ -1,0 +1,141 @@
+{
+ "id": "chui",
+ "name": "Чуйская",
+ "bbox": [
+  42.2,
+  72.8,
+  43.3,
+  76.0
+ ],
+ "data_until": "2025-12",
+ "current": {
+  "month": "2025-12",
+  "count": 2,
+  "median": 0,
+  "anomaly_pct": null
+ },
+ "season": {
+  "peak_month": 8,
+  "peak_month_name": "август",
+  "phase": "межсезонье",
+  "months_to_peak": 8
+ },
+ "median_by_month": {
+  "01": 0.0,
+  "02": 0.5,
+  "03": 195.5,
+  "04": 91.2,
+  "05": 8.6,
+  "06": 6.5,
+  "07": 39.5,
+  "08": 201.6,
+  "09": 165.8,
+  "10": 43.5,
+  "11": 9.2,
+  "12": 0.5
+ },
+ "last_12_months": [
+  {
+   "month": "2025-01",
+   "count": 0,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-02",
+   "count": 9,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-03",
+   "count": 513,
+   "median": 196,
+   "anomaly_pct": 162
+  },
+  {
+   "month": "2025-04",
+   "count": 62,
+   "median": 91,
+   "anomaly_pct": -32
+  },
+  {
+   "month": "2025-05",
+   "count": 9,
+   "median": 9,
+   "anomaly_pct": 5
+  },
+  {
+   "month": "2025-06",
+   "count": 15,
+   "median": 7,
+   "anomaly_pct": 129
+  },
+  {
+   "month": "2025-07",
+   "count": 45,
+   "median": 40,
+   "anomaly_pct": 14
+  },
+  {
+   "month": "2025-08",
+   "count": 166,
+   "median": 202,
+   "anomaly_pct": -18
+  },
+  {
+   "month": "2025-09",
+   "count": 32,
+   "median": 166,
+   "anomaly_pct": -81
+  },
+  {
+   "month": "2025-10",
+   "count": 47,
+   "median": 44,
+   "anomaly_pct": 8
+  },
+  {
+   "month": "2025-11",
+   "count": 80,
+   "median": 9,
+   "anomaly_pct": 765
+  },
+  {
+   "month": "2025-12",
+   "count": 2,
+   "median": 0,
+   "anomaly_pct": null
+  }
+ ],
+ "yearly": {
+  "2001": 1362,
+  "2002": 2731,
+  "2003": 1882,
+  "2004": 2032,
+  "2005": 1655,
+  "2006": 1951,
+  "2007": 1777,
+  "2008": 596,
+  "2009": 1561,
+  "2010": 925,
+  "2011": 1387,
+  "2012": 607,
+  "2013": 713,
+  "2014": 660,
+  "2015": 390,
+  "2016": 854,
+  "2017": 986,
+  "2018": 900,
+  "2019": 1000,
+  "2020": 708,
+  "2021": 382,
+  "2022": 330,
+  "2023": 434,
+  "2024": 353,
+  "2025": 980
+ },
+ "yearly_median": 912,
+ "worst_year": 2002,
+ "site_url": "https://bakai4eg.github.io/fire-free-will/?bbox=42.2,72.8,43.3,76"
+}

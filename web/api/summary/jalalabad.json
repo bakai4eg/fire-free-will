@@ -1,0 +1,141 @@
+{
+ "id": "jalalabad",
+ "name": "Джалал-Абадская",
+ "bbox": [
+  40.6,
+  70.6,
+  42.4,
+  74.0
+ ],
+ "data_until": "2025-12",
+ "current": {
+  "month": "2025-12",
+  "count": 1,
+  "median": 0,
+  "anomaly_pct": null
+ },
+ "season": {
+  "peak_month": 9,
+  "peak_month_name": "сентябрь",
+  "phase": "спад",
+  "months_to_peak": 9
+ },
+ "median_by_month": {
+  "01": 0.0,
+  "02": 2.8,
+  "03": 22.5,
+  "04": 34.5,
+  "05": 7.5,
+  "06": 11.5,
+  "07": 26.7,
+  "08": 48.0,
+  "09": 68.5,
+  "10": 19.2,
+  "11": 7.0,
+  "12": 0.0
+ },
+ "last_12_months": [
+  {
+   "month": "2025-01",
+   "count": 0,
+   "median": 0,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-02",
+   "count": 15,
+   "median": 3,
+   "anomaly_pct": null
+  },
+  {
+   "month": "2025-03",
+   "count": 62,
+   "median": 22,
+   "anomaly_pct": 176
+  },
+  {
+   "month": "2025-04",
+   "count": 20,
+   "median": 34,
+   "anomaly_pct": -42
+  },
+  {
+   "month": "2025-05",
+   "count": 13,
+   "median": 8,
+   "anomaly_pct": 73
+  },
+  {
+   "month": "2025-06",
+   "count": 21,
+   "median": 12,
+   "anomaly_pct": 83
+  },
+  {
+   "month": "2025-07",
+   "count": 27,
+   "median": 27,
+   "anomaly_pct": 1
+  },
+  {
+   "month": "2025-08",
+   "count": 33,
+   "median": 48,
+   "anomaly_pct": -31
+  },
+  {
+   "month": "2025-09",
+   "count": 37,
+   "median": 68,
+   "anomaly_pct": -46
+  },
+  {
+   "month": "2025-10",
+   "count": 19,
+   "median": 19,
+   "anomaly_pct": -1
+  },
+  {
+   "month": "2025-11",
+   "count": 38,
+   "median": 7,
+   "anomaly_pct": 447
+  },
+  {
+   "month": "2025-12",
+   "count": 1,
+   "median": 0,
+   "anomaly_pct": null
+  }
+ ],
+ "yearly": {
+  "2001": 817,
+  "2002": 1797,
+  "2003": 715,
+  "2004": 898,
+  "2005": 861,
+  "2006": 838,
+  "2007": 1722,
+  "2008": 660,
+  "2009": 594,
+  "2010": 344,
+  "2011": 497,
+  "2012": 244,
+  "2013": 355,
+  "2014": 330,
+  "2015": 265,
+  "2016": 332,
+  "2017": 162,
+  "2018": 270,
+  "2019": 218,
+  "2020": 226,
+  "2021": 142,
+  "2022": 86,
+  "2023": 208,
+  "2024": 123,
+  "2025": 286
+ },
+ "yearly_median": 338,
+ "worst_year": 2002,
+ "site_url": "https://bakai4eg.github.io/fire-free-will/?bbox=40.6,70.6,42.4,74"
+}
