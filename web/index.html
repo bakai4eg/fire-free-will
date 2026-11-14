@@ -3,377 +3,465 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BurnBeat</title>
-<meta name="description" content="25 years of the planet's fires, harmonized from NASA MODIS and VIIRS.">
+<meta name="description" content="Harmonized MODIS + VIIRS burning calendar for any place on Earth.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 12h4l2-6 4 12 3-9 2 3h5' fill='none' stroke='%23ff6a1a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<script>if (/[?&]bbox=/.test(location.search)) location.replace('tool.html' + location.search);</script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#07070a; --ink:#f4efe8; --muted:#9a9189; --dim:#5d5750; --line:rgba(255,255,255,.08); --fire:#ff6a1a; --glass:rgba(16,14,13,.72); }
-  * { box-sizing:border-box } html { scroll-behavior:smooth }
-  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden }
-  h1,h2,.display { font-family:Manrope,Inter,sans-serif; letter-spacing:-.03em }
+  :root { --bg:#0b0b0e; --panel:#121216; --card:#18181d; --card2:#1f1f25; --ink:#f2ede6; --muted:#9b938a; --dim:#5f5952; --line:rgba(255,255,255,.08);
+          --fire:#ff6a1a; --up:#ff7a45; --up-bg:rgba(255,106,26,.14); --down:#6cb4ff; --down-bg:rgba(108,180,255,.13); }
+  * { box-sizing:border-box }
+  html, body { height:100% }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased }
+  h1,h2,.num { font-family:Manrope,Inter,sans-serif; letter-spacing:-.02em }
   .mono { font-family:'JetBrains Mono',ui-monospace,monospace }
+  button, input { font:inherit; color:inherit }
 
-  /* stage: map that stays behind the story */
-  #stage { position:fixed; inset:0; z-index:0 }
-  #stage canvas { position:absolute; inset:0; width:100%; height:100%; transition:opacity 1.2s }
-  body.hero-on #fire, body.hero-on #land { opacity:.38 }
-  #vignette { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.75) 100%) }
+  header { height:60px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--line); background:var(--panel) }
+  .brand { display:flex; align-items:center; gap:9px; margin-right:8px; color:var(--ink); text-decoration:none }
+  .brand svg { width:22px; height:22px } .brand b { font:800 18px Manrope } .brand small { color:var(--muted); font-size:12px; margin-left:6px }
+  .sp { flex:1 }
+  .pill { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 13px; font-weight:500; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-flex; gap:6px; align-items:center }
+  .pill:hover { background:var(--card2) } .pill.fire { background:var(--fire); border-color:var(--fire); color:#160800 } .pill:disabled { opacity:.4; cursor:not-allowed }
+  .seg { display:inline-flex; background:var(--card); border-radius:999px; padding:3px; border:1px solid var(--line) }
+  .seg button { border:0; background:none; padding:5px 10px; border-radius:999px; color:var(--muted); cursor:pointer; font-weight:600; font-size:12px }
+  .seg button.on { background:var(--card2); color:var(--ink) }
+  input[type=month] { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 10px; color-scheme:dark }
 
-  /* HUD */
-  .top { position:fixed; top:0; left:0; right:0; z-index:5; display:flex; align-items:center; gap:14px; padding:18px 24px }
-  .brand { display:flex; align-items:center; gap:10px; font:800 18px Manrope; margin-right:auto; color:var(--ink); text-decoration:none }
-  .brand svg { width:22px; height:22px }
-  .lang { display:flex; gap:2px; background:rgba(255,255,255,.06); border-radius:999px; padding:3px }
-  .lang button { border:0; background:none; color:var(--muted); font:600 12px Inter; padding:6px 10px; border-radius:999px; cursor:pointer }
-  .lang button.on { background:rgba(255,255,255,.14); color:var(--ink) }
-  .btn { border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.04); color:var(--ink); border-radius:999px; padding:9px 16px; font:600 14px Inter; cursor:pointer; text-decoration:none; transition:background .2s }
-  .btn:hover { background:rgba(255,255,255,.12) } .btn.fire { background:var(--fire); border-color:var(--fire); color:#120800 } .btn.fire:hover { background:#ff8240 }
+  .app { display:grid; grid-template-columns:minmax(0,1fr) 440px; height:calc(100vh - 60px) }
+  /* map side */
+  .mapside { position:relative; display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--line) }
+  .chips { display:flex; gap:6px; overflow-x:auto; padding:10px 12px; scrollbar-width:none; border-bottom:1px solid var(--line) }
+  .chip { flex:none; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:6px 12px; cursor:pointer; color:#d9d2c9 }
+  .chip:hover { background:var(--card2) } .chip.on { background:var(--ink); color:#111; border-color:var(--ink) }
+  .chip.sep { border:0; background:none; color:var(--dim); cursor:default; padding:6px 2px }
+  #stage { position:relative; flex:1; min-height:300px; cursor:crosshair; touch-action:none; overflow:hidden }
+  #stage canvas { position:absolute; inset:0; width:100%; height:100% }
+  .hint { position:absolute; left:12px; top:10px; color:var(--muted); font-size:12px; pointer-events:none; background:rgba(11,11,14,.7); padding:4px 8px; border-radius:8px }
+  .clock { position:absolute; left:14px; bottom:10px; pointer-events:none }
+  .clock .m { font:800 clamp(28px,4vw,48px)/1 Manrope; letter-spacing:-.03em } .clock .n { color:var(--muted); font-size:12px; margin-top:4px } .clock .n b { color:var(--fire) }
+  .player { position:absolute; right:12px; bottom:12px; display:flex; gap:8px; align-items:center }
+  .player button { width:40px; height:40px; border-radius:50%; border:0; background:var(--fire); color:#160800; font-size:15px; cursor:pointer; box-shadow:0 0 24px rgba(255,106,26,.45) }
+  #timeline { height:70px; border-top:1px solid var(--line); cursor:pointer; display:block; width:100% }
 
-  .clock { position:fixed; left:24px; bottom:96px; z-index:4; pointer-events:none; transition:opacity .6s }
-  .clock .m { font:800 clamp(40px,7vw,96px)/.9 Manrope; letter-spacing:-.04em }
-  .clock .n { color:var(--muted); font-size:14px; margin-top:8px } .clock .n b { color:var(--fire); font-weight:600 }
-  .pulse { position:fixed; left:0; right:0; bottom:0; height:84px; z-index:4; background:linear-gradient(transparent, rgba(0,0,0,.7)) }
-  .pulse canvas { width:100%; height:100% }
-  .player { position:fixed; right:24px; bottom:100px; z-index:5; display:flex; gap:8px; align-items:center }
-  .player input { width:min(260px,40vw); accent-color:var(--fire) }
-
-  /* story */
-  main { position:relative; z-index:3 }
-  .chapter { min-height:100vh; display:flex; align-items:center; padding:90px 24px 190px; pointer-events:none }
-  .card { pointer-events:auto; max-width:440px; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--line); border-radius:24px; padding:28px; opacity:0; transform:translateY(30px); transition:opacity .9s, transform .9s }
-  .chapter.in .card { opacity:1; transform:none }
-  .card .kicker { color:var(--fire); font:600 12px Inter; letter-spacing:.14em; text-transform:uppercase }
-  .card h2 { font-size:clamp(28px,3.4vw,40px); line-height:1.05; margin:10px 0 12px } .card p { color:#cfc7bd; margin:0 0 12px }
-  .card canvas { width:100%; display:block; margin-top:8px }
-  .stat { display:flex; gap:20px; margin:14px 0 4px } .stat div b { display:block; font:800 30px Manrope; color:var(--ink) } .stat div span { color:var(--muted); font-size:13px }
-  .legend { display:flex; gap:14px; color:var(--muted); font-size:13px; margin-top:8px } .legend i { display:inline-block; width:14px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px }
-  .hero { justify-content:center; text-align:center }
-  .hero .card { background:radial-gradient(ellipse at center, rgba(7,7,10,.82) 0%, rgba(7,7,10,.55) 45%, transparent 72%); border:0; backdrop-filter:none; -webkit-backdrop-filter:none; max-width:900px; padding:70px 60px }
-  .hero p, .hero .scrollhint { text-shadow:0 2px 16px #000 }
-  .hero h1 { font-size:clamp(52px,10vw,148px); line-height:.88; margin:0 0 18px; font-weight:800 }
-  .hero h1 span { color:var(--fire); text-shadow:0 0 60px rgba(255,106,26,.55) }
-  .hero p { font-size:clamp(17px,2vw,22px); color:#d9d1c7; max-width:620px; margin:0 auto 26px }
-  .scrollhint { color:var(--muted); font-size:13px; margin-top:28px; animation:bob 2s infinite } @keyframes bob { 50% { transform:translateY(6px) } }
-  .phone { width:270px; border-radius:34px; border:8px solid #1b1a19; background:#0e1621; padding:14px 12px; margin:6px auto 0; box-shadow:0 30px 80px rgba(0,0,0,.6) }
-  .bubble { background:#182533; border-radius:14px; padding:12px; font-size:13px; line-height:1.45; color:#e9edf1; white-space:pre-line }
-  .here { color:var(--muted); font-size:13px } .here b { color:var(--ink) }
-  footer { position:relative; z-index:3; text-align:center; color:var(--dim); font-size:13px; padding:40px 24px 130px } footer a { color:var(--muted) }
-  #loading { position:fixed; inset:0; z-index:10; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .8s }
-  @media (max-width:760px) { .chapter { align-items:flex-end; padding:90px 14px 120px } .card { padding:20px } .clock { bottom:92px; left:16px } .player { right:12px; bottom:96px } .top { padding:12px 14px } }
-  @media (prefers-reduced-motion:reduce) { .card { transition:none } .scrollhint { animation:none } }
+  /* panel side */
+  .panel { overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; background:var(--panel) }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px }
+  .card h2 { font-size:15px; margin:0 } .card .sub { color:var(--muted); font-size:12px; margin:2px 0 10px }
+  .head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px }
+  .where { color:var(--muted); font-weight:500 } .where b { color:var(--ink) }
+  .big { font:800 52px/1 Manrope; letter-spacing:-.03em; margin:10px 0 2px } .big span { font-size:16px; color:var(--muted); letter-spacing:0; font-weight:600 }
+  .badge { display:inline-flex; border-radius:999px; padding:4px 10px; font-weight:600; font-size:13px; margin-top:8px }
+  .badge.up { background:var(--up-bg); color:var(--up) } .badge.down { background:var(--down-bg); color:var(--down) } .badge.na { background:var(--card2); color:var(--muted) }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px }
+  .stat { background:var(--card2); border-radius:12px; padding:10px 12px } .stat b { display:block; font:800 18px Manrope } .stat span { color:var(--muted); font-size:12px }
+  #cal { height:470px } #line, #harm, #wx { height:220px }
+  .note { color:var(--muted); font-size:12px; margin-top:6px }
+  .src { color:var(--dim); font-size:11px; margin-top:4px }
+  .bot { display:flex; gap:12px; align-items:center } .bot p { margin:0; color:#cfc7bd; font-size:13px }
+  #loading { position:fixed; inset:0; z-index:9; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
+  @media (max-width:1300px) { .brand small { display:none } }
+  @media (max-width:1100px) { #csvCal, #csvPts { padding:7px 10px } input[type=month] { width:150px } }
+  @media (max-width:980px) {
+    .app { display:block; height:auto } .mapside { height:72vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px }
+    .brand small { display:none } .panel { overflow:visible }
+  }
 </style>
 </head>
 <body>
 <div id="loading" class="mono">BURNBEAT · loading 25 years of fire…</div>
-<div id="stage"><canvas id="land"></canvas><canvas id="fire"></canvas><canvas id="marks"></canvas></div>
-<div id="vignette"></div>
+<header>
+  <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b><small data-t="tagline"></small></a>
+  <div class="sp"></div>
+  <input type="month" id="y0" aria-label="from"><input type="month" id="y1" aria-label="to">
+  <button class="pill" id="csvCal" data-t="csvCal"></button>
+  <button class="pill" id="csvPts" data-t="csvPts"></button>
+  <a class="pill fire" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener" data-t="tg"></a>
+  <div class="seg" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
+</header>
 
-<div class="top">
-  <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>BurnBeat</a>
-  <div class="lang" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
-  <a class="btn" href="tool.html" data-t="toolBtn"></a>
+<div class="app">
+  <section class="mapside">
+    <div class="chips" id="chips"></div>
+    <div id="stage">
+      <canvas id="land"></canvas><canvas id="fire"></canvas><canvas id="marks"></canvas>
+      <div class="hint" data-t="hint"></div>
+      <div class="clock"><div class="m mono" id="clockM"></div><div class="n" id="clockN"></div></div>
+      <div class="player"><button id="play" aria-label="play">▶</button></div>
+    </div>
+    <canvas id="timeline"></canvas>
+  </section>
+
+  <aside class="panel">
+    <div class="card" id="hero"></div>
+    <div class="card">
+      <div class="head"><div><h2 data-t="calT"></h2><div class="sub" data-t="calS"></div></div>
+        <div class="seg" id="mode"><button data-v="n" class="on" data-t="modeN"></button><button data-v="a" data-t="modeA"></button></div></div>
+      <div id="cal"></div>
+    </div>
+    <div class="card"><h2 id="lineT"></h2><div class="sub" data-t="lineS"></div><div id="line"></div></div>
+    <div class="card" id="wxCard"><h2 data-t="wxT"></h2><div class="sub" data-t="wxS"></div><div id="wx"></div><div class="note" id="wxNote"></div></div>
+    <div class="card"><h2 data-t="harmT"></h2><div class="sub" id="harmS"></div><div id="harm"></div><div class="note" id="valid"></div></div>
+    <div class="card bot"><div style="font-size:30px">📱</div><p data-t="botP"></p></div>
+    <div class="src" data-t="footer"></div>
+  </aside>
 </div>
-
-<div class="clock" id="clock"><div class="m mono" id="clockM">—</div><div class="n" id="clockN"></div></div>
-<div class="player"><button class="btn" id="play">❚❚</button><input type="range" id="scrub" min="0" max="0" value="0" aria-label="month"></div>
-<div class="pulse"><canvas id="pulse"></canvas></div>
-
-<main>
-  <section class="chapter hero" data-ch="hero"><div class="card">
-    <h1><span>Burn</span>Beat</h1>
-    <p data-t="heroP"></p>
-    <a class="btn fire" href="#c1" data-t="heroBtn"></a>
-    <div class="scrollhint" data-t="scroll"></div>
-  </div></section>
-
-  <section class="chapter" id="c1" data-ch="rhythm"><div class="card">
-    <div class="kicker" data-t="k1"></div><h2 data-t="h1"></h2><p data-t="p1"></p>
-    <canvas id="calendar" height="300"></canvas>
-    <div class="legend"><span data-t="calLegend"></span></div>
-  </div></section>
-
-  <section class="chapter" data-ch="clocks"><div class="card">
-    <div class="kicker" data-t="k2"></div><h2 data-t="h2"></h2><p data-t="p2"></p>
-    <canvas id="harm" height="200"></canvas>
-    <div class="legend"><span><i style="background:#777"></i><span data-t="raw"></span></span><span><i style="background:#ff6a1a"></i><span data-t="harmonized"></span></span></div>
-    <div class="stat" id="valStat"></div>
-  </div></section>
-
-  <section class="chapter" data-ch="explore"><div class="card">
-    <div class="kicker" data-t="k3"></div><h2 data-t="h3"></h2><p data-t="p3"></p>
-    <div class="here" id="hereTxt"></div>
-    <canvas id="local" height="230"></canvas>
-  </div></section>
-
-  <section class="chapter" data-ch="kg"><div class="card">
-    <div class="kicker" data-t="k4"></div><h2 data-t="h4"></h2><p data-t="p4"></p>
-    <div class="phone"><div class="bubble" data-t="bot"></div></div>
-  </div></section>
-
-  <section class="chapter" data-ch="cta"><div class="card">
-    <div class="kicker" data-t="k5"></div><h2 data-t="h5"></h2><p data-t="p5"></p>
-    <a class="btn fire" href="tool.html" data-t="toolBtn"></a>
-  </div></section>
-</main>
-<footer data-t="footer"></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <script>
+// ---------------- text (KY needs a native-speaker check) ----------------
 const I18N = {
-  ru: { toolBtn:'Инструмент →', heroP:'25 лет пожаров планеты за 40 секунд. Спутники NASA MODIS и VIIRS, сведённые в один честный ряд.', heroBtn:'Смотреть историю ↓', scroll:'прокрутите вниз',
-    k1:'01 · Ритм', h1:'Планета горит по расписанию', p1:'Каждая клетка — месяц. Строки — годы с 2001-го. Один и тот же рисунок повторяется четверть века: огонь — это сезон, а не случайность.', calLegend:'темнее — меньше очагов, ярче — больше',
-    k2:'02 · Сломанные часы', h2:'В 2012 году спутники «соврали»', p2:'Новый прибор VIIRS видит в несколько раз больше мелких пожаров, чем старый MODIS. Если склеить ряды как есть, кажется, что мир внезапно загорелся. Мы пересчитали 25 лет в одну шкалу.',
-    raw:'сырые данные', harmonized:'гармонизированный ряд', vErr:'ошибка вместо', vCorr:'корреляция по клеткам',
-    k3:'03 · Ваша земля', h3:'Нажмите на любое место карты', p3:'Календарь горения для любой точки планеты: когда там обычно горит и какой год был худшим.', pick:'Кликните по карте, чтобы выбрать место', peak:'пик', worst:'худший год', perYear:'очагов в год (медиана)',
-    k4:'04 · Сейчас', h4:'Кыргызстан: предупредить до огня', p4:'Каждое утро бот BurnBeat присылает службам и фермерам оценку пожарной опасности: сезон, отклонение от нормы, погода, свежие очаги со спутников.',
-    bot:'🔥 Пожарная сводка · 15 ноября\n\n🟠 Чуйская — риск СРЕДНИЙ\nЗа сутки: 1 · С 8 ноября: 41 (норма 2.6, ▲ в 15 раз)\nСезон: осенние палы\nПочему: выше нормы, сухо\n🗺 Открыть карту',
-    k5:'05 · Инструмент', h5:'Для тех, кто планирует сезон', p5:'Календарь горения по областям, аномалии к норме, связь с дождём, CSV и PNG для отчётов. На трёх языках.',
-    footer:'Данные: NASA FIRMS (MODIS C6.1, VIIRS S-NPP / NOAA-20), NASA POWER, Open-Meteo · NASA Space Apps Challenge 2026',
-    months:['ЯНВ','ФЕВ','МАР','АПР','МАЙ','ИЮН','ИЮЛ','АВГ','СЕН','ОКТ','НОЯ','ДЕК'], fires:'очагов на планете', firesHere:'очагов' },
-  ky: { toolBtn:'Курал →', heroP:'Планетадагы 25 жылдык өрттөр 40 секундда. NASA MODIS жана VIIRS спутниктери бир чынчыл катарга бириктирилди.', heroBtn:'Тарыхты көрүү ↓', scroll:'ылдый жылдырыңыз',
-    k1:'01 · Ыргак', h1:'Планета график менен күйөт', p1:'Ар бир уяча — бир ай. Саптар — 2001-жылдан бери жылдар. Бир эле сүрөт чейрек кылым кайталанат: өрт — бул сезон, кокустук эмес.', calLegend:'караңгы — аз, ачык — көп очок',
-    k2:'02 · Бузулган саат', h2:'2012-жылы спутниктер «калп айтты»', p2:'Жаңы VIIRS прибору эски MODISке караганда майда өрттөрдү бир нече эсе көп көрөт. Катарларды ошол бойдон бириктирсек, дүйнө күтүлбөгөн жерден күйүп кеткендей көрүнөт. Биз 25 жылды бир шкалага келтирдик.',
-    raw:'чийки маалымат', harmonized:'гармонизацияланган катар', vErr:'ката, мурун', vCorr:'уячалар боюнча корреляция',
-    k3:'03 · Сиздин жер', h3:'Картанын каалаган жерин басыңыз', p3:'Планетанын каалаган чекити үчүн күйүү календары: ал жерде качан күйөт жана кайсы жыл эң оор болгон.', pick:'Жерди тандоо үчүн картаны басыңыз', peak:'чокусу', worst:'эң оор жыл', perYear:'жылына очок (медиана)',
-    k4:'04 · Азыр', h4:'Кыргызстан: өрткө чейин эскертүү', p4:'Ар күнү эртең менен BurnBeat боту кызматтарга жана фермерлерге өрт коркунучун жөнөтөт: сезон, нормадан четтөө, аба ырайы, спутниктен жаңы очоктор.',
-    bot:'🔥 Өрт сводкасы · 15-ноябрь\n\n🟠 Чүй — коркунуч ОРТОЧО\nБир суткада: 1 · 8-ноябрдан бери: 41 (норма 2.6, ▲ 15 эсе)\nСезон: күзгү өрттөр\nЭмне үчүн: нормадан жогору, кургак\n🗺 Картаны ачуу',
-    k5:'05 · Курал', h5:'Сезонду пландагандар үчүн', p5:'Облустар боюнча күйүү календары, нормадан четтөө, жаан менен байланыш, отчеттор үчүн CSV жана PNG. Үч тилде.',
-    footer:'Маалымат: NASA FIRMS (MODIS C6.1, VIIRS S-NPP / NOAA-20), NASA POWER, Open-Meteo · NASA Space Apps Challenge 2026',
-    months:['ЯНВ','ФЕВ','МАР','АПР','МАЙ','ИЮН','ИЮЛ','АВГ','СЕН','ОКТ','НОЯ','ДЕК'], fires:'очок планетада', firesHere:'очок' },
-  en: { toolBtn:'Open the tool →', heroP:'25 years of the planet\'s fires in 40 seconds. NASA MODIS and VIIRS satellites, merged into one honest record.', heroBtn:'Watch the story ↓', scroll:'scroll down',
-    k1:'01 · Rhythm', h1:'The planet burns on schedule', p1:'Each cell is a month, each row a year since 2001. The same pattern repeats for a quarter century: fire is a season, not an accident.', calLegend:'darker — fewer hotspots, brighter — more',
-    k2:'02 · Broken clocks', h2:'In 2012 the satellites "lied"', p2:'The new VIIRS sensor sees several times more small fires than the old MODIS. Stitch the records together as they are and the world seems to suddenly catch fire. We put 25 years on one scale.',
-    raw:'raw data', harmonized:'harmonized record', vErr:'error, instead of', vCorr:'cell-level correlation',
-    k3:'03 · Your land', h3:'Click anywhere on the map', p3:'A burning calendar for any place on Earth: when it usually burns and which year was the worst.', pick:'Click the map to pick a place', peak:'peak', worst:'worst year', perYear:'hotspots a year (median)',
-    k4:'04 · Now', h4:'Kyrgyzstan: warn before the fire', p4:'Every morning the BurnBeat bot sends services and farmers a fire-danger rating: season, anomaly vs normal, weather and fresh satellite detections.',
-    bot:'🔥 Fire brief · 15 November\n\n🟠 Chui — risk MEDIUM\nLast 24 h: 1 · Since 8 Nov: 41 (normal 2.6, ▲ 15×)\nSeason: autumn field burning\nWhy: above normal, dry\n🗺 Open map',
-    k5:'05 · The tool', h5:'For those who plan the season', p5:'Burning calendar by region, anomalies vs normal, the rain link, CSV and PNG for reports. In three languages.',
-    footer:'Data: NASA FIRMS (MODIS C6.1, VIIRS S-NPP / NOAA-20), NASA POWER, Open-Meteo · NASA Space Apps Challenge 2026',
-    months:['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'], fires:'hotspots on the planet', firesHere:'hotspots' },
+  ru: { tagline:'календарь горения · MODIS + VIIRS', csvCal:'CSV календаря', csvPts:'CSV очагов', tg:'Сводка в Telegram',
+    hint:'Клик — выбрать место · протянуть — выбрать область', calT:'Календарь горения', calS:'Гармонизированные очаги (VIIRS-эквивалент) · клик по клетке — перейти к месяцу',
+    modeN:'Очаги', modeA:'К норме', lineS:'Медиана прошлых лет по месяцам', lineT:y=>`${y} против нормы`,
+    wxT:'Огонь и дождь', wxS:'Месяцы сезона 2012–2025 · погода NASA POWER', harmT:'Почему нужна гармонизация',
+    harmWorld:'Весь мир: сырой ряд «прыгает» в 2012, когда появился VIIRS', harmLocal:'Эта область: сырой ряд против гармонизированного',
+    botP:'Бот @burn_beat_bot каждое утро присылает службам Кыргызстана оценку пожарной опасности: сезон, отклонение от нормы, погода, свежие очаги.',
+    footer:'Данные: NASA FIRMS (MODIS C6.1, VIIRS S-NPP), NASA POWER · метод и проверка: docs/METHOD.md · NASA Space Apps 2026',
+    mon:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'], monFull:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
+    fires:'очагов', toNorm:'к норме', normLow:'норма почти ноль — не с чем сравнить', phase:'Сезон', peakNow:'сейчас пик', peakIn:n=>`пик через ${n} мес.`, peakMonth:m=>`пик: ${m}`,
+    worst:'Худший год', yearNorm:'Норма за год', lastYear:y=>`Очагов за ${y}`, norm:'Норма', raw:'Сырой MODIS → VIIRS', harm:'Гармонизированный',
+    many:'больше', few:'меньше', above:'выше нормы', below:'ниже нормы', custom:'Выбранная область', point:'Точка',
+    validW:v=>`Проверка (каждый год 2012–2019 скрыт по очереди): смещение ${v.cell.bias_pct}% против ${v.raw.bias_pct}% без гармонизации; ошибка в месяц в ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} раз меньше.`,
+    validK:(b,r)=>`Проверка по Кыргызстану: ошибка ${b.mae} очага/мес против ${r} у сырого MODIS · смещение ${b.bias_pct}%`,
+    rain:'Осадки, % нормы месяца', fireAnom:'Очаги, % к норме', wxNote:r=>`Корреляция осадки ↔ пожары: r = ${r}. ${r < -0.25 ? 'Дождливые месяцы горят меньше.' : 'Связь слабая.'}`,
+    ptsOnlyKg:'Отдельные очаги доступны для областей Кыргызстана' },
+  ky: { tagline:'күйүү календары · MODIS + VIIRS', csvCal:'Календарь CSV', csvPts:'Очоктор CSV', tg:'Telegram сводка',
+    hint:'Басуу — жерди тандоо · тартуу — аймакты тандоо', calT:'Күйүү календары', calS:'Гармонизацияланган очоктор (VIIRS эквиваленти) · уячаны басыңыз — ошол айга өтүү',
+    modeN:'Очоктор', modeA:'Нормага', lineS:'Мурунку жылдардын айлык медианасы', lineT:y=>`${y} жана норма`,
+    wxT:'Өрт жана жаан', wxS:'2012–2025 сезон айлары · аба ырайы NASA POWER', harmT:'Гармонизация эмне үчүн керек',
+    harmWorld:'Бүт дүйнө: 2012-жылы VIIRS чыкканда чийки катар секирет', harmLocal:'Бул аймак: чийки жана гармонизацияланган катар',
+    botP:'@burn_beat_bot ар күнү эртең менен Кыргызстандын кызматтарына өрт коркунучун жөнөтөт: сезон, нормадан четтөө, аба ырайы, жаңы очоктор.',
+    footer:'Маалымат: NASA FIRMS (MODIS C6.1, VIIRS S-NPP), NASA POWER · ыкма жана текшерүү: docs/METHOD.md · NASA Space Apps 2026',
+    mon:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'], monFull:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
+    fires:'очок', toNorm:'нормага карата', normLow:'норма нөлгө жакын — салыштырууга болбойт', phase:'Сезон', peakNow:'азыр чокусу', peakIn:n=>`чокуга ${n} ай`, peakMonth:m=>`чокусу: ${m}`,
+    worst:'Эң оор жыл', yearNorm:'Жылдык норма', lastYear:y=>`${y}-жылы очоктор`, norm:'Норма', raw:'Чийки MODIS → VIIRS', harm:'Гармонизацияланган',
+    many:'көп', few:'аз', above:'нормадан жогору', below:'нормадан төмөн', custom:'Тандалган аймак', point:'Чекит',
+    validW:v=>`Текшерүү (2012–2019 ар бир жыл кезек менен жашырылган): жылыш ${v.cell.bias_pct}%, гармонизациясыз ${v.raw.bias_pct}%; айлык ката ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} эсе аз.`,
+    validK:(b,r)=>`Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r} · жылыш ${b.bias_pct}%`,
+    rain:'Жаан, айлык нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r=>`Жаан ↔ өрт корреляциясы: r = ${r}. ${r < -0.25 ? 'Жаандуу айларда өрт азыраак.' : 'Байланыш алсыз.'}`,
+    ptsOnlyKg:'Өзүнчө очоктор Кыргызстандын облустары үчүн гана бар' },
+  en: { tagline:'burning calendar · MODIS + VIIRS', csvCal:'Calendar CSV', csvPts:'Hotspots CSV', tg:'Telegram brief',
+    hint:'Click — pick a place · drag — pick an area', calT:'Burning calendar', calS:'Harmonized hotspots (VIIRS-equivalent) · click a cell to jump to that month',
+    modeN:'Hotspots', modeA:'vs normal', lineS:'Median of past years by month', lineT:y=>`${y} vs normal`,
+    wxT:'Fire and rain', wxS:'Fire-season months 2012–2025 · weather: NASA POWER', harmT:'Why harmonization matters',
+    harmWorld:'Whole world: the raw record jumps in 2012 when VIIRS arrives', harmLocal:'This area: raw vs harmonized record',
+    botP:'Every morning @burn_beat_bot sends Kyrgyz services a fire-danger rating: season, anomaly vs normal, weather and fresh detections.',
+    footer:'Data: NASA FIRMS (MODIS C6.1, VIIRS S-NPP), NASA POWER · method and validation: docs/METHOD.md · NASA Space Apps 2026',
+    mon:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], monFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
+    fires:'hotspots', toNorm:'vs normal', normLow:'normal is near zero — nothing to compare', phase:'Season', peakNow:'peak now', peakIn:n=>`peak in ${n} mo.`, peakMonth:m=>`peak: ${m}`,
+    worst:'Worst year', yearNorm:'Normal year', lastYear:y=>`Hotspots in ${y}`, norm:'Normal', raw:'Raw MODIS → VIIRS', harm:'Harmonized',
+    many:'more', few:'fewer', above:'above normal', below:'below normal', custom:'Selected area', point:'Point',
+    validW:v=>`Validation (each year 2012–2019 held out in turn): bias ${v.cell.bias_pct}% vs ${v.raw.bias_pct}% without harmonization; monthly error ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)}× smaller.`,
+    validK:(b,r)=>`Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS · bias ${b.bias_pct}%`,
+    rain:'Rainfall, % of monthly normal', fireAnom:'Hotspots, % vs normal', wxNote:r=>`Rainfall ↔ fire correlation: r = ${r}. ${r < -0.25 ? 'Wet months burn less.' : 'Weak link.'}`,
+    ptsOnlyKg:'Individual hotspots are available for Kyrgyz regions' },
 };
+const PRESETS = [   // bbox = [south, west, north, east]
+  ['world', null, { ru:'Весь мир', ky:'Бүт дүйнө', en:'World' }],
+  ['amazon', [-15,-70,0,-45], { ru:'Амазония', ky:'Амазония', en:'Amazon' }],
+  ['sahel', [4,-18,14,35], { ru:'Сахель', ky:'Сахель', en:'Sahel' }],
+  ['siberia', [50,90,70,140], { ru:'Сибирь', ky:'Сибирь', en:'Siberia' }],
+  ['australia', [-40,112,-10,155], { ru:'Австралия', ky:'Австралия', en:'Australia' }],
+  ['casia', [35,46,56,88], { ru:'Центральная Азия', ky:'Борбор Азия', en:'Central Asia' }],
+  ['|'],
+  ['kg', [39.1,69.2,43.3,80.3], { ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyrgyzstan' }, 'kg'],
+  ['chui', [42.2,72.8,43.3,76.0], { ru:'Чуй', ky:'Чүй', en:'Chui' }, 'chui'],
+  ['talas', [41.9,70.9,42.8,73.2], { ru:'Талас', ky:'Талас', en:'Talas' }, 'talas'],
+  ['issykkul', [41.6,76.0,43.0,80.3], { ru:'Иссык-Куль', ky:'Ысык-Көл', en:'Issyk-Kul' }, 'issykkul'],
+  ['naryn', [40.5,73.5,42.3,78.5], { ru:'Нарын', ky:'Нарын', en:'Naryn' }, 'naryn'],
+  ['jalalabad', [40.6,70.6,42.4,74.0], { ru:'Джалал-Абад', ky:'Жалал-Абад', en:'Jalal-Abad' }, 'jalalabad'],
+  ['osh', [39.3,72.4,40.9,75.0], { ru:'Ош', ky:'Ош', en:'Osh' }, 'osh'],
+  ['batken', [39.5,69.2,40.4,72.4], { ru:'Баткен', ky:'Баткен', en:'Batken' }, 'batken'],
+];
+const KG_EXTENT = [39.1,69.2,43.3,80.3];
+
 let lang = 'ru'; try { lang = localStorage.getItem('bb_lang') || 'ru'; } catch (e) {}
 const T = () => I18N[lang];
 const $ = id => document.getElementById(id);
-const DPR = Math.min(2, window.devicePixelRatio || 1);
-const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const FIRE_RES = 0.5;
+const DPR = Math.min(2, devicePixelRatio || 1);
+const fmt = n => Math.round(n).toLocaleString(lang === 'en' ? 'en-US' : 'ru-RU');
+const median = a => { a = a.filter(v => v != null).sort((x, y) => x - y); if (!a.length) return 0; const k = a.length >> 1; return a.length % 2 ? a[k] : (a[k-1] + a[k]) / 2; };
+const mean = a => a.reduce((s, x) => s + x, 0) / (a.length || 1);
+const corr = (a, b) => { const ma = mean(a), mb = mean(b); let n = 0, da = 0, db = 0; a.forEach((x, i) => { n += (x-ma)*(b[i]-mb); da += (x-ma)**2; db += (b[i]-mb)**2; }); return da && db ? n / Math.sqrt(da*db) : 0; };
+const zs = a => { const m = mean(a), s = Math.sqrt(mean(a.map(x => (x-m)**2))) || 1; return a.map(x => (x-m)/s); };
 
-let G, S, world, proj, path, W, H, pts = [], frameIdx = 0, playing = !REDUCED, picked = null, chapter = 'hero';
+// ---------------- state ----------------
+let MONTHS, N, WORLD, SUMMARY, KG, KGMETA, WEATHER, world;
+let gCells = [], kgCells = [];                // {la, lo, h:Float32Array, m?, v?}
+let sel = { key:'world', bbox:null, name:null, src:'global' };
+let cur = 0, playing = false, mode = 'n', series = null;
+const charts = {};
+
+// ---------------- map ----------------
 const C = { land:$('land'), fire:$('fire'), marks:$('marks') };
 const ctx = Object.fromEntries(Object.entries(C).map(([k, c]) => [k, c.getContext('2d')]));
-
-// ember sprite: soft radial glow, drawn additively
+let proj, path, W, H, ptsG = [], ptsK = [];
 const sprite = document.createElement('canvas'); sprite.width = sprite.height = 64;
 { const g = sprite.getContext('2d'), r = g.createRadialGradient(32,32,0,32,32,32);
-  r.addColorStop(0,'rgba(255,240,200,1)'); r.addColorStop(.18,'rgba(255,170,60,.9)'); r.addColorStop(.45,'rgba(255,90,20,.35)'); r.addColorStop(1,'rgba(255,60,0,0)');
+  r.addColorStop(0,'rgba(255,240,200,1)'); r.addColorStop(.2,'rgba(255,160,50,.85)'); r.addColorStop(.5,'rgba(255,80,20,.3)'); r.addColorStop(1,'rgba(255,60,0,0)');
   g.fillStyle = r; g.fillRect(0,0,64,64); }
+const GRID = 3; let off, offCtx, img, buf, pix, LUT, P99G, P99K;
 
-function applyLang() {
-  document.documentElement.lang = lang;
-  document.querySelectorAll('[data-t]').forEach(el => el.textContent = T()[el.dataset.t]);
-  document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
-  if (G) { drawCalendar(); drawHarm(1); drawLocal(); updateClock(); valStat(); }
-}
-$('lang').onclick = e => { const v = e.target.dataset.v; if (!v) return; lang = v; try { localStorage.setItem('bb_lang', v); } catch (e) {} applyLang(); };
-
-function size(c, h) { const r = c.getBoundingClientRect(); c.width = r.width * DPR; c.height = (h || r.height) * DPR; return [r.width, h || r.height]; }
+function boxGeo(b) { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8;
+  pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); }
+  return { type:'MultiPoint', coordinates:pts }; }
 
 function layout() {
-  W = innerWidth; H = innerHeight;
+  const r = $('stage').getBoundingClientRect(); W = r.width; H = r.height;
   Object.values(C).forEach(c => { c.width = W * DPR; c.height = H * DPR; });
   Object.values(ctx).forEach(g => g.setTransform(DPR,0,0,DPR,0,0));
-  // glow is blurry anyway: render the fire layer at half resolution (4x fewer pixels to blend)
-  C.fire.width = W * FIRE_RES; C.fire.height = H * FIRE_RES; ctx.fire.setTransform(FIRE_RES,0,0,FIRE_RES,0,0);
-  const focus = chapter === 'kg';
   proj = d3.geoEqualEarth();
-  if (focus) proj.center([0,0]).rotate([-74.5,0]).scale(W*1.9).translate([W*0.62, H*0.5 + W*1.9*0.79]);   // zoom on Central Asia
-  else proj.fitExtent([[24, 70], [W - 24, H - 100]], { type:'Sphere' });
+  if (sel.bbox) { const b = sel.bbox, pad = Math.max(1.5, (b[2]-b[0]) * .35);
+    proj.rotate([-(b[1] + b[3]) / 2, 0]);          // centre the area so it is not sheared
+    proj.fitExtent([[20, 40], [W - 20, H - 70]], boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3])); }
+  else proj.fitExtent([[10, 44], [W - 10, H - 64]], { type:'Sphere' });
   path = d3.geoPath(proj, ctx.land);
-  drawLand();
-  pts = G.cells.map(c => { const lat = Math.floor(c/360) - 90 + .5, lon = c%360 - 180 + .5; return proj([lon, lat]); });
-  prepareGrid();
-  ctx.fire.clearRect(0,0,W,H); drawFrame(frameIdx, 1); drawMarks();
-  const [pw] = size($('pulse')); drawPulse();
-}
-
-function drawLand() {
   const g = ctx.land; g.clearRect(0,0,W,H);
-  g.beginPath(); path({ type:'Sphere' }); g.fillStyle = '#0b0b0f'; g.fill();
-  g.beginPath(); path(d3.geoGraticule10()); g.strokeStyle = 'rgba(255,255,255,.035)'; g.lineWidth = .6; g.stroke();
-  g.beginPath(); path(world.land); g.fillStyle = '#16151a'; g.fill();
-  g.beginPath(); path(world.borders); g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = .5; g.stroke();
-}
-
-const scaleR = () => Math.max(1.6, (proj.scale() / 160) * 2.2);
-// Fast path for the world view: every cell is one pixel of a small offscreen image (one putImageData per frame),
-// then drawn scaled up twice: blurred (glow) and sharp (cores). The sprite path is kept for the zoomed view.
-const GRID = 3; let off, offCtx, img, buf, pix, LUT;
-function prepareGrid() {
+  g.beginPath(); path({ type:'Sphere' }); g.fillStyle = '#08080b'; g.fill();
+  g.beginPath(); path(d3.geoGraticule10()); g.strokeStyle = 'rgba(255,255,255,.03)'; g.lineWidth = .6; g.stroke();
+  g.beginPath(); path(world.land); g.fillStyle = '#1c1b21'; g.fill();
+  g.beginPath(); path(world.borders); g.strokeStyle = sel.bbox ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)'; g.lineWidth = sel.bbox ? 1 : .6; g.stroke();
+  ptsG = gCells.map(c => proj([c.lo, c.la])); ptsK = kgCells.map(c => proj([c.lo, c.la]));
   const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
   off = document.createElement('canvas'); off.width = gw; off.height = gh; offCtx = off.getContext('2d');
   img = offCtx.createImageData(gw, gh); buf = new Uint32Array(img.data.buffer);
-  pix = new Int32Array(pts.length).fill(-1);
-  pts.forEach((p, i) => { if (!p) return; const x = Math.round(p[0] / GRID), y = Math.round(p[1] / GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y * gw + x; });
-  if (!LUT) { LUT = new Uint32Array(256);
-    for (let k = 0; k < 256; k++) { const c = d3.rgb(d3.interpolateInferno(0.45 + 0.55 * k / 255)), a = Math.round(60 + 195 * k / 255);
-      LUT[k] = (a << 24) | (c.b << 16) | (c.g << 8) | c.r; } }
+  pix = new Int32Array(ptsG.length).fill(-1);
+  ptsG.forEach((p, i) => { if (!p) return; const x = Math.round(p[0]/GRID), y = Math.round(p[1]/GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y*gw + x; });
+  ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks();
 }
-function drawFrame(i, fade) {
-  const g = ctx.fire, fr = G.frames[i]; if (!fr) return;
-  g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade})`; g.fillRect(0,0,W,H);   // embers fade
+
+function drawFire(fade) {
+  const g = ctx.fire;
+  g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade})`; g.fillRect(0,0,W,H);
   g.globalCompositeOperation = 'lighter';
-  const base = scaleR(), max = G.p99;
-  if (base < 6 && buf) {                                   // world view
-    buf.fill(0); const lmax = Math.log1p(max);
-    for (let k = 0; k < fr.length; k += 2) { const q = pix[fr[k]]; if (q < 0) continue;
-      const v = Math.min(255, Math.round(255 * Math.log1p(fr[k+1]) / lmax)); if (buf[q] >>> 0 < LUT[v] >>> 0) buf[q] = LUT[v]; }
+  const zoomed = proj.scale() > 600;
+  if (zoomed && sel.src === 'kg') {                  // fine 0.25° cells
+    const r0 = proj.scale() / 160 * .9, lm = Math.log1p(P99K);
+    kgCells.forEach((c, i) => { const n = c.h[cur], p = ptsK[i]; if (!p || n < 1) return;
+      const v = Math.min(1, Math.log1p(n) / lm), r = r0 * (0.6 + 1.6 * v); g.globalAlpha = .15 + .7 * v; g.drawImage(sprite, p[0]-r, p[1]-r, 2*r, 2*r); });
+  } else if (zoomed) {
+    const r0 = proj.scale() / 160 * 2.4, lm = Math.log1p(P99G);
+    gCells.forEach((c, i) => { const n = c.h[cur], p = ptsG[i]; if (!p || n < 1 || p[0] < -r0 || p[0] > W + r0 || p[1] < -r0 || p[1] > H + r0) return;
+      const v = Math.min(1, Math.log1p(n) / lm), r = r0 * (0.6 + 1.4 * v); g.globalAlpha = .15 + .7 * v; g.drawImage(sprite, p[0]-r, p[1]-r, 2*r, 2*r); });
+  } else {                                           // world: one pixel per cell, then glow
+    buf.fill(0); const lm = Math.log1p(P99G);
+    gCells.forEach((c, i) => { const q = pix[i], n = c.h[cur]; if (q < 0 || n < 2) return;
+      const v = Math.min(255, Math.round(255 * Math.log1p(n) / lm)); if (buf[q] >>> 0 < LUT[v] >>> 0) buf[q] = LUT[v]; });
     offCtx.putImageData(img, 0, 0);
-    g.imageSmoothingEnabled = true;
     g.filter = 'blur(4px)'; g.globalAlpha = .9; g.drawImage(off, 0, 0, W, H);
-    g.filter = 'none'; g.globalAlpha = .55; g.drawImage(off, 0, 0, W, H);
-    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; return;
-  }
-  for (let k = 0; k < fr.length; k += 2) {
-    const p = pts[fr[k]]; if (!p || fr[k+1] < 2) continue;      // single detections add nothing visible
-    const v = Math.min(1, Math.log1p(fr[k+1]) / Math.log1p(max)), r = base * (0.5 + 2.1 * v * v);
-    if (p[0] < -r || p[0] > W + r || p[1] < -r || p[1] > H + r) continue;
-    g.globalAlpha = 0.12 + 0.55 * v; g.drawImage(sprite, p[0] - r, p[1] - r, 2*r, 2*r);
+    g.filter = 'none'; g.globalAlpha = .6; g.drawImage(off, 0, 0, W, H);
   }
   g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
 }
 
-function drawMarks() {
+function drawMarks(drag) {
   const g = ctx.marks; g.clearRect(0,0,W,H);
-  if (!picked) return;
-  const p = proj([picked.lon, picked.lat]); if (!p) return;
-  g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.arc(p[0], p[1], 14, 0, 7); g.stroke();
-  g.strokeStyle = 'rgba(255,106,26,.6)'; g.beginPath(); g.arc(p[0], p[1], 24, 0, 7); g.stroke();
+  const b = drag || sel.bbox; if (!b) return;
+  const ring = [[b[1],b[0]],[b[3],b[0]],[b[3],b[2]],[b[1],b[2]]];
+  g.beginPath();
+  ring.forEach((p, i) => { const q = ring[(i+1) % 4]; for (let t = 0; t <= 1; t += .1) { const xy = proj([p[0] + (q[0]-p[0])*t, p[1] + (q[1]-p[1])*t]); if (xy) (i || t) ? g.lineTo(...xy) : g.moveTo(...xy); } });
+  g.closePath(); g.setLineDash([6,4]); g.strokeStyle = '#ffd2b0'; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]);
 }
 
-function updateClock() {
-  const ym = G.months[frameIdx], [y, m] = ym.split('-');
-  $('clockM').textContent = `${T().months[+m-1]} ${y}`;
-  $('clockN').innerHTML = `<b>${S.harmonized[frameIdx].toLocaleString(lang==='en'?'en-US':'ru-RU')}</b> ${T().fires}`;
-  $('scrub').value = frameIdx;
-}
-
-function drawPulse() {
-  const c = $('pulse'), g = c.getContext('2d'), w = c.width / DPR, h = c.height / DPR;
-  g.setTransform(DPR,0,0,DPR,0,0); g.clearRect(0,0,w,h);
-  const v = S.harmonized, max = d3.max(v), x = i => 16 + (w - 32) * i / (v.length - 1), y = n => h - 14 - (h - 28) * n / max;
-  g.beginPath(); v.forEach((n, i) => i ? g.lineTo(x(i), y(n)) : g.moveTo(x(i), y(n)));
-  g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1.2; g.stroke();
-  g.save(); g.beginPath(); g.rect(0, 0, x(frameIdx), h); g.clip();
-  g.beginPath(); v.forEach((n, i) => i ? g.lineTo(x(i), y(n)) : g.moveTo(x(i), y(n)));
-  g.strokeStyle = '#ff6a1a'; g.lineWidth = 2; g.shadowColor = '#ff6a1a'; g.shadowBlur = 10; g.stroke(); g.restore();
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(x(frameIdx), y(v[frameIdx]), 3.5, 0, 7); g.fill();
-  g.fillStyle = 'rgba(255,255,255,.35)'; g.font = '11px JetBrains Mono';
-  G.months.forEach((ym, i) => { if (ym.endsWith('-01') && +ym.slice(0,4) % 5 === 0) g.fillText(ym.slice(0,4), x(i) - 14, h - 2); });
-}
-
-// --- calendar of the whole planet (or picked place) ---
-function calendarOf(series, canvas, n) {
-  const [w, h] = size(canvas, n || 300), g = canvas.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0); g.clearRect(0,0,w,h);
-  const years = [...new Set(G.months.map(m => +m.slice(0,4)))], cw = (w - 40) / 12, ch = (h - 18) / years.length;
-  const max = d3.quantile(series.filter(v => v > 0).sort(d3.ascending), .97) || 1;
-  const color = d3.scaleSequential(t => d3.interpolateInferno(0.08 + 0.9 * t)).domain([0, Math.log1p(max)]).clamp(true);
-  G.months.forEach((ym, i) => { const yi = years.indexOf(+ym.slice(0,4)), mi = +ym.slice(5) - 1;
-    g.fillStyle = color(Math.log1p(series[i])); g.fillRect(40 + mi*cw + 1, 16 + yi*ch + .5, cw - 2, Math.max(1, ch - 1)); });
-  g.fillStyle = '#9a9189'; g.font = '10px JetBrains Mono';
-  T().months.forEach((m, i) => g.fillText(m[0], 40 + i*cw + cw/2 - 3, 10));
-  years.forEach((y, i) => { if (y % 5 === 0 || i === 0) g.fillText(y, 0, 16 + i*ch + ch); });
-}
-const drawCalendar = () => calendarOf(S.harmonized, $('calendar'));
-
-function drawHarm(t) {
-  const c = $('harm'), [w, h] = size(c, 200), g = c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0); g.clearRect(0,0,w,h);
-  const yrs = [...new Set(G.months.map(m => m.slice(0,4)))].filter(y => y < G.months.at(-1).slice(0,4));
-  const sum = arr => yrs.map(y => d3.sum(G.months.map((m, i) => m.startsWith(y) ? arr[i] : 0)));
-  const raw = sum(S.raw), har = sum(S.harmonized), max = d3.max([...raw, ...har]);
-  const x = i => 6 + (w - 12) * i / (yrs.length - 1), y = v => h - 22 - (h - 34) * v / max;
-  const line = (arr, col, lw, k) => { g.beginPath(); arr.slice(0, Math.max(2, Math.ceil(arr.length * k))).forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))); g.strokeStyle = col; g.lineWidth = lw; g.stroke(); };
-  line(raw, '#777', 2, Math.min(1, t * 2));
-  if (t > .5) { g.shadowColor = '#ff6a1a'; g.shadowBlur = 12; line(har, '#ff6a1a', 3, (t - .5) * 2); g.shadowBlur = 0; }
-  const i12 = yrs.indexOf('2012'); g.strokeStyle = 'rgba(255,255,255,.25)'; g.setLineDash([3,4]); g.beginPath(); g.moveTo(x(i12), 8); g.lineTo(x(i12), h - 22); g.stroke(); g.setLineDash([]);
-  g.fillStyle = '#9a9189'; g.font = '10px JetBrains Mono'; g.fillText('2012 · VIIRS', x(i12) + 4, 14);
-  [0, yrs.length - 1].forEach(i => g.fillText(yrs[i], Math.min(w - 30, x(i)), h - 6));
-}
-function animateHarm() { if (REDUCED) return drawHarm(1); const t0 = performance.now(); const step = now => { const t = Math.min(1, (now - t0) / 2600); drawHarm(t); if (t < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
-function valStat() {
-  const v = S.validation, b = v.cell, r = v.raw;
-  $('valStat').innerHTML = `<div><b>${b.bias_pct > 0 ? '+' : ''}${b.bias_pct}%</b><span>${T().vErr} ${r.bias_pct}%</span></div><div><b>${b.corr_cell_annual}</b><span>${T().vCorr}</span></div>`;
-}
-
-// --- pick any place: 3x3 cells around the click ---
-function localSeries(lat, lon) {
-  const r0 = Math.floor(lat) + 90, c0 = (Math.floor(lon) + 180 + 360) % 360, want = new Set();
-  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) want.add((r0 + dr) * 360 + (c0 + dc + 360) % 360);
-  const idx = new Set(G.cells.map((c, i) => want.has(c) ? i : -1).filter(i => i >= 0));
-  return G.frames.map(fr => { let s = 0; for (let k = 0; k < fr.length; k += 2) if (idx.has(fr[k])) s += fr[k+1]; return s; });
-}
-function drawLocal() {
-  if (!picked) { $('hereTxt').textContent = T().pick; const c = $('local'); size(c, 230); c.getContext('2d').clearRect(0,0,c.width,c.height); return; }
-  const s = picked.series, byMonth = d3.range(12).map(m => d3.median(G.months.map((ym, i) => +ym.slice(5) === m + 1 ? s[i] : null).filter(v => v !== null)));
-  const yrs = d3.groups(G.months.map((ym, i) => [ym.slice(0,4), s[i]]), d => d[0]).map(([y, a]) => [y, d3.sum(a, d => d[1])]).filter(([y]) => y < G.months.at(-1).slice(0,4));
-  const worst = d3.greatest(yrs, d => d[1]), med = d3.median(yrs, d => d[1]);
-  $('hereTxt').innerHTML = `<b>${picked.lat.toFixed(1)}°, ${picked.lon.toFixed(1)}°</b> · ${T().peak}: <b>${T().months[byMonth.indexOf(d3.max(byMonth))]}</b> · ${T().worst}: <b>${worst[0]}</b> · <b>${Math.round(med).toLocaleString()}</b> ${T().perYear}`;
-  calendarOf(s, $('local'), 230);
-}
-C.marks.parentElement.style.pointerEvents = 'auto';
-addEventListener('click', e => {
-  if (chapter !== 'explore' || e.target.closest('.card,.top,.player')) return;
-  const ll = proj.invert([e.clientX, e.clientY]); if (!ll || !isFinite(ll[0])) return;
-  picked = { lon: ll[0], lat: ll[1], series: localSeries(ll[1], ll[0]) };
-  drawMarks(); drawLocal();
+// click = point (±1°), drag = rectangle
+let down = null;
+$('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player')) return; const r = $('stage').getBoundingClientRect(); down = [e.clientX - r.left, e.clientY - r.top]; });
+$('stage').addEventListener('pointermove', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top];
+  if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 6) { const a = proj.invert(down), c = proj.invert(p); if (a && c) drawMarks([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); } });
+addEventListener('pointerup', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top], d0 = down; down = null;
+  const a = proj.invert(d0); if (!a || !isFinite(a[0])) return;
+  if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) { const la = a[1], lo = a[0];
+    select({ key:null, bbox:[la-1, lo-1.3, la+1, lo+1.3].map(x => +x.toFixed(2)), name:`${T().point} ${la.toFixed(1)}°, ${lo.toFixed(1)}°` }); }
+  else { const c = proj.invert(p); if (!c) return;
+    select({ key:null, bbox:[Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])].map(x => +x.toFixed(2)), name:T().custom }); }
 });
 
-// --- playback ---
+// ---------------- selection & data ----------------
+const inside = (b, o) => b[0] >= o[0] && b[1] >= o[1] && b[2] <= o[2] && b[3] <= o[3];
+function select(s) {
+  const pre = PRESETS.find(p => p[0] === s.key);
+  sel = { key:s.key, bbox:s.bbox, name:s.name, wk:pre?.[3] || null,
+          src: s.bbox && inside(s.bbox, KG_EXTENT) ? 'kg' : 'global' };
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.k === sel.key));
+  const u = new URL(location); sel.bbox ? u.searchParams.set('bbox', sel.bbox.join(',')) : u.searchParams.delete('bbox'); history.replaceState(null, '', u);
+  series = aggregate('h');
+  layout(); render();
+}
+function aggregate(key) {
+  if (!sel.bbox) return key === 'h' ? Float32Array.from(SUMMARY.harmonized) : null;
+  const cells = sel.src === 'kg' ? kgCells : gCells, b = sel.bbox, out = new Float32Array(N);
+  for (const c of cells) if (c.la >= b[0] && c.la <= b[2] && c.lo >= b[1] && c.lo <= b[3] && c[key]) { const a = c[key]; for (let i = 0; i < N; i++) out[i] += a[i]; }
+  return out;
+}
+const nameOf = () => sel.key ? PRESETS.find(p => p[0] === sel.key)[2][lang] : sel.name;
+const range = () => [Math.max(0, MONTHS.indexOf($('y0').value)), Math.max(0, MONTHS.indexOf($('y1').value))];
+
+// ---------------- panel ----------------
+function render() {
+  const t = T(), [a, b] = range(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
+  const years = d3.range(+MONTHS[a].slice(0,4), +MONTHS[b].slice(0,4) + 1);
+  const val = (y, m) => { const i = (y - 2001) * 12 + m - 1; return i < a || i > b || i >= N ? null : series[i]; };
+  const med = d3.range(12).map(m => median(years.filter(y => y !== cy).map(y => val(y, m + 1))));
+
+  // hero
+  const now = series[cur], m0 = med[cm-1], anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null;
+  const peak = med.indexOf(Math.max(...med)), toPeak = (peak - (cm - 1) + 12) % 12;
+  const phase = toPeak === 0 ? t.peakNow : toPeak <= 2 ? t.peakIn(toPeak) : t.peakMonth(t.monFull[peak]);
+  const full = years.filter(y => y < 2025 || MONTHS.length > 300).map(y => [y, d3.sum(d3.range(12), m => val(y, m + 1) || 0)]);
+  const worst = d3.greatest(full, d => d[1]) || [0, 0];
+  $('hero').innerHTML = `<div class="where"><b>${nameOf()}</b> · ${t.mon[cm-1]} ${cy}</div>
+    <div class="big num">${fmt(now)} <span>${t.fires}</span></div>
+    ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
+    <div class="stats"><div class="stat"><span>${t.phase}</span><b>${phase}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
+      <div class="stat"><span>${t.lastYear(full.at(-1)?.[0])}</span><b>${fmt(full.at(-1)?.[1] || 0)}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.map(d => d[1])))}</b></div></div>`;
+
+  // calendar
+  const data = [];
+  years.forEach((y, yi) => d3.range(12).forEach(mi => { const v = val(y, mi + 1); if (v === null) return;
+    data.push([mi, yi, mode === 'a' ? (med[mi] >= 1 ? Math.round(100 * (v - med[mi]) / med[mi]) : 0) : Math.round(v)]); }));
+  const sorted = data.map(d => d[2]).sort((p, q) => p - q), maxN = Math.max(1, sorted[Math.floor(sorted.length * .95)] || 1);
+  const vm = { calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:10, itemHeight:140, textStyle:{ color:'#9b938a' } };
+  const curCell = [cm - 1, years.indexOf(cy)];
+  charts.cal.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:40, right:6, top:22, bottom:50 },
+    tooltip:{ formatter:p => p.seriesType === 'heatmap' ? `<b>${t.mon[p.value[0]]} ${years[p.value[1]]}</b><br>${mode === 'a' ? (p.value[2] > 0 ? '+' : '') + p.value[2] + '% ' + t.toNorm : fmt(p.value[2]) + ' ' + t.fires}` : '' },
+    xAxis:{ type:'category', data:t.mon, position:'top', axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
+    yAxis:{ type:'category', data:years, inverse:true, axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
+    visualMap: mode === 'a' ? { ...vm, min:-100, max:100, inRange:{ color:['#2b6cb0','#5fa5e6','#24242a','#ff8a4c','#d1380d'] }, text:[t.above, t.below] }
+                            : { ...vm, min:0, max:maxN, inRange:{ color:['#1c1b21','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.many, t.few] },
+    series:[{ type:'heatmap', data, itemStyle:{ borderColor:'#18181d', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
+            { type:'scatter', data:curCell[1] >= 0 ? [curCell] : [], symbol:'rect', symbolSize:[22, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
+
+  // selected year vs normal
+  $('lineT').textContent = t.lineT(cy);
+  const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
+  const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
+  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend, grid:{ left:44, right:8, top:10, bottom:40 },
+    xAxis:{ type:'category', data:t.mon, ...ax }, yAxis:{ type:'value', ...ax },
+    series:[{ name:t.norm, type:'line', smooth:true, symbol:'none', data:med.map(Math.round), lineStyle:{ type:'dashed', width:2 }, color:'#8a8178' },
+            { name:String(cy), type:'line', smooth:true, symbolSize:6, data:d3.range(12).map(m => val(cy, m + 1)), color:'#ff6a1a', lineStyle:{ width:3 }, areaStyle:{ opacity:.12 } }] }, true);
+
+  // harmonization: local (KG data has raw m/v) or world summary
+  const yrs = d3.range(2001, 2025), ysum = (arr, y) => d3.sum(d3.range(12), m => arr[(y - 2001) * 12 + m]);
+  let raw, harm;
+  if (sel.src === 'kg') { const m = aggregate('m'), v = aggregate('v'); raw = yrs.map(y => Math.round(ysum(y < 2012 ? m : v, y))); harm = yrs.map(y => Math.round(ysum(series, y)));
+    $('harmS').textContent = t.harmLocal; const kv = KGMETA.validation; $('valid').textContent = t.validK(kv.models[kv.best], kv.raw_modis.mae); }
+  else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y));
+    $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation); }
+  charts.harm.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend, grid:{ left:52, right:8, top:10, bottom:40 },
+    xAxis:{ type:'category', data:yrs, ...ax }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
+    series:[{ name:t.raw, type:'line', step:'middle', symbol:'none', data:raw, color:'#8a8178', lineStyle:{ width:2 } },
+            { name:t.harm, type:'line', smooth:true, symbol:'none', data:harm, color:'#ff6a1a', lineStyle:{ width:3 } }] }, true);
+
+  // fire and rain (Kyrgyz presets only)
+  const w = sel.wk && WEATHER[sel.wk];
+  $('wxCard').style.display = w ? '' : 'none';
+  if (w) {
+    const season = med.map((x, i) => [x, i]).sort((p, q) => q[0] - p[0]).slice(0, 5).map(x => x[1] + 1), pts = [], zf = [], zp = [];
+    season.forEach(mo => { const ys = d3.range(2012, 2026).filter(y => w[`${y}-${String(mo).padStart(2,'0')}`]);
+      const f = ys.map(y => series[(y - 2001) * 12 + mo - 1]), p = ys.map(y => w[`${y}-${String(mo).padStart(2,'0')}`][1]), fm = median(f), pm = mean(p);
+      ys.forEach((y, i) => { if (fm >= 3 && pm > 0) pts.push([Math.round(100 * p[i] / pm), Math.min(400, Math.round(100 * (f[i] - fm) / fm)), `${t.mon[mo-1]} ${y}`]); });
+      zf.push(...zs(f.map(Math.log1p))); zp.push(...zs(p)); });
+    const r = +corr(zp, zf).toFixed(2);
+    charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:50, right:10, top:10, bottom:38 },
+      tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
+      xAxis:{ type:'value', name:t.rain, nameLocation:'middle', nameGap:24, nameTextStyle:{ color:'#9b938a' }, ...ax },
+      yAxis:{ type:'value', name:t.fireAnom, nameLocation:'middle', nameGap:36, nameTextStyle:{ color:'#9b938a' }, ...ax },
+      series:[{ type:'scatter', data:pts, symbolSize:8, itemStyle:{ color:'#ff6a1a', opacity:.65 },
+        markLine:{ silent:true, symbol:'none', label:{ show:false }, lineStyle:{ color:'#5f5952', type:'dashed' }, data:[{ xAxis:100 }, { yAxis:0 }] } }] }, true);
+    $('wxNote').textContent = t.wxNote(r);
+  }
+  Object.values(charts).forEach(c => c.setOption({ toolbox:{ right:0, top:0, iconStyle:{ borderColor:'#9b938a' }, feature:{ saveAsImage:{ title:'PNG', name:'burnbeat', pixelRatio:2, backgroundColor:'#18181d' } } } }));
+
+  $('csvPts').disabled = sel.src !== 'kg'; $('csvPts').title = sel.src !== 'kg' ? t.ptsOnlyKg : '';
+  drawClock(); drawTimeline();
+}
+
+function drawClock() {
+  const [y, m] = MONTHS[cur].split('-');
+  $('clockM').textContent = `${T().mon[+m-1].toUpperCase()} ${y}`;
+  $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${T().fires} · ${nameOf()}`;
+}
+function drawTimeline() {
+  const c = $('timeline'), r = c.getBoundingClientRect(); c.width = r.width * DPR; c.height = r.height * DPR;
+  const g = c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
+  const w = r.width, h = r.height, max = d3.max(series) || 1, x = i => 12 + (w - 24) * i / (N - 1), y = v => h - 18 - (h - 28) * v / max;
+  g.clearRect(0,0,w,h);
+  g.beginPath(); series.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))); g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 1.2; g.stroke();
+  g.save(); g.beginPath(); g.rect(0, 0, x(cur), h); g.clip();
+  g.beginPath(); series.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))); g.strokeStyle = '#ff6a1a'; g.lineWidth = 1.8; g.shadowColor = '#ff6a1a'; g.shadowBlur = 8; g.stroke(); g.restore();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(x(cur), y(series[cur]), 3.5, 0, 7); g.fill();
+  g.fillStyle = '#5f5952'; g.font = '10px JetBrains Mono';
+  MONTHS.forEach((ym, i) => { if (ym.endsWith('-01') && +ym.slice(0,4) % 5 === 0) g.fillText(ym.slice(0,4), x(i) - 13, h - 4); });
+}
+$('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); seek(Math.round((e.clientX - r.left - 12) / (r.width - 24) * (N - 1))); });
+function seek(i) { cur = Math.max(0, Math.min(N - 1, i)); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
+
+// ---------------- playback ----------------
 let last = 0, acc = 0;
-const MS_PER_MONTH = 130;
 function tick(now) {
   const dt = Math.min(500, now - (last || now)); last = now;
-  if (playing && chapter !== 'kg') { acc += dt;
-    if (acc >= MS_PER_MONTH) { acc = 0; frameIdx = (frameIdx + 1) % G.frames.length; drawFrame(frameIdx, .55); updateClock(); drawPulse(); } }
+  if (playing && (acc += dt) >= 130) { acc = 0;
+    if (cur >= N - 1) { playing = false; $('play').textContent = '▶'; render(); }
+    else { cur++; drawFire(.55); drawClock(); drawTimeline(); } }
   requestAnimationFrame(tick);
 }
-$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? '❚❚' : '▶'; };
-$('scrub').oninput = e => { frameIdx = +e.target.value; ctx.fire.clearRect(0,0,W,H); drawFrame(frameIdx, 1); updateClock(); drawPulse(); };
+$('play').onclick = () => { playing = !playing; if (playing && cur >= N - 1) cur = 0; $('play').textContent = playing ? '❚❚' : '▶'; if (!playing) render(); };
 
-// --- chapters ---
-const io = new IntersectionObserver(es => es.forEach(e => {
-  if (!e.isIntersecting) return;
-  e.target.classList.add('in');
-  const ch = e.target.dataset.ch, prev = chapter; chapter = ch;
-  document.body.classList.toggle('hero-on', ch === 'hero');
-  $('clock').style.opacity = ch === 'hero' || ch === 'rhythm' || ch === 'explore' ? 1 : .25;
-  if (ch === 'clocks') animateHarm();
-  if (ch === 'kg') { // freeze on the latest November for Central Asia
-    frameIdx = G.months.lastIndexOf(G.months.filter(m => m.endsWith('-11')).at(-1)); updateClock(); drawPulse();
-  }
-  if ((ch === 'kg') !== (prev === 'kg')) layout();
-}), { threshold: .45 });
-document.querySelectorAll('.chapter').forEach(s => io.observe(s));
+// ---------------- controls ----------------
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = T()[el.dataset.t]);
+  document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
+  $('chips').innerHTML = PRESETS.map(p => p[0] === '|' ? '<span class="chip sep">·</span>' : `<button class="chip${p[0] === sel.key ? ' on' : ''}" data-k="${p[0]}">${p[2][lang]}</button>`).join('');
+  if (series) render();
+}
+$('lang').onclick = e => { const v = e.target.dataset.v; if (!v) return; lang = v; try { localStorage.setItem('bb_lang', v); } catch (e) {} applyLang(); };
+$('chips').onclick = e => { const k = e.target.dataset.k; if (!k) return; const p = PRESETS.find(x => x[0] === k); select({ key:k, bbox:p[1] }); };
+$('mode').onclick = e => { const v = e.target.dataset.v; if (!v) return; mode = v; $('mode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); render(); };
+['y0','y1'].forEach(id => $(id).onchange = render);
+function download(name, text) { const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); el.download = name; el.click(); }
+$('csvCal').onclick = () => { const [a, b] = range(), rows = ['month,hotspots_harmonized'];
+  for (let i = a; i <= b; i++) rows.push(`${MONTHS[i]},${series[i].toFixed(1)}`);
+  download(`burnbeat_${sel.key || 'area'}_calendar.csv`, rows.join('\n')); };
+$('csvPts').onclick = async () => { if (sel.src !== 'kg') return; const [a, b] = range(), A = MONTHS[a], B = MONTHS[b], bb = sel.bbox;
+  const lines = (await (await fetch('data/points.csv')).text()).trim().split('\n');
+  download(`burnbeat_${sel.key || 'area'}_hotspots.csv`, [lines[0], ...lines.slice(1).filter(l => { const [la, lo, d] = l.split(','); const ym = d.slice(0,7);
+    return ym >= A && ym <= B && +la >= bb[0] && +la <= bb[2] && +lo >= bb[1] && +lo <= bb[3]; })].join('\n')); };
+charts.cal = echarts.init($('cal')); charts.line = echarts.init($('line')); charts.harm = echarts.init($('harm')); charts.wx = echarts.init($('wx'));
+charts.cal.on('click', p => { if (p.seriesType === 'heatmap') { const [a, b] = range(), y0 = +MONTHS[a].slice(0,4); seek((y0 + p.value[1] - 2001) * 12 + p.value[0]); } });
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { Object.values(charts).forEach(c => c.resize()); layout(); drawTimeline(); }, 120); });
 
-// --- load ---
+// ---------------- load ----------------
 applyLang();
 Promise.all([
-  fetch('data/global/frames.json').then(r => r.json()),
-  fetch('data/global/summary.json').then(r => r.json()),
+  fetch('data/global/frames.json').then(r => r.json()), fetch('data/global/summary.json').then(r => r.json()),
+  fetch('data/cells.json').then(r => r.json()), fetch('data/meta.json').then(r => r.json()),
+  fetch('data/weather.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(r => r.json()),
-]).then(([g, s, topo]) => {
-  G = g; S = s;
-  world = { land: topojson.feature(topo, topo.objects.land), borders: topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b) };
-  G.p99 = d3.quantile(G.frames.flatMap(fr => fr.filter((_, k) => k % 2)).sort(d3.ascending), .99) || 10;
-  $('scrub').max = G.frames.length - 1;
-  layout(); drawCalendar(); valStat(); drawHarm(0); drawLocal(); updateClock();
-  $('loading').style.opacity = 0; setTimeout(() => $('loading').remove(), 900);
-  if (REDUCED) { playing = false; $('play').textContent = '▶'; }
+]).then(([fr, su, kc, km, wx, topo]) => {
+  MONTHS = su.months; N = MONTHS.length; SUMMARY = su; KGMETA = km; WEATHER = wx;
+  world = { land:topojson.feature(topo, topo.objects.land), borders:topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b) };
+  gCells = fr.cells.map(c => ({ la:Math.floor(c / 360) - 90 + .5, lo:c % 360 - 180 + .5, h:new Float32Array(N) }));
+  fr.frames.forEach((f, i) => { for (let k = 0; k < f.length; k += 2) gCells[f[k]].h[i] = f[k+1]; });
+  const mi = new Map(MONTHS.map((m, i) => [m, i]));
+  const toArr = o => { const a = new Float32Array(N); for (const [ym, v] of Object.entries(o)) { const i = mi.get(ym); if (i !== undefined) a[i] = v; } return a; };
+  kgCells = kc.map(c => ({ la:c.la, lo:c.lo, h:toArr(c.h), m:toArr(c.m), v:toArr(c.v) }));
+  const q99 = cells => { const v = []; cells.forEach(c => c.h.forEach(x => { if (x >= 1) v.push(x); })); v.sort((p, q) => p - q); return v[Math.floor(v.length * .99)] || 10; };
+  P99G = q99(gCells); P99K = q99(kgCells);
+  LUT = new Uint32Array(256);
+  for (let k = 0; k < 256; k++) { const c = d3.rgb(d3.interpolateInferno(.45 + .55 * k / 255)), al = Math.round(60 + 195 * k / 255); LUT[k] = (al << 24) | (c.b << 16) | (c.g << 8) | c.r; }
+  ['y0','y1'].forEach(id => { $(id).min = MONTHS[0]; $(id).max = MONTHS[N - 1]; }); $('y0').value = MONTHS[0]; $('y1').value = MONTHS[N - 1];
+  cur = N - 1;
+  const q = new URLSearchParams(location.search).get('bbox')?.split(',').map(Number);
+  const pre = q && PRESETS.find(p => p[1] && p[1].join(',') === q.join(','));
+  if (q?.length === 4 && q.every(isFinite)) select(pre ? { key:pre[0], bbox:pre[1] } : { key:null, bbox:q, name:T().custom });
+  else select({ key:'world', bbox:null });
+  $('loading').style.opacity = 0; setTimeout(() => $('loading').remove(), 700);
   requestAnimationFrame(tick);
 });
-addEventListener('resize', () => { if (G) { layout(); drawCalendar(); drawHarm(1); drawLocal(); } });
 </script>
 </body>
 </html>
