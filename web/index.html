@@ -111,7 +111,7 @@
     <div class="card">
       <div class="head"><div><h2 data-t="calT"></h2><div class="sub" data-t="calS"></div></div>
         <div class="seg" id="mode"><button data-v="n" class="on" data-t="modeN"></button><button data-v="a" data-t="modeA"></button></div></div>
-      <div id="cal"></div>
+      <div id="cal"></div><div class="note" id="note2001"></div>
     </div>
     <div class="card"><h2 id="lineT"></h2><div class="sub" id="lineS"></div><div id="line"></div></div>
     <details class="card" id="how"><summary data-t="howT"></summary><div class="inner">
@@ -131,6 +131,7 @@
 // ======================= text (KY needs a native-speaker check) =======================
 const ruPl = (n, one, few, many) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
 const firesWord = (n, l) => l === 'ru' ? ruPl(n, 'очаг', 'очага', 'очагов') : l === 'en' ? (Math.round(n) === 1 ? 'hotspot' : 'hotspots') : 'очок';
+const ruTimes = r => { if (r < 10) { const v = r.toFixed(1).replace('.', ','); return v.endsWith(',0') ? `${v.slice(0, -2)} ${ruPl(+v.slice(0, -2), 'раз', 'раза', 'раз')}` : `${v} раза`; } const n = Math.round(r); return `${n} ${ruPl(n, 'раз', 'раза', 'раз')}`; };
 const MON_LOC_RU = ['январе','феврале','марте','апреле','мае','июне','июле','августе','сентябре','октябре','ноябре','декабре'];
 const I18N = {
   ru: { tagline:'когда и где горит · NASA MODIS + VIIRS', p1:'Год', p5:'5 лет', p10:'10 лет', pall:'Все 25 лет', tg:'Сводка в Telegram', nowBtn:'Сейчас',
@@ -151,12 +152,15 @@ const I18N = {
     villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', near:(n, km) => `${n} · ${km} км`, villNone:'Очагов рядом с сёлами не было.',
     liveT:'Последние 7 дней', liveNone:'За последние 7 дней спутники не видели очагов в этой области.', liveOutside:'Свежие данные пока есть только для Центральной Азии.',
     liveN:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за 7 дней`, liveNow:'СЕЙЧАС', liveDays:'последние 7 дней', newest:'Последний',
+    storyLive:s => { const r = s.ratio, cmp = r === null ? '' : r >= 2 ? `, а сейчас <em>в ${ruTimes(r)} больше</em>` : r <= .5 ? `, а сейчас в ${ruTimes(1 / Math.max(r, .01))} меньше` : ' — сейчас около нормы';
+      return `Сейчас в ${s.where}: за последние 7 дней спутник заметил <em>${s.n} ${ruPl(s.n, 'очаг', 'очага', 'очагов')}</em>. Обычно в ${MON_LOC_RU[s.m]} за неделю тут около ${s.norm}${cmp}. Больше всего здесь горит в ${MON_LOC_RU[s.peak]}.`; },
+    y2001:'2001: первые полгода работал один спутник — оценка менее точная',
     story:s => {
       const peak = s.peak2 !== null ? `<em>${MON_LOC_RU[s.peak]}</em> и <em>${MON_LOC_RU[s.peak2]}</em>` : `<em>${MON_LOC_RU[s.peak]}</em>`;
       let cmp;
       if (s.ratio === null) cmp = 'в это время года тут почти не горит';
-      else if (s.ratio >= 2) cmp = `<em>в ${s.ratio < 10 ? s.ratio.toFixed(1).replace('.', ',') : Math.round(s.ratio)} раза больше нормы</em>`;
-      else if (s.ratio <= .5 && s.ratio > 0) cmp = `в ${(1 / s.ratio).toFixed(1).replace('.', ',')} раза меньше нормы`;
+      else if (s.ratio >= 2) cmp = `<em>в ${ruTimes(s.ratio)} больше нормы</em>`;
+      else if (s.ratio <= .5 && s.ratio > 0) cmp = `в ${ruTimes(1 / s.ratio)} меньше нормы`;
       else if (s.ratio === 0) cmp = 'ни одного очага';
       else if (Math.abs(s.anom) < 15) cmp = 'около нормы';
       else cmp = s.anom > 0 ? `<em>на ${s.anom}% больше нормы</em>` : `на ${-s.anom}% меньше нормы`;
@@ -180,6 +184,9 @@ const I18N = {
     villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', near:(n, km) => `${n} · ${km} км`, villNone:'Айылдардын жанында очок болгон жок.',
     liveT:'Акыркы 7 күн', liveNone:'Акыркы 7 күндө бул аймакта спутниктер очок көргөн жок.', liveOutside:'Жаңы маалымат азырынча Борбор Азия үчүн гана бар.',
     liveN:n => `7 күндө ${n} очок`, liveNow:'АЗЫР', liveDays:'акыркы 7 күн', newest:'Акыркысы',
+    storyLive:s => { const r = s.ratio, M = I18N.ky.monFull, cmp = r === null ? '' : r >= 2 ? `, азыр <em>${r < 10 ? r.toFixed(1) : Math.round(r)} эсе көп</em>` : r <= .5 ? `, азыр ${(1 / Math.max(r, .01)).toFixed(1)} эсе аз` : ', азыр нормага жакын';
+      return `Азыр ${s.whereKy}: акыркы 7 күндө спутник <em>${s.n} очок</em> байкады. Адатта ${M[s.m]} айында бир жумада болжол менен ${s.norm}${cmp}. Бул жерде эң көп ${M[s.peak]} айында күйөт.`; },
+    y2001:'2001: алгачкы жарым жылда бир гана спутник иштеген — баа так эмес',
     story:s => {
       const mo = i => `<em>${I18N.ky.monFull[i]}</em>`;
       const peak = s.peak2 !== null ? `${mo(s.peak)} жана ${mo(s.peak2)} айларында` : `${mo(s.peak)} айында`;
@@ -210,6 +217,9 @@ const I18N = {
     villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', near:(n, km) => `near ${n}, ${km} km`, villNone:'No hotspots near villages.',
     liveT:'Last 7 days', liveNone:'Satellites saw no hotspots in this area in the last 7 days.', liveOutside:'Fresh data is available for Central Asia only so far.',
     liveN:n => `${n} hotspots in 7 days`, liveNow:'NOW', liveDays:'last 7 days', newest:'Latest',
+    storyLive:s => { const r = s.ratio, M = I18N.en.monFull, cmp = r === null ? '' : r >= 2 ? `; right now it is <em>${r < 10 ? r.toFixed(1) : Math.round(r)}× that</em>` : r <= .5 ? `; right now ${(1 / Math.max(r, .01)).toFixed(1)}× less` : '; right now about normal';
+      return `Right now in ${s.whereEn}: the satellite spotted <em>${s.n} ${s.n === 1 ? 'hotspot' : 'hotspots'}</em> in the last 7 days. A normal ${M[s.m]} week here has about ${s.norm}${cmp}. It burns most in ${M[s.peak]}.`; },
+    y2001:'2001: only one satellite for the first half of the year — a rougher estimate',
     story:s => {
       const M = I18N.en.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> and <em>${M[s.peak2]}</em>` : `<em>${M[s.peak]}</em>`;
       let cmp;
@@ -430,6 +440,7 @@ function select(s) {
   document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.k === sel.key));
   const u = new URL(location); sel.bbox ? u.searchParams.set('bbox', sel.bbox.join(',')) : u.searchParams.delete('bbox'); history.replaceState(null, '', u);
   series = aggregate('h');
+  liveOn = !!(LIVE && sel.pre && sel.pre[3] && liveInSel()); $('now').classList.toggle('on', liveOn); if (liveOn) { playing = false; $('play').textContent = '▶'; }
   layout(); render();
 }
 function aggregate(key) {
@@ -468,7 +479,20 @@ function render() {
   const live = liveInSel();
   const ruWhere = sel.pre ? sel.pre[4] : t.custom, kyWhere = sel.pre ? sel.pre[5] : 'Тандалган аймакта', enWhere = sel.pre ? sel.pre[6] : 'The selected area';
   const story = t.story({ where:ruWhere, whereKy:kyWhere, whereEn:enWhere, peak, peak2:second ? second[1] : null, m:cm - 1, y:cy, n:fmt(now), nRaw:Math.round(now), anom, ratio, live:live ? live.length : null });
-  $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${story}</div>
+  let liveHero = null;
+  if (liveOn && live) {        // "now vs normal": NOAA-20 only (single satellite, like the S-NPP-based norm), 7 days vs a pro-rated weekly norm
+    const newest = live.length ? live[0][2] : LIVE.updated, lm = +newest.slice(5, 7), ly = +newest.slice(0, 4);
+    const n20 = live.filter(p => p[3] === 'NOAA-20').length, dim = new Date(ly, lm, 0).getDate(), wk = med[lm - 1] * 7 / dim;
+    const r = med[lm - 1] >= 3 ? n20 / Math.max(wk, .1) : null;
+    liveHero = { n:n20, wk, r, lm, ly, text:t.storyLive({ where:ruWhere, whereKy:kyWhere, whereEn:enWhere.replace(/^The /, 'the '), n:n20, m:lm - 1, norm:wk < 1 ? '<1' : Math.round(wk), ratio:r, peak }) };
+  }
+  if (liveHero) $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${liveHero.text}</div>
+    <div class="big num" style="color:#ff8a7a">${liveHero.n} <span>${firesWord(liveHero.n, lang)} · ${t.liveDays}</span></div>
+    ${liveHero.r === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${liveHero.r >= 1 ? 'up' : 'down'}">${liveHero.r >= 1 ? '▲ ×' + liveHero.r.toFixed(1) : '▼ ×' + liveHero.r.toFixed(1)} ${t.toNorm} (${liveHero.wk.toFixed(1)})</div>`}
+    <div class="stats"><div class="stat"><span>${t.phase}</span><b>${t.peakMonth(t.monFull[peak])}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
+      <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
+    <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${sel.src !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
+  else $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${story}</div>
     <div class="big num">${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span></div>
     ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
     <div class="stats"><div class="stat"><span>${t.phase}</span><b>${phase}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
@@ -514,6 +538,7 @@ function render() {
     series:[{ type:'heatmap', data, label:{ show:years.length <= 5, color:'#111', fontSize:10 }, itemStyle:{ borderColor:'#17171c', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
             { type:'scatter', data:curCell[1] >= 0 && !liveOn ? [curCell] : [], symbol:'rect', symbolSize:[24, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
 
+  $('note2001').textContent = years[0] <= 2001 ? t.y2001 : '';
   // ---- year vs normal ----
   $('lineT').textContent = t.lineT(cy); $('lineS').textContent = t.lineS(2001, lastY);
   const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
