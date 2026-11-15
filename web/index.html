@@ -595,7 +595,7 @@ async function apply(s) {
   if (sel.kind === 'box') u.searchParams.set('bbox', sel.bbox.join(',')); if (sel.kind === 'country') u.searchParams.set('c', sel.f.id); if (sel.kind === 'kg') u.searchParams.set('kg', sel.key);
   history.replaceState(null, '', u);
   drawCrumbs(); flyTo(); render();
-  const pn = document.querySelector('.panel'); pn.classList.remove('swap'); void pn.offsetWidth; pn.classList.add('swap');
+
   if (sel.kind !== 'world') await loadLivePoints();
 }
 async function loadLivePoints() {
@@ -769,7 +769,7 @@ function render() {
   RS.data = data;
   const shown = scrub && !liveOn ? data.map(d => ((years[0] + d[1]) - 2001) * 12 + d[0] <= cur ? d : { value:d, itemStyle:{ opacity:.12 } }) : data;
   charts.cal.getDom().style.height = Math.max(180, 70 + years.length * 15.5) + 'px'; charts.cal.resize();
-  charts.cal.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:40, right:6, top:22, bottom:50 },
+  charts.cal.setOption({ textStyle:{ fontFamily:'Inter' }, animation:false, grid:{ left:40, right:6, top:22, bottom:50 },
     tooltip:{ formatter:p => { if (p.seriesType !== 'heatmap') return ''; const v = Array.isArray(p.value) ? p.value : p.data.value; const k = (years[v[1]] - 2001) * 12 + v[0];
       const fires = `${fmt(series[k] || 0)} ${firesWord(series[k] || 0, lang)}`, main = mode === 'a' ? (v[2] > 0 ? '+' : '') + v[2] + '% ' + t.toNorm : mode === 'e' ? v[2] + '% ' + t.unitE : mode === 'r' ? Math.round(v[2]) + ' ' + t.unitR : fires;
       return `<b>${t.mon[v[0]]} ${years[v[1]]}</b><br>${main}${mode !== 'n' && mode !== 'a' ? '<br>' + fires : ''}`; } },
@@ -787,7 +787,7 @@ function render() {
   const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
   const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
   const qn = q => d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), q) || 0), q25 = qn(.25), q75 = qn(.75);
-  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend:{ ...legend, data:[t.norm, String(cy)] }, grid:{ left:52, right:8, top:10, bottom:40 },
+  charts.line.setOption({ textStyle:{ fontFamily:'Inter' }, animation:false, tooltip:{ trigger:'axis' }, legend:{ ...legend, data:[t.norm, String(cy)] }, grid:{ left:52, right:8, top:10, bottom:40 },
     xAxis:{ type:'category', data:t.mon, ...ax, boundaryGap:false }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
     series:[{ type:'line', data:q25.map(Math.round), stack:'band', lineStyle:{ opacity:0 }, symbol:'none', silent:true, tooltip:{ show:false } },
             { type:'line', data:q75.map((v, i) => Math.max(0, Math.round(v - q25[i]))), stack:'band', lineStyle:{ opacity:0 }, symbol:'none', areaStyle:{ color:'rgba(255,255,255,.07)' }, silent:true, tooltip:{ show:false } },
@@ -806,7 +806,7 @@ function renderHow(med) {
     raw = yrs.map(y => Math.round(ysum(y < 2012 ? m : v, y))); harm = yrs.map(y => Math.round(ysum(series, y))); $('harmS').textContent = t.harmLocal; const kv = KGMETA.validation; $('valid').textContent = t.validK(kv.models[kv.best], kv.raw_modis.mae); }
   else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y)); $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation); }
   charts.harm.resize();
-  charts.harm.setOption({ textStyle:{ fontFamily:'Inter' }, tooltip:{ trigger:'axis' }, legend, grid:{ left:52, right:8, top:10, bottom:40 },
+  charts.harm.setOption({ textStyle:{ fontFamily:'Inter' }, animation:false, tooltip:{ trigger:'axis' }, legend, grid:{ left:52, right:8, top:10, bottom:40 },
     xAxis:{ type:'category', data:yrs, ...ax }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
     series:[{ name:t.raw, type:'line', step:'middle', symbol:'none', data:raw, color:'#8a8178', lineStyle:{ width:2 } }, { name:t.harm, type:'line', smooth:true, symbol:'none', data:harm, color:'#ff6a1a', lineStyle:{ width:3 } }] }, true);
   const w = sel.kind === 'kg' && WEATHER[sel.key]; $('wxBox').style.display = w ? '' : 'none'; if (!w) return;
@@ -815,7 +815,7 @@ function renderHow(med) {
     const f = ys.map(y => series[(y - 2001) * 12 + mo - 1]), p = ys.map(y => w[`${y}-${String(mo).padStart(2,'0')}`][1]), fm = median(f), pm = mean(p);
     ys.forEach((y, i) => { if (fm >= 3 && pm > 0) pts.push([Math.round(100 * p[i] / pm), Math.min(400, Math.round(100 * (f[i] - fm) / fm)), `${t.mon[mo-1]} ${y}`]); }); zf.push(...zs(f.map(Math.log1p))); zp.push(...zs(p)); });
   charts.wx.resize();
-  charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:50, right:10, top:10, bottom:38 }, tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
+  charts.wx.setOption({ textStyle:{ fontFamily:'Inter' }, animation:false, grid:{ left:50, right:10, top:10, bottom:38 }, tooltip:{ formatter:p => `<b>${p.value[2]}</b><br>${t.rain}: ${p.value[0]}%<br>${t.fireAnom}: ${p.value[1] > 0 ? '+' : ''}${p.value[1]}%` },
     xAxis:{ type:'value', name:t.rain, nameLocation:'middle', nameGap:24, nameTextStyle:{ color:'#9b938a' }, ...ax }, yAxis:{ type:'value', name:t.fireAnom, nameLocation:'middle', nameGap:36, nameTextStyle:{ color:'#9b938a' }, ...ax },
     series:[{ type:'scatter', data:pts, symbolSize:8, itemStyle:{ color:'#ff6a1a', opacity:.65 }, markLine:{ silent:true, symbol:'none', label:{ show:false }, lineStyle:{ color:'#5f5952', type:'dashed' }, data:[{ xAxis:100 }, { yAxis:0 }] } }] }, true);
   $('wxNote').textContent = t.wxNote(+corr(zp, zf).toFixed(2));
@@ -830,7 +830,7 @@ function playUI() {           // cheap panel update while playing: big number, b
   if (bd && m0 >= 3) { const an = Math.round(100 * (now - m0) / m0); bd.className = `badge ${an >= 0 ? 'up' : 'down'}`; bd.textContent = `${an >= 0 ? '▲ +' : '▼ '}${an}% ${t.toNorm} (${fmt(m0)})`; }
   const yi = RS.years.indexOf(cy), y0 = RS.years[0];
   const filled = RS.data.map(d => ((y0 + d[1]) - 2001) * 12 + d[0] <= cur ? d : { value:d, itemStyle:{ opacity:.12 } });   // months not yet played stay pale
-  charts.cal.setOption({ series:[{ data:filled }, { data:yi >= 0 ? [[cm - 1, yi]] : [] }] });
+  charts.cal.setOption({ animation:false, series:[{ data:filled }, { data:yi >= 0 ? [[cm - 1, yi]] : [] }] });
 }
 function drawClock() {
   const t = T(), [y, m] = MONTHS[cur].split('-'); $('clock').classList.toggle('live', liveOn);
@@ -885,7 +885,7 @@ function tick(now) {
   if (isGlobe() && spinning && !down && (globeAcc += dt) > 40) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); drawFire(1); }
   if (!tween && !moving && liveOn && zoomed() && LIVEXY.length && LIVEXY.length < 6000 && (liveAcc += dt) > 33) { livePhase = (livePhase + liveAcc / 1800) % 1; liveAcc = 0; drawFire(1); }
   else if (playing && (acc += dt) >= 130) { acc = 0; const [, b] = viewRange();
-    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning) && !moving) drawFire(.55); drawClock(); drawTimeline(); playUI(); } }
+    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning) && !moving) drawFire(1); drawClock(); drawTimeline(); playUI(); } }
   requestAnimationFrame(tick);
 }
 $('play').onclick = () => { const wasLive = liveOn; scrub = true; if (!playing) document.querySelector('#cal').scrollIntoView({ block:'nearest', behavior:'smooth' }); if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
