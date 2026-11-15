@@ -59,6 +59,10 @@ The harmonized world series stays at 15–19 M hotspots a year for 2001–2025.
 - Last 7 days: public FIRMS NRT files (VIIRS NOAA-20 and NOAA-21; S-NPP no longer publishes NRT), `tools/fetch_live.py`, no API key.
 - NRT files have no `type` column, so factories and power plants are removed with a mask of persistent FIRMS type 2–3 locations from the archive (`web/api/static_sources.json`, ~1.5 km radius).
 - "Now vs normal" compares **NOAA-20 only** (a single satellite, like the S-NPP-based norm) for 7 days with the monthly median × 7 / days in month.
+  The normal for this comparison is the **VIIRS-era median (2012 onward)**, so it is not pulled by converted MODIS years or by the long-term decline; it does not depend on the month being browsed.
+  A ratio is shown only when the expected weekly count is at least 3; below that, a large count is reported as "unusual for the season" instead of a dramatic ratio.
+- Worldwide, "now" and the normal are counted over **the same 1° cells** (cell centres inside the country or box; the nearest cells for very small places). In Kyrgyzstan both use the exact region borders.
+- Gas flares and industry in the worldwide NRT files: places (~1 km) that glow on 5 or more of the 7 days are removed (≈2 800 places per run). The live layer is rebuilt on the server every 3 hours.
 - Kyrgyz regions use real borders (geoBoundaries ADM1, ODbL); villages from GeoNames (CC-BY), nearest within 3 km.
 - Fire danger (today + 3 days) is a rating of conditions, not a fire forecast: season share, anomaly, 24 h detections, Open-Meteo forecast (temperature, humidity, wind, rain). Same rules as the Telegram bot.
 

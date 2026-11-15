@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0b0b0e; --panel:#111115; --card:#17171c; --card2:#1f1f26; --ink:#f2ede6; --soft:#d6cfc6; --muted:#9b938a; --dim:#5f5952; --line:rgba(255,255,255,.08);
+  :root { --bg:#0b0b0e; --panel:#111115; --card:#17171c; --card2:#1f1f26; --ink:#f2ede6; --soft:#d6cfc6; --muted:#9b938a; --dim:#857d74; --line:rgba(255,255,255,.08);
           --fire:#ff6a1a; --fire2:#ffb36b; --up:#ff7a45; --up-bg:rgba(255,106,26,.14); --down:#6cb4ff; --down-bg:rgba(108,180,255,.13); --live:#ff3b30; }
   * { box-sizing:border-box } html, body { height:100% }
   body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased }
@@ -96,7 +96,7 @@
   #loading { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
   @media (max-width:1100px) { .tg-text { display:none } }
   @media (max-width:980px) {
-    .app { display:block; height:auto } .mapside { height:70vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px; row-gap:8px }
+    .app { display:block; height:auto } .mapside { height:60vh; border-right:0 } header { height:auto; flex-wrap:wrap; padding:10px 12px; row-gap:8px }
     .search { order:9; flex-basis:100%; max-width:none; margin:0 } .panel { overflow:visible }
     .hint { display:none } .scale { top:10px } .clock .n { display:none } .clock .m { font-size:30px }
   }
@@ -106,7 +106,7 @@
 <div id="loading" class="mono">BURNBEAT · loading 25 years of fire…</div>
 <header>
   <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b></a>
-  <div class="search"><span class="ic">⌕</span><input id="q" autocomplete="off" spellcheck="false"><div class="drop" id="drop"></div></div>
+  <div class="search"><span class="ic">⌕</span><input id="q" autocomplete="off" spellcheck="false" aria-label="Search a place"><div class="drop" id="drop"></div></div>
   <div class="sp"></div>
   <div class="seg" id="period"><button data-v="1" data-t="p1"></button><button data-v="5" data-t="p5"></button><button data-v="10" data-t="p10"></button><button data-v="all" class="on" data-t="pall"></button></div>
   <a class="pill fire" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener">✈<span class="tg-text" data-t="tg"></span></a>
@@ -184,12 +184,14 @@ const I18N = {
     villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', villNone:'Очагов рядом с сёлами не было.',
     y2001:'2001: первые полгода работал один спутник — оценка менее точная',
     worldMsg:(lo, hi) => `Каждый месяц спутники NASA видят на Земле от <em>${lo}</em> до <em>${hi}</em> очагов. <b>Нажмите на страну</b> или найдите место — покажем, когда там обычно горит и что происходит сейчас.`,
+    unusual:'необычно для сезона', baseNote:y => `норма — медиана 2012–${y} (VIIRS)`, updated:u => `данные обновлены ${u}`, empty:'Здесь почти не бывает пожаров: за 25 лет в среднем меньше одного очага в месяц.',
+    unusualTxt:(n, m) => `<em>${n}</em> — необычно много для этого времени года (обычно ~${m}).`,
     story:s => { const peak = s.peak2 !== null ? `<em>${MON_LOC_RU[s.peak]}</em> и <em>${MON_LOC_RU[s.peak2]}</em>` : `<em>${MON_LOC_RU[s.peak]}</em>`;
       let cmp; if (s.ratio === null) cmp = 'в это время года тут почти не горит'; else if (s.ratio === 0) cmp = 'ни одного очага';
       else if (s.ratio >= 2) cmp = `<em>в ${ruTimes(s.ratio)} больше нормы</em>`; else if (s.ratio <= .5) cmp = `в ${ruTimes(1 / s.ratio)} меньше нормы`;
       else if (Math.abs(s.anom) < 15) cmp = 'около нормы'; else cmp = s.anom > 0 ? `<em>на ${s.anom}% больше нормы</em>` : `на ${-s.anom}% меньше нормы`;
       return `Больше всего здесь горит в ${peak}. В ${MON_LOC_RU[s.m]} ${s.y} — ${s.n} ${ruPl(s.nRaw, 'очаг', 'очага', 'очагов')}, ${cmp}.`; },
-    storyLive:s => { const r = s.ratio, cmp = r === null ? '' : r === 0 ? '' : r >= 2 ? `, а сейчас <em>в ${ruTimes(r)} больше</em>` : r <= .5 ? `, а сейчас в ${ruTimes(1 / r)} меньше` : ' — сейчас около нормы';
+    storyLive:s => { const r = s.ratio, cmp = r === null ? '' : r === 0 ? '' : r >= 1.5 ? `, а сейчас <em>в ${ruTimes(r)} больше</em>` : r <= .67 ? `, а сейчас в ${ruTimes(1 / r)} меньше` : ' — сейчас около нормы';
       return `За последние 7 дней спутник заметил здесь <em>${fmt(s.n)} ${ruPl(s.n, 'очаг', 'очага', 'очагов')}</em>. Обычно в ${MON_LOC_RU[s.m]} за неделю около ${s.norm}${cmp}. Больше всего здесь горит в ${MON_LOC_RU[s.peak]}.`; } },
   ky: { search:'Жер издөө: өлкө, шаар, облус…', p1:'Жыл', p5:'5 жыл', p10:'10 жыл', pall:'25 жыл', tg:'Telegram сводка', nowBtn:'Азыр', world:'Бүт дүйнө',
     hint:'Тартуу — жылдыруу · дөңгөлөк же +/− — масштаб · басуу — өлкөнү тандоо', hintIn:'Тартуу — жылдыруу · дөңгөлөк — масштаб · басуу — тандоо · Shift+тартуу же ▭ — өз аймагыңыз', useView:'Бул аймакты көрсөтүү', hintRect:'Керектүү аймактын айланасына рамка тартыңыз', hintG:'Басуу — өлкөнү тандоо · тартуу — Жерди айлантуу',
@@ -214,12 +216,14 @@ const I18N = {
     villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', villNone:'Айылдардын жанында очок болгон жок.',
     y2001:'2001: алгачкы жарым жылда бир гана спутник иштеген — баа так эмес',
     worldMsg:(lo, hi) => `NASA спутниктери ар айда Жерде <em>${lo}</em> дан <em>${hi}</em> чейин очок көрөт. <b>Өлкөнү басыңыз</b> же жер издеңиз — ал жерде качан күйөрүн жана азыр эмне болуп жатканын көрсөтөбүз.`,
+    unusual:'сезон үчүн адаттан тыш', baseNote:y => `норма — 2012–${y} медианасы (VIIRS)`, updated:u => `маалымат жаңыртылды ${u}`, empty:'Бул жерде өрт дээрлик болбойт: 25 жылда орточо айына бир очоктон аз.',
+    unusualTxt:(n, m) => `<em>${n}</em> — жылдын бул маалы үчүн адаттан тыш көп (адатта ~${m}).`,
     story:s => { const M = I18N.ky.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> жана <em>${M[s.peak2]}</em> айларында` : `<em>${M[s.peak]}</em> айында`;
       let cmp; if (s.ratio === null) cmp = 'жылдын бул маалында дээрлик күйбөйт'; else if (s.ratio === 0) cmp = 'бир да очок жок';
       else if (s.ratio >= 2) cmp = `<em>нормадан ${x10(s.ratio)} эсе көп</em>`; else if (s.ratio <= .5) cmp = `нормадан ${x10(1 / s.ratio)} эсе аз`;
       else if (Math.abs(s.anom) < 15) cmp = 'нормага жакын'; else cmp = s.anom > 0 ? `<em>нормадан ${s.anom}% көп</em>` : `нормадан ${-s.anom}% аз`;
       return `Бул жерде эң көп ${peak} күйөт. ${s.y}-жылдын ${M[s.m]} айында — ${s.n} очок, ${cmp}.`; },
-    storyLive:s => { const r = s.ratio, M = I18N.ky.monFull, cmp = r === null || r === 0 ? '' : r >= 2 ? `, азыр <em>${x10(r)} эсе көп</em>` : r <= .5 ? `, азыр ${x10(1 / r)} эсе аз` : ', азыр нормага жакын';
+    storyLive:s => { const r = s.ratio, M = I18N.ky.monFull, cmp = r === null || r === 0 ? '' : r >= 1.5 ? `, азыр <em>${x10(r)} эсе көп</em>` : r <= .67 ? `, азыр ${x10(1 / r)} эсе аз` : ', азыр нормага жакын';
       return `Акыркы 7 күндө спутник бул жерде <em>${fmt(s.n)} очок</em> байкады. Адатта ${M[s.m]} айында бир жумада болжол менен ${s.norm}${cmp}. Бул жерде эң көп ${M[s.peak]} айында күйөт.`; } },
   en: { search:'Find a place: country, city, region…', p1:'Year', p5:'5 years', p10:'10 years', pall:'All 25 years', tg:'Telegram brief', nowBtn:'Now', world:'World',
     hint:'Drag — move · wheel or +/− — zoom · click — pick a country', hintIn:'Drag — move · wheel — zoom · click — pick · Shift+drag or ▭ — your own area', useView:'Show this area', hintRect:'Drag a frame around the area you need', hintG:'Click — pick a country · drag — spin the Earth',
@@ -244,12 +248,14 @@ const I18N = {
     villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', villNone:'No hotspots near villages.',
     y2001:'2001: only one satellite for the first half of the year — a rougher estimate',
     worldMsg:(lo, hi) => `Every month NASA satellites see between <em>${lo}</em> and <em>${hi}</em> fires on Earth. <b>Click a country</b> or search for a place to see when it usually burns there and what is happening now.`,
+    unusual:'unusual for the season', baseNote:y => `normal = median 2012–${y} (VIIRS)`, updated:u => `data updated ${u}`, empty:'Fires almost never happen here: less than one hotspot a month on average over 25 years.',
+    unusualTxt:(n, m) => `<em>${n}</em> — unusually many for this time of year (normally ~${m}).`,
     story:s => { const M = I18N.en.monFull, peak = s.peak2 !== null ? `<em>${M[s.peak]}</em> and <em>${M[s.peak2]}</em>` : `<em>${M[s.peak]}</em>`;
       let cmp; if (s.ratio === null) cmp = 'it hardly burns here at this time of year'; else if (s.ratio === 0) cmp = 'not a single hotspot';
       else if (s.ratio >= 2) cmp = `<em>${x10(s.ratio)}× the normal</em>`; else if (s.ratio <= .5) cmp = `${x10(1 / s.ratio)}× below normal`;
       else if (Math.abs(s.anom) < 15) cmp = 'about normal'; else cmp = s.anom > 0 ? `<em>${s.anom}% above normal</em>` : `${-s.anom}% below normal`;
       return `It burns most here in ${peak}. ${M[s.m]} ${s.y}: ${s.n} ${s.nRaw === 1 ? 'hotspot' : 'hotspots'}, ${cmp}.`; },
-    storyLive:s => { const r = s.ratio, M = I18N.en.monFull, cmp = r === null || r === 0 ? '' : r >= 2 ? `; right now it is <em>${x10(r)}× that</em>` : r <= .5 ? `; right now ${x10(1 / r)}× less` : '; right now about normal';
+    storyLive:s => { const r = s.ratio, M = I18N.en.monFull, cmp = r === null || r === 0 ? '' : r >= 1.5 ? `; right now it is <em>${x10(r)}× that</em>` : r <= .67 ? `; right now ${x10(1 / r)}× less` : '; right now about normal';
       return `The satellite spotted <em>${fmt(s.n)} ${s.n === 1 ? 'hotspot' : 'hotspots'}</em> here in the last 7 days. A normal ${M[s.m]} week has about ${s.norm}${cmp}. It burns most here in ${M[s.peak]}.`; } },
 };
 const KGR = { kg:{ ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyrgyzstan' }, chui:{ ru:'Чуйская область', ky:'Чүй облусу', en:'Chui region' }, talas:{ ru:'Таласская область', ky:'Талас облусу', en:'Talas region' },
@@ -258,6 +264,8 @@ const KGR = { kg:{ ru:'Кыргызстан', ky:'Кыргызстан', en:'Kyr
 const EXAMPLES = [['amazon', [-15,-70,0,-45], { ru:'Амазония', ky:'Амазония', en:'Amazon' }], ['sahel', [4,-18,14,35], { ru:'Сахель', ky:'Сахель', en:'Sahel' }],
   ['siberia', [50,90,70,140], { ru:'Сибирь', ky:'Сибирь', en:'Siberia' }], ['australia', [-40,112,-10,155], { ru:'Австралия', ky:'Австралия', en:'Australia' }], ['casia', [35,46,56,88], { ru:'Центральная Азия', ky:'Борбор Азия', en:'Central Asia' }]];
 const KG_EXTENT = [39.1,69.2,43.3,80.3], KG_NUM = '417';
+// common short names people actually type
+const ALIAS = { '840':['сша','америка','usa','us','america','штаты'], '826':['великобритания','англия','uk','britain'], '784':['оаэ','uae','эмираты'], '156':['кнр','китай'], '643':['рф','russia'], '408':['кндр'], '410':['южная корея'], '180':['дрк','конго'], '417':['кр','кыргызстан','киргизия'] };
 
 let lang = 'ru'; try { lang = localStorage.getItem('bb_lang') || 'ru'; } catch (e) {}
 const T = () => I18N[lang];
@@ -272,7 +280,7 @@ const rewind = f => { if (d3.geoArea(f) > 2 * Math.PI) { const rv = r => r.slice
 
 // =============================== state ===============================
 let MONTHS, N, SUMMARY, KGMETA, WEATHER, LSUM, world, COUNTRIES = [], NUM2A2 = {}, REGIONS = [], POINTS = new Map();
-const CELLCACHE = new Map();
+const CELLCACHE = new Map(), LIVEBYCELL = new Map();
 let gCells = [], kgCells = [], VILL = [], VGRID = new Map(), CITIES = null, CGRID = null, TILES = new Map();
 let sel = { kind:'world' }, selCells = null, liveCellsSel = null, livePts = null;
 let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
@@ -293,11 +301,14 @@ function label() {
 const ringHas = (ring, x, y) => { let k = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j];
   if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) k = !k; } return k; };
 const polyHas = (poly, x, y) => ringHas(poly[0], x, y) && !poly.slice(1).some(h => ringHas(h, x, y));
+// countries whose rings wrap around the antimeridian (Fiji, Russia...) need the spherical test; the rest use the fast planar one
+const featIn = (f, lo, la) => f.wrap ? featHas(f, lo, la) : featPlanar(f, lo, la);
 const featPlanar = (f, lo, la) => { const b = f.pb; if (lo < b[0] || lo > b[2] || la < b[1] || la > b[3]) return false; const g = f.geometry;
   return g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la)); };
 const featHas = (f, lo, la) => { const b = f.bb; if (b[0] <= b[2] ? (lo < b[0] || lo > b[2]) : (lo < b[0] && lo > b[2])) return false; if (la < b[1] || la > b[3]) return false; return d3.geoContains(f, [lo, la]); };
 const regionOf = (lo, la) => { for (const f of REGIONS) { const b = f.bb; if (lo < b[0] || lo > b[2] || la < b[1] || la > b[3]) continue;
   const g = f.geometry; if (g.type === 'Polygon' ? polyHas(g.coordinates, lo, la) : g.coordinates.some(p => polyHas(p, lo, la))) return f.properties.key; } return null; };
+const inBoxW = (la, lo, b, m = 0) => { if (la < b[0] - m || la > b[2] + m) return false; const L = lo < b[1] - m ? lo + 360 : lo; return L >= b[1] - m && L <= b[3] + m; };
 const inKgKey = (reg, key) => key === 'kg' ? reg != null : reg === key;
 
 const kmBetween = (a, b, c, d) => { const x = (d - b) * Math.cos((a + c) / 2 * Math.PI / 180), y = c - a; return 111.2 * Math.sqrt(x * x + y * y); };
@@ -306,8 +317,9 @@ function nearestIn(list, grid, la, lo, maxKm) { let best = -1, bd = maxKm; const
   return best < 0 ? null : [best, bd]; }
 const villName = k => lang === 'en' ? VILL[k][1] : lang === 'ky' ? (VILL[k][5] || VILL[k][0]) : VILL[k][0];
 const cityName = k => lang === 'en' || !CITIES[k][1] ? CITIES[k][0] : CITIES[k][1];
-async function ensureCities() { if (CITIES) return; const c = await fetch('data/cities.json').then(r => r.json()).catch(() => []); CGRID = new Map();
-  c.forEach((x, k) => { const key = `${Math.floor(x[2] * 10)}|${Math.floor(x[3] * 10)}`; if (!CGRID.has(key)) CGRID.set(key, []); CGRID.get(key).push(k); }); CITIES = c; }
+let citiesP = null;
+async function ensureCities() { if (CITIES) return; if (citiesP) return citiesP; citiesP = (async () => { const c = await fetch('data/cities.json').then(r => r.json()).catch(() => []); CGRID = new Map();
+  c.forEach((x, k) => { const key = `${Math.floor(x[2] * 10)}|${Math.floor(x[3] * 10)}`; if (!CGRID.has(key)) CGRID.set(key, []); CGRID.get(key).push(k); }); CITIES = c; })(); return citiesP; }
 function placeName(la, lo) {
   if (VILL.length && la > 39 && la < 43.5 && lo > 69 && lo < 80.5) { const v = nearestIn(VILL, VGRID, la, lo, 15); if (v) return [villName(v[0]), v[1]]; }
   if (CITIES) { const c = nearestIn(CITIES, CGRID, la, lo, 80); if (c) return [cityName(c[0]), c[1]]; }
@@ -326,7 +338,7 @@ let VIS = [], LIVEXY = [], VISKG = false;
 const boxGeo = b => { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); } return { type:'MultiPoint', coordinates:pts }; };
 const zoomed = () => proj.scale() > 600;
 
-let tween = null;
+let tween = null, flyFallback = 0;
 function boxView(b) {          // projection that shows a bbox (used by the instant zoom)
   const pj = d3.geoEqualEarth(), pad = Math.max(.6, (b[2]-b[0]) * .18);
   pj.rotate([-(b[1] + b[3]) / 2, 0]).fitExtent([[20, 44], [W - 20, H - 74]], boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3]));
@@ -350,7 +362,7 @@ function flyTo() {             // animate the flat map from the current view to 
     proj.rotate(ir(e)).scale(Math.exp(ls(e))).translate(it(e)); drawBase();
     if (k < 1) tween = requestAnimationFrame(step); else { tween = null; layout(); } };
   tween = requestAnimationFrame(step);
-  setTimeout(() => { if (tween) layout(); }, D + 250);      // frames frozen (background tab): finish anyway
+  clearTimeout(flyFallback); flyFallback = setTimeout(() => { if (tween) layout(); }, D + 250);      // frames frozen (background tab): finish anyway
 }
 function layout() {
   if (tween) { cancelAnimationFrame(tween); tween = null; }
@@ -403,9 +415,9 @@ function buildVis() {         // cells on screen when zoomed in, with their scre
   cells.forEach((c, i) => { if (c.la < la0 || c.la > la1 || c.lo < lo0 || c.lo > lo1) return; const r = cellRect(c.la, c.lo, d); if (r && r[0] < W && r[1] < H && r[0] + r[2] > 0 && r[1] + r[3] > 0) VIS.push([i, r]); });
 }
 function buildLiveXY() {      // screen positions of the live hotspots (computed once per view)
-  LIVEXY = []; if (!livePts || !zoomed()) return; const now = Date.now();
+  LIVEXY = []; if (!livePts || !zoomed() || livePts.length > 15000) return; const now = LSUM ? Date.parse(LSUM.newest.replace(' ', 'T') + 'Z') : Date.now();   // fresh = within 24 h of the newest data, not of the viewer's clock
   for (const p of livePts) { const xy = proj([p[1], p[0]]); if (!xy || xy[0] < 0 || xy[1] < 0 || xy[0] > W || xy[1] > H) continue;
-    LIVEXY.push([xy[0], xy[1], now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5, (p[0] * 7) % 1]); }
+    LIVEXY.push([xy[0], xy[1], now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5, (((p[0] * 7) % 1) + 1) % 1]); }
 }
 function buildPix() {
   GRID = 3; const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
@@ -442,7 +454,7 @@ let livePhase = 0;
 function drawFire(fade) {
   const g = ctx.fire;
   if (isGlobe()) globePix();
-  if (liveOn) { g.clearRect(0,0,W,H); if (!zoomed()) paintGrid(i => LCELLS[i], LUTLIVE, Math.log1p(40)); drawLivePoints(); return; }
+  if (liveOn) { g.clearRect(0,0,W,H); if (!zoomed() || !LIVEXY.length) paintGrid(i => LCELLS[i], LUTLIVE, Math.log1p(40)); drawLivePoints(); return; }
   g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${isGlobe() ? 1 : fade})`; g.fillRect(0,0,W,H); g.globalCompositeOperation = 'source-over';
   if (zoomed()) {
     g.clearRect(0,0,W,H);
@@ -478,7 +490,7 @@ function drawMarks(drag) {
 let down = null;
 const onEarth = p => { const a = proj.invert(p); if (!a || !isFinite(a[0]) || !isFinite(a[1])) return null; const b = proj(a);
   return b && Math.hypot(b[0] - p[0], b[1] - p[1]) < 2 && (!isGlobe() || d3.geoDistance(a, [-rot[0], -rot[1]]) < Math.PI / 2) ? a : null; };
-const countryAt = (lo, la) => COUNTRIES.find(f => featPlanar(f, lo, la));
+const countryAt = (lo, la) => COUNTRIES.find(f => featIn(f, lo, la));
 $('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player,.zoom,.view,.useview')) return; const r = $('stage').getBoundingClientRect();
   down = [e.clientX - r.left, e.clientY - r.top]; down.rect = rectMode || e.shiftKey; down.t0 = proj.translate(); try { $('stage').setPointerCapture(e.pointerId); } catch (_) {} });
 $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top];
@@ -513,7 +525,7 @@ function selectWorld() { apply({ kind:'world', contains:() => true, bbox:[-90,-1
 function selectCountry(f) {
   if (f.id === KG_NUM && REGIONS.length) return selectKg('kg');
   const b = d3.geoBounds(f), bbox = [b[0][1], b[0][0], b[1][1], b[1][0] < b[0][0] ? b[1][0] + 360 : b[1][0]];
-  apply({ kind:'country', f, contains:(lo, la) => featPlanar(f, lo, la), bbox, geo:f, center:d3.geoCentroid(f) });
+  apply({ kind:'country', f, contains:(lo, la) => featIn(f, lo, la), bbox, geo:f, center:d3.geoCentroid(f) });
 }
 function selectKg(key) {
   const fs = REGIONS.filter(f => inKgKey(f.properties.key, key)), fc = { type:'FeatureCollection', features:fs }, b = d3.geoBounds(fc);
@@ -521,7 +533,8 @@ function selectKg(key) {
 }
 async function selectBox(bbox, name, at) {
   bbox = bbox.map(x => +x.toFixed(3));
-  const s = { kind:'box', bbox, name, contains:(lo, la) => la >= bbox[0] && la <= bbox[2] && lo >= bbox[1] && lo <= bbox[3] };
+  if (bbox[3] < bbox[1]) bbox[3] += 360;                         // a box across the antimeridian
+  const s = { kind:'box', bbox, name, contains:(lo, la) => inBoxW(la, lo, bbox) };
   s.kgBox = REGIONS.length > 0 && (bbox[2] - bbox[0]) <= 5 && (bbox[3] - bbox[1]) <= 12 && regionOf((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2) != null;
   const nameIt = () => { const c = at || [(bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2], pn = placeName(c[1], c[0]);
     if (pn && (bbox[2] - bbox[0]) < 6) s.name = { ru:I18N.ru.near(pn[0]), ky:I18N.ky.near(pn[0]), en:I18N.en.near(pn[0]) };
@@ -535,16 +548,19 @@ async function apply(s) {
   else { const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, out = new Float32Array(N), ck = sel.kind === 'country' ? 'c' + sel.f.id : null;
     if (ck && CELLCACHE.has(ck)) selCells = CELLCACHE.get(ck);
     else { selCells = []; const b = sel.bbox;
-      cells.forEach((c, i) => { if (sel.kind !== 'kg' && (c.la < b[0] - 1 || c.la > b[2] + 1 || c.lo < b[1] - 1 || c.lo > b[3] + 1)) return;
+      cells.forEach((c, i) => { if (sel.kind !== 'kg' && !inBoxW(c.la, c.lo, b, 1)) return;
         if (sel.kind === 'kg' ? inKgKey(c.reg, sel.key) : sel.contains(c.lo, c.la)) selCells.push(i); });
+      if (selCells.length < 2 && !kg && sel.kind !== 'world') { const c0 = sel.center || [(b[1] + b[3]) / 2, (b[0] + b[2]) / 2]; selCells = [];
+        cells.forEach((c, i) => { if (Math.abs(c.la - c0[1]) <= 1 && Math.abs(((c.lo - c0[0] + 540) % 360) - 180) <= 1) selCells.push(i); }); }
       if (ck) CELLCACHE.set(ck, selCells); }
     for (const i of selCells) { const h = cells[i].h; for (let m = 0; m < N; m++) out[m] += h[m]; }
     series = out; }
   liveCellsSel = { n20:0, all:0 };
   if (LSUM) for (const [c, n20, all] of LSUM.cells) { const la = Math.floor(c / 360) - 90 + .5, lo = c % 360 - 180 + .5, b = sel.bbox;
-    if (sel.kind !== 'world' && (la < b[0] - 1 || la > b[2] + 1 || lo < b[1] - 1 || lo > b[3] + 1)) continue;
+    if (sel.kind !== 'world' && !inBoxW(la, lo, b, 1)) continue;
     const ok = sel.kind === 'world' ? true : sel.kind === 'kg' ? inKgKey(regionOf(lo, la), sel.key) : sel.contains(lo, la);   // KG: rough first, exact once the points load
     if (ok) { liveCellsSel.n20 += n20; liveCellsSel.all += all; } }
+  if (LSUM && sel.kind !== 'world' && selSrc() !== 'kg') { liveCellsSel = { n20:0, all:0 }; for (const i of selCells) { const v = LIVEBYCELL.get(gCells[i].id); if (v) { liveCellsSel.n20 += v[0]; liveCellsSel.all += v[1]; } } }
   livePts = null; liveOn = sel.kind !== 'world' && !!LSUM; $('now').classList.toggle('on', liveOn);
   const u = new URL(location); ['bbox', 'c', 'kg'].forEach(k => u.searchParams.delete(k));
   if (sel.kind === 'box') u.searchParams.set('bbox', sel.bbox.join(',')); if (sel.kind === 'country') u.searchParams.set('c', sel.f.id); if (sel.kind === 'kg') u.searchParams.set('kg', sel.key);
@@ -560,7 +576,8 @@ async function loadLivePoints() {
   if (s !== sel) return;
   if (selSrc() !== 'kg' && !CITIES) ensureCities().then(() => { if (s === sel) render(); });
   livePts = parts.flat().filter(p => sel.contains(p[1], p[0])).sort((x, y) => x[2] < y[2] ? 1 : -1);
-  if (sel.kind === 'kg') liveCellsSel = { n20:livePts.filter(p => p[3] === 20).length, all:livePts.length };   // exact borders for Kyrgyz regions
+  const inMask = p => sel.kind === 'kg' || !sel.kgBox || regionOf(p[1], p[0]) != null;   // Kyrgyz boxes: same Kyrgyzstan-only mask as the history
+  if (selSrc() === 'kg') { const ps = livePts.filter(inMask); liveCellsSel = { n20:ps.filter(p => p[3] === 20).length, all:ps.length }; }   // fine Kyrgyz data: exact points, same mask as history
   if (!tween) buildLiveXY(); render(); if (liveOn && !tween) { ctx.fire.clearRect(0,0,W,H); drawFire(1); }
 }
 
@@ -569,8 +586,9 @@ let searchT = 0, searchSeq = 0, hiIdx = -1, results = [];
 function suggestions() {
   const t = T(); return [{ grp:t.sugKg }, ...Object.keys(KGR).map(k => ({ label:KGR[k][lang], sub:'', act:() => selectKg(k) })),
     { grp:t.sugWorld }, { label:t.world, sub:'', act:selectWorld }, ...EXAMPLES.map(e => ({ label:e[2][lang], sub:'', act:() => selectBox(e[1], e[2]) }))]; }
+const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
 function showDrop(items) { results = items.filter(i => !i.grp); hiIdx = -1;
-  $('drop').innerHTML = items.length ? items.map(i => i.grp ? `<div class="grp">${i.grp}</div>` : `<button data-i="${results.indexOf(i)}">${i.label}<span>${i.sub || ''}</span></button>`).join('') : `<div class="grp">${T().noRes}</div>`;
+  $('drop').innerHTML = items.length ? items.map(i => i.grp ? `<div class="grp">${i.grp}</div>` : `<button data-i="${results.indexOf(i)}">${esc(i.label)}<span>${esc(i.sub)}</span></button>`).join('') : `<div class="grp">${T().noRes}</div>`;
   $('drop').classList.add('on'); }
 const hideDrop = () => $('drop').classList.remove('on');
 const pick = it => { hideDrop(); $('q').value = ''; $('q').blur(); it.act(); };
@@ -579,22 +597,26 @@ $('q').addEventListener('focus', () => { if (!$('q').value) showDrop(suggestions
 $('q').addEventListener('blur', () => setTimeout(hideDrop, 150));
 $('q').addEventListener('keydown', e => { const bs = [...$('drop').querySelectorAll('button')];
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); hiIdx = Math.max(0, Math.min(bs.length - 1, hiIdx + (e.key === 'ArrowDown' ? 1 : -1))); bs.forEach((b, i) => b.classList.toggle('hi', i === hiIdx)); }
-  if (e.key === 'Enter') { const b = bs[Math.max(0, hiIdx)]; if (b) pick(results[+b.dataset.i]); }
+  if (e.key === 'Enter') { const b = bs[Math.max(0, hiIdx)]; if (b && results.length) pick(results[+b.dataset.i]); else if ($('q').value.trim()) enterWaiting = true; }
   if (e.key === 'Escape') { hideDrop(); $('q').blur(); } });
-$('q').addEventListener('input', () => { clearTimeout(searchT); const q = $('q').value.trim(); if (!q) return showDrop(suggestions());
+let enterWaiting = false;
+$('q').addEventListener('input', () => { clearTimeout(searchT); results = []; const q = $('q').value.trim(); if (!q) return showDrop(suggestions());
+  $('drop').innerHTML = '<div class="grp">…</div>'; $('drop').classList.add('on');
   searchT = setTimeout(async () => { const seq = ++searchSeq, ql = q.toLowerCase();
     const local = Object.keys(KGR).filter(k => Object.values(KGR[k]).some(n => n.toLowerCase().includes(ql))).map(k => ({ label:KGR[k][lang], sub:'', act:() => selectKg(k) }));
-    const ctry = COUNTRIES.filter(f => [countryName(f), f.properties.name].some(n => n && n.toLowerCase().startsWith(ql))).slice(0, 4).map(f => ({ label:countryName(f), sub:'', act:() => selectCountry(f) }));
+    const names = f => { const a2 = NUM2A2[f.id], out = [f.properties.name, ...(ALIAS[f.id] || [])]; for (const l of ['ru', 'ky', 'en']) { try { out.push(new Intl.DisplayNames([l], { type:'region' }).of(a2)); } catch (e) {} } return out.filter(Boolean).map(n => n.toLowerCase()); };
+    const ctry = COUNTRIES.map(f => [f, names(f)]).filter(([, ns]) => ns.some(n => n.startsWith(ql) || (ql.length >= 3 && n.includes(' ' + ql))) || ns.includes(ql))
+      .slice(0, 4).map(([f]) => ({ label:countryName(f), sub:'', act:() => selectCountry(f) }));
     let geo = [];
     try { const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${lang === 'en' ? 'en' : 'ru'}`).then(r => r.json());
       geo = (r.results || []).filter(g => !(g.feature_code || '').startsWith('PCL')).map(g => { const fc = g.feature_code || '', d = fc.startsWith('ADM1') ? 1.6 : fc.startsWith('ADM') ? .8 : .45;
         return { label:g.name, sub:[g.admin1, g.country].filter(Boolean).join(', '), act:() => selectBox([g.latitude - d, g.longitude - d * 1.3, g.latitude + d, g.longitude + d * 1.3], { ru:g.name, ky:g.name, en:g.name }, [g.longitude, g.latitude]) }; }); } catch (e) {}
-    if (seq === searchSeq) showDrop([...local, ...ctry, ...geo]); }, 250); });
+    if (seq === searchSeq) { showDrop([...local, ...ctry, ...geo]); if (enterWaiting && results.length) { enterWaiting = false; pick(results[0]); } } }, 250); });
 
 function drawCrumbs() {
   const t = T(), parts = [`<button data-a="world">🌍 ${t.world}</button>`];
   if ((sel.kind === 'kg' && sel.key !== 'kg') || (sel.kind === 'box' && selSrc() === 'kg')) parts.push(`<i>›</i><button data-a="kg">${KGR.kg[lang]}</button>`);
-  if (sel.kind !== 'world') parts.push(`<i>›</i><b>${label()}</b>`);
+  if (sel.kind !== 'world') parts.push(`<i>›</i><b>${esc(label())}</b>`);
   $('crumbs').innerHTML = parts.join('');
   $('crumbs').querySelectorAll('button').forEach(b => b.onclick = () => b.dataset.a === 'world' ? selectWorld() : selectKg('kg'));
 }
@@ -602,7 +624,8 @@ function drawCrumbs() {
 // =============================== fire danger ===============================
 const WXCACHE = new Map();
 function forecast(la, lo) { const key = `${la.toFixed(2)},${lo.toFixed(2)}`; if (WXCACHE.has(key)) return WXCACHE.get(key);
-  const pr = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(3)}&longitude=${lo.toFixed(3)}&daily=temperature_2m_max,relative_humidity_2m_min,wind_speed_10m_max,precipitation_sum&timezone=auto&forecast_days=4`).then(r => r.json()).then(d => d.daily);
+  const pr = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(3)}&longitude=${lo.toFixed(3)}&daily=temperature_2m_max,relative_humidity_2m_min,wind_speed_10m_max,precipitation_sum&timezone=auto&forecast_days=4`)
+    .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status))).then(d => { if (!d.daily) throw new Error('no data'); return d.daily; }).catch(e => { WXCACHE.delete(key); throw e; });
   WXCACHE.set(key, pr); return pr; }
 function riskOf(share, ratio, daily, w) { const t = T().why, why = []; let s = 0;
   if (share >= .6) { s += 2; why.push(t.peak); } else if (share >= .3) { s += 1; why.push(t.season); }
@@ -619,11 +642,11 @@ async function renderDanger(med, liveRatio) {
   card.style.display = '';
   const b = sel.bbox; if ((b[2] - b[0]) > 14 || (b[3] - b[1]) > 22) { card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub" style="margin:6px 0 0">${t.bigArea}</div>`; return; }
   const token = ++dangerToken, c = sel.center || [(b[1] + b[3]) / 2, (b[0] + b[2]) / 2];
-  card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div><div class="why">…</div>`;
+  if (card.dataset.place !== c.join()) card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div><div class="why">…</div>`; card.dataset.place = c.join();
   let d; try { d = await forecast(c[1], c[0]); } catch (e) { d = null; }
   if (token !== dangerToken) return;
   if (!d) { card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.wxErr}</div>`; return; }
-  const max = Math.max(...med) || 1, now = Date.now(), daily = livePts ? livePts.filter(p => now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5).length : 0;
+  const max = Math.max(...med) || 1, now = LSUM ? Date.parse(LSUM.newest.replace(' ', 'T') + 'Z') : Date.now(), daily = livePts ? livePts.filter(p => p[3] === 20 && now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5).length : 0;
   const days = d.time.map((day, i) => ({ day, ...riskOf(med[+day.slice(5, 7) - 1] / max, liveRatio, i === 0 ? daily : 0, { t:d.temperature_2m_max[i], h:d.relative_humidity_2m_min[i], w:d.wind_speed_10m_max[i], r:d.precipitation_sum[i] }) }));
   const r0 = days[0], dn = (day, i) => i < 2 ? t.days[i] : new Date(day + 'T00:00').toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU', { weekday:'short', day:'numeric' });
   card.innerHTML = `<h2>${t.dangerT}</h2><div class="sub">${t.dangerS}</div>
@@ -644,38 +667,48 @@ function render() {
   RS = { med, years };
   const order = med.map((v, i) => [v, i]).sort((p, q) => q[0] - p[0]), peak = order[0][1];
   const second = order.slice(1).find(([v, i]) => v >= .55 * order[0][0] && Math.min(Math.abs(i - peak), 12 - Math.abs(i - peak)) >= 3);
-  const full = d3.range(2001, lastY + 1).map(y => [y, d3.sum(d3.range(12), m => at(y, m + 1) || 0)]), worst = d3.greatest(full.filter(d => d[0] > 2001), d => d[1]);
+  const full = d3.range(2001, lastY + 1).map(y => [y, d3.sum(d3.range(12), m => at(y, m + 1) || 0)]), worstY = d3.greatest(full.filter(d => d[0] > 2001), d => d[1]), worst = worstY[1] >= 12 ? worstY : ['—', 0];
   const statsHtml = ph => `<div class="stats"><div class="stat"><span>${t.phase}</span><b>${ph}</b></div><div class="stat"><span>${t.worst}</span><b>${worst[0]}</b></div>
       <div class="stat"><span>${t.lastYear(full.at(-1)[0])}</span><b>${fmt(full.at(-1)[1])}</b></div><div class="stat"><span>${t.yearNorm}</span><b>${fmt(median(full.slice(0, -1).map(d => d[1])))}</b></div></div>
     <div class="dl"><button class="pill" id="csvCal">${t.csvCal}</button><button class="pill" id="csvPts" ${selSrc() !== 'kg' ? `disabled title="${t.ptsOnlyKg}"` : ''}>${t.csvPts}</button></div>`;
 
-  let liveRatio = null;
+  // "now" is compared with a fixed VIIRS-era normal (2012 onward, same sensor family), independent of the month being browsed
+  let liveRatio = null, liveNorm = null, liveUnusual = false;
+  if (LSUM && sel.kind !== 'world') { const lm = +LSUM.newest.slice(5, 7), ly = +LSUM.newest.slice(0, 4), dim = new Date(ly, lm, 0).getDate();
+    const vMed = median(d3.range(2012, lastY + 1).map(y => at(y, lm))), wk = vMed * 7 / dim, n20 = liveCellsSel.n20;
+    liveNorm = { lm, wk, n20 }; if (wk >= 3) liveRatio = n20 / wk; else liveUnusual = n20 >= 10 && n20 >= 5 * Math.max(wk, 1); }
+  const medAll = d3.range(12).map(m => median(d3.range(2002, lastY + 1).map(y => at(y, m + 1))));
   if (liveOn && sel.kind === 'kg' && livePts === null) {     // exact Kyrgyz count comes with the points: show a placeholder, not a wrong number
     $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story" style="color:var(--muted)">…</div><div class="big num" style="color:#ff8a7a">…</div>`;
   } else if (liveOn && sel.kind !== 'world' && LSUM) {
-    const lm = +LSUM.newest.slice(5, 7), ly = +LSUM.newest.slice(0, 4), dim = new Date(ly, lm, 0).getDate(), wk = med[lm - 1] * 7 / dim, n20 = liveCellsSel.n20;
-    liveRatio = med[lm - 1] >= 3 ? n20 / Math.max(wk, .1) : null;
-    $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${t.storyLive({ n:n20, m:lm - 1, norm:wk < 1 ? '<1' : fmt(wk), ratio:liveRatio, peak })}</div>
+    const { lm, wk, n20 } = liveNorm;
+    let ls = t.storyLive({ n:n20, m:lm - 1, norm:wk < 1 ? '<1' : fmt(wk), ratio:liveRatio, peak });
+    if (Math.max(...med) < 1 && !n20) ls = t.empty;
+    $('hero').innerHTML = `<div class="place"><span class="dot"></span>${label()} · ${t.liveNow}</div><div class="story">${ls}</div>
       <div class="big num" style="color:#ff8a7a">${fmt(n20)} <span>${firesWord(n20, lang)} · ${t.liveDays} · NOAA-20</span></div>
-      ${liveRatio === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${liveRatio >= 1 ? 'up' : 'down'}">${liveRatio >= 1 ? '▲' : '▼'} ×${liveRatio.toFixed(1)} ${t.toNorm} (${wk < 10 ? wk.toFixed(1) : fmt(wk)})</div>`}
-      ${statsHtml(t.peakMonth(t.monFull[peak]))}`;
+      ${liveRatio !== null ? `<div class="badge ${liveRatio >= 1 ? 'up' : 'down'}">${liveRatio >= 1 ? '▲' : '▼'} ×${liveRatio.toFixed(1)} ${t.toNorm} (${wk < 10 ? wk.toFixed(1) : fmt(wk)})</div>` : liveUnusual ? `<div class="badge up">⚠ ${t.unusual}</div>` : `<div class="badge na">${t.normLow}</div>`}
+      <div class="note">${t.baseNote(lastY)} · ${t.updated(LSUM.updated)}</div>
+      ${statsHtml(Math.max(...med) < 1 ? '—' : t.peakMonth(t.monFull[peak]))}`;
   } else {
-    const now = series[cur], m0 = med[cm-1], anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null, ratio = m0 >= 3 ? now / m0 : null;
+    const now = series[cur], m0 = med[cm-1], anom = m0 >= 3 ? Math.round(100 * (now - m0) / m0) : null, ratio = m0 >= 3 ? now / m0 : null, unusualH = m0 < 3 && now >= 10 && now >= 5 * Math.max(m0, 1);
     const toPeak = (peak - (cm - 1) + 12) % 12, phase = toPeak === 0 ? t.peakNow : toPeak <= 2 ? t.peakIn(toPeak) : t.peakMonth(t.monFull[peak]);
     let st = t.story({ peak, peak2:second ? second[1] : null, m:cm - 1, y:cy, n:fmt(now), nRaw:Math.round(now), anom, ratio });
+    if (unusualH) st = st.replace(/[,—] [^,.]*почти не горит|, жылдын бул маалында дээрлик күйбөйт|, it hardly burns here at this time of year/, ' — ' + t.unusualTxt(fmt(now), fmt(m0)).replace(/<em>[^<]*<\/em> — /, ''));
+    if (Math.max(...med) < 1) st = t.empty;
     if (sel.kind === 'world') { const recent = Array.from(series.subarray(N - 120)); st = t.worldMsg(fmt(d3.min(recent)), fmt(d3.max(recent))); }
     $('hero').innerHTML = `<div class="place">${label()}</div><div class="story">${st}</div>
       <div class="big num">${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span></div>
-      ${anom === null ? `<div class="badge na">${t.normLow}</div>` : `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>`}
-      ${statsHtml(phase)}`;
+      ${anom !== null ? `<div class="badge ${anom >= 0 ? 'up' : 'down'}">${anom >= 0 ? '▲ +' : '▼ '}${anom}% ${t.toNorm} (${fmt(m0)})</div>` : unusualH ? `<div class="badge up">⚠ ${t.unusual}</div>` : `<div class="badge na">${t.normLow}</div>`}
+      ${statsHtml(Math.max(...med) < 1 ? '—' : phase)}`;
   }
   if ($('csvCal')) { $('csvCal').onclick = csvCal; $('csvPts').onclick = csvPts; }
-  renderDanger(med, liveRatio);
+  renderDanger(medAll, liveRatio);
 
   const lc = $('liveCard'); lc.style.display = sel.kind === 'world' || !LSUM ? 'none' : '';
   if (sel.kind !== 'world' && LSUM) {
     const all = liveCellsSel.all;
-    const head = `<div class="head"><h2><span class="dot"></span>${all ? t.liveN(all) : t.liveT}</h2>${all ? `<button class="pill" id="liveShow">${liveOn ? '✕' : '🗺'}</button>` : ''}</div>`;
+    const n20 = liveCellsSel.n20;
+    const head = `<div class="head"><h2><span class="dot"></span>${n20 ? t.liveN(n20) : t.liveT}</h2>${all ? `<button class="pill" id="liveShow">${liveOn ? '✕' : '🗺'}</button>` : ''}</div>`;
     let body;
     if (!all && livePts !== null) body = `<div class="sub" style="margin:6px 0 0">${t.liveNone}</div>`;
     else if (livePts === null) body = `<div class="sub" style="margin:6px 0 0">…</div>`;
@@ -752,12 +785,14 @@ $('how').addEventListener('toggle', () => { if ($('how').open) render(); });
 function playUI() {           // cheap panel update while playing: big number, badge, calendar frame
   if (!RS) return; const t = T(), cy = +MONTHS[cur].slice(0, 4), cm = +MONTHS[cur].slice(5), now = series[cur], m0 = RS.med[cm - 1];
   const big = document.querySelector('#hero .big'); if (big) big.innerHTML = `${fmt(now)} <span>${firesWord(now, lang)} · ${t.mon[cm-1]} ${cy}</span>`;
-  const bd = document.querySelector('#hero .badge'); if (bd && m0 >= 3) { const an = Math.round(100 * (now - m0) / m0); bd.className = `badge ${an >= 0 ? 'up' : 'down'}`; bd.textContent = `${an >= 0 ? '▲ +' : '▼ '}${an}% ${t.toNorm} (${fmt(m0)})`; }
+  const stEl = document.querySelector('#hero .story'); if (stEl) stEl.style.opacity = playing ? .4 : 1;
+  const bd = document.querySelector('#hero .badge'); if (bd && m0 < 3) { bd.className = 'badge na'; bd.textContent = t.normLow; }
+  if (bd && m0 >= 3) { const an = Math.round(100 * (now - m0) / m0); bd.className = `badge ${an >= 0 ? 'up' : 'down'}`; bd.textContent = `${an >= 0 ? '▲ +' : '▼ '}${an}% ${t.toNorm} (${fmt(m0)})`; }
   const yi = RS.years.indexOf(cy); charts.cal.setOption({ series:[{}, { data:yi >= 0 ? [[cm - 1, yi]] : [] }] });
 }
 function drawClock() {
   const t = T(), [y, m] = MONTHS[cur].split('-'); $('clock').classList.toggle('live', liveOn);
-  if (liveOn) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${fmt(sel.kind === 'world' ? LSUM.cells.reduce((s, c) => s + c[2], 0) : liveCellsSel.all)}</b> ${t.fires} · ${t.liveDays} · NOAA-20 + NOAA-21`; return; }
+  if (liveOn && LSUM) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${fmt(sel.kind === 'world' ? LSUM.cells.reduce((s, c) => s + c[1], 0) : liveCellsSel.n20)}</b> ${t.fires} · ${t.liveDays}`; return; }
   $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`; $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
 }
 function drawTimeline() {
@@ -776,7 +811,7 @@ function drawTimeline() {
   for (let i = a; i <= b; i++) { const ym = MONTHS[i]; if (ym.endsWith('-01') && +ym.slice(0,4) % step === 0) g.fillText(ym.slice(0,4), x(i) - 13, h - 4); }
 }
 $('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(), [a, b] = viewRange(), px = e.clientX - r.left;
-  if (px > r.width - 50) { if (!liveOn) toggleLive(true); return; } if (liveOn) toggleLive(false); seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
+  if (px > r.width - 50) { if (!liveOn && LSUM) toggleLive(true); return; } if (liveOn) toggleLive(false); seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
 function seek(i) { cur = Math.max(0, Math.min(N - 1, i)); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
 function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) { playing = false; $('play').textContent = '▶'; } $('now').classList.toggle('on', liveOn); layout(); render(); }
 
@@ -784,13 +819,13 @@ let last = 0, acc = 0, globeAcc = 0, liveAcc = 0;
 function tick(now) {
   const dt = Math.max(0, Math.min(500, now - (last || now))); last = Math.max(last, now);   // never negative, even if timestamps jump
   if (isGlobe() && spinning && !down && (globeAcc += dt) > 40) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); drawFire(1); }
-  if (!tween && liveOn && zoomed() && (liveAcc += dt) > 33) { livePhase = (livePhase + liveAcc / 1800) % 1; liveAcc = 0; drawFire(1); }
+  if (!tween && liveOn && zoomed() && LIVEXY.length && LIVEXY.length < 6000 && (liveAcc += dt) > 33) { livePhase = (livePhase + liveAcc / 1800) % 1; liveAcc = 0; drawFire(1); }
   else if (playing && (acc += dt) >= 130) { acc = 0; const [, b] = viewRange();
     if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning)) drawFire(.55); drawClock(); drawTimeline(); playUI(); } }
   requestAnimationFrame(tick);
 }
 $('play').onclick = () => { const wasLive = liveOn; if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
-  $('play').textContent = playing ? '❚❚' : '▶'; if (wasLive) layout(); render(); };
+  $('play').textContent = playing ? '❚❚' : '▶'; $('play').setAttribute('aria-label', playing ? 'pause' : 'play'); if (wasLive) layout(); render(); };
 $('now').onclick = () => toggleLive();
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
 function zoomBy(k, at) {          // k < 1 zooms in; the point under the cursor stays where it is
@@ -805,10 +840,10 @@ function zoomBy(k, at) {          // k < 1 zooms in; the point under the cursor 
   camActive = true; redrawCam();
 }
 $('zin').onclick = () => zoomBy(.6); $('zout').onclick = () => zoomBy(1.65);
-$('rect').onclick = () => { rectMode = !rectMode; setChrome(); };
+$('rect').onclick = () => { rectMode = !rectMode; if (rectMode && isGlobe()) { globe = false; layout(); } setChrome(); };
 ['zin', 'zout', 'rect', 'useView'].forEach(id => $(id).addEventListener('pointerdown', e => e.stopPropagation()));
 $('useView').onclick = () => { const a = proj.invert([20, 20]), b = proj.invert([W - 20, H - 20]); if (!a || !b) return;
-  selectBox([Math.max(-89, Math.min(a[1], b[1])), Math.min(a[0], b[0]), Math.min(89, Math.max(a[1], b[1])), Math.max(a[0], b[0])], null); };
+  selectBox([Math.max(-89, Math.min(a[1], b[1])), a[0], Math.min(89, Math.max(a[1], b[1])), b[0] < a[0] ? b[0] + 360 : b[0]], null); };
 let wheelRaf = 0, wheelAcc = 0, wheelAt = null;
 $('stage').addEventListener('wheel', e => { e.preventDefault();
   const r = $('stage').getBoundingClientRect(); wheelAt = onEarth([e.clientX - r.left, e.clientY - r.top]) || wheelAt;
@@ -837,7 +872,7 @@ let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() 
 
 applyLang();
 Promise.all([
-  fetch('data/global/frames.json').then(r => r.json()), fetch('data/global/summary.json').then(r => r.json()),
+  fetch('data/global/frames.json').then(r => { if (!r.ok) throw new Error('frames.json ' + r.status); return r.json(); }), fetch('data/global/summary.json').then(r => r.json()),
   fetch('data/cells.json').then(r => r.json()), fetch('data/meta.json').then(r => r.json()),
   fetch('data/weather.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   fetch('data/live/summary.json').then(r => r.ok ? r.json() : null).catch(() => null),
@@ -855,9 +890,10 @@ Promise.all([
   world.landLite = { type:'FeatureCollection', features:world.land.features.map(f => ({ type:'Feature', geometry:{ type:f.geometry.type, coordinates:f.geometry.type === 'Polygon' ? f.geometry.coordinates.map(thin) : f.geometry.coordinates.map(p => p.map(thin)) } })) };
   COUNTRIES = topojson.feature(topo, topo.objects.countries).features.filter(f => f.id).map(f => { const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]];
     let x0 = 180, y0 = 90, x1 = -180, y1 = -90; (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates).forEach(pl => pl[0].forEach(([x, y]) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }));
-    f.pb = [x0, y0, x1, y1]; return f; });
+    f.pb = [x0, y0, x1, y1]; f.wrap = x1 - x0 > 180; return f; });
   if (kreg) REGIONS = kreg.features.map(f => { rewind(f); const b = d3.geoBounds(f); f.bb = [b[0][0], b[0][1], b[1][0], b[1][1]]; return f; });
-  gCells = fr.cells.map(c => ({ la:Math.floor(c / 360) - 90 + .5, lo:c % 360 - 180 + .5, h:new Float32Array(N) }));
+  gCells = fr.cells.map(c => ({ id:c, la:Math.floor(c / 360) - 90 + .5, lo:c % 360 - 180 + .5, h:new Float32Array(N) }));
+  if (LSUM) LSUM.cells.forEach(([c, n20, all]) => LIVEBYCELL.set(c, [n20, all]));
   fr.frames.forEach((f, i) => { for (let k = 0; k < f.length; k += 2) gCells[f[k]].h[i] = f[k+1]; });
   const cellIndex = new Map(fr.cells.map((c, i) => [c, i]));
   LCELLS = new Float32Array(gCells.length); if (LSUM) LSUM.cells.forEach(([c, , all]) => { const i = cellIndex.get(c); if (i !== undefined) LCELLS[i] = all; });
@@ -881,7 +917,7 @@ Promise.all([
   else selectWorld();
   const ld = $('loading'); ld.style.opacity = 0; ld.style.pointerEvents = 'none'; ld.addEventListener('transitionend', () => ld.remove()); setTimeout(() => ld.remove(), 900);
   requestAnimationFrame(tick);
-});
+}).catch(err => { const ld = $('loading'); if (ld) ld.innerHTML = `<div style="text-align:center">Не удалось загрузить данные / Failed to load data<br><small>${esc(err && err.message)}</small><br><br><button class="pill" onclick="location.reload()">↻</button></div>`; });
 </script>
 </body>
 </html>
