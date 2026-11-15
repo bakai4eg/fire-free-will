@@ -28,7 +28,7 @@ The harmonized world record stays at 15–19 million hotspots a year for 2001–
 
 ## Who it is for
 - **Emergency services** — plan the season, see anomalies early, send patrols before the peak.
-- **Local governments and farmers** — a morning Telegram brief: risk level with reasons, new fires near the village.
+- **Local governments and farmers** — a morning Telegram brief: risk level with reasons, new fires near the village, and an alert when a region burns at least twice its normal week.
 - **Scientists and journalists** — any country, CSV and PNG export, an open method with honest limits.
 
 ## Data
@@ -44,6 +44,8 @@ Vegetation fires only: factories, gas flares and volcanoes are removed.
 | Weather, villages, Kyrgyz points | `tools/fetch_weather.py`, `tools/precompute_kg.py` |
 | Web app (one file, d3 + ECharts, RU/KY/EN) | `web/index.html` |
 | API for the bot | `web/api/` |
+
+Open in English: https://34-40-83-150.sslip.io/?lang=en (the app also picks the browser language).
 
 Run locally: `python -m http.server 8000 -d web` → http://localhost:8000. Rebuild Kyrgyz data: `python pipeline.py`. Rebuild the world: `python tools/run_global.py` (downloads ~7 GB, Python only).
 Hosting: Google Cloud VM with Caddy (HTTPS, code pulled from GitHub every 5 min, live data every 3 h) and GitHub Pages as a mirror.

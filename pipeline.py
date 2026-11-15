@@ -166,6 +166,7 @@ def write_api(cells, meta):
         get = lambda y, m: h.get(f"{y}-{m:02d}", 0.0)
         past = range(first_year, ly)                             # complete past years only
         med = {m: statistics.median([get(y, m) for y in past]) for m in range(1, 13)}
+        med_v = {m: statistics.median([get(y, m) for y in range(VIIRS_START, ly + 1)]) for m in range(1, 13)}   # VIIRS-era normal, same as the site's "now vs normal"
         anom = lambda v, m: round(100 * (v - med[m]) / med[m]) if med[m] >= 3 else None   # too few fires to compare
         peak = max(med, key=med.get)
         to_peak = (peak - lm) % 12
@@ -181,6 +182,7 @@ def write_api(cells, meta):
             "current": {"month": last, "count": round(get(ly, lm)), "median": round(med[lm]), "anomaly_pct": anom(get(ly, lm), lm)},
             "season": {"peak_month": peak, "peak_month_name": MON_RU[peak - 1], "phase": phase, "months_to_peak": to_peak},
             "median_by_month": {f"{m:02d}": round(med[m], 1) for m in range(1, 13)},
+            "median_viirs_by_month": {f"{m:02d}": round(med_v[m], 1) for m in range(1, 13)},
             "last_12_months": last12,
             "yearly": yearly, "yearly_median": round(statistics.median([yearly[y] for y in past])), "worst_year": worst,
             "site_url": SITE + "?bbox=" + ",".join("%g" % x for x in r["bbox"]),

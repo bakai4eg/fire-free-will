@@ -273,7 +273,12 @@ const KG_EXTENT = [39.1,69.2,43.3,80.3], KG_NUM = '417';
 // common short names people actually type
 const ALIAS = { '840':['сша','америка','usa','us','america','штаты'], '826':['великобритания','англия','uk','britain'], '784':['оаэ','uae','эмираты'], '156':['кнр','китай'], '643':['рф','russia'], '408':['кндр'], '410':['южная корея'], '180':['дрк','конго'], '417':['кр','кыргызстан','киргизия'] };
 
-let lang = 'ru'; try { lang = localStorage.getItem('bb_lang') || 'ru'; } catch (e) {}
+let lang = (() => {                 // ?lang=en link > saved choice > browser language (foreign judges get English)
+  const ok = v => ['ru', 'ky', 'en'].includes(v) ? v : null;
+  let v = ok(new URLSearchParams(location.search).get('lang'));
+  if (!v) try { v = ok(localStorage.getItem('bb_lang')); } catch (e) {}
+  if (!v) { const b = (navigator.language || 'en').slice(0, 2).toLowerCase(); v = b === 'ru' ? 'ru' : b === 'ky' ? 'ky' : 'en'; }
+  return v; })();
 const T = () => I18N[lang];
 const $ = id => document.getElementById(id);
 const DPR = Math.min(2, devicePixelRatio || 1);
@@ -438,7 +443,7 @@ function buildLiveXY() {      // screen positions of the live hotspots (computed
     LIVEXY.push([xy[0], xy[1], now - Date.parse(p[2].replace(' ', 'T') + 'Z') < 864e5, (((p[0] * 7) % 1) + 1) % 1]); }
 }
 function buildPix() {
-  GRID = 3; const gw = Math.ceil(W / GRID), gh = Math.ceil(H / GRID);
+  GRID = 3; const gw = Math.max(1, Math.ceil(W / GRID)), gh = Math.max(1, Math.ceil(H / GRID));   // a hidden or collapsing pane can report 0 px
   off = document.createElement('canvas'); off.width = gw; off.height = gh; offCtx = off.getContext('2d'); img = offCtx.createImageData(gw, gh); buf = new Uint32Array(img.data.buffer);
   pix = new Int32Array(ptsG.length).fill(-1);
   ptsG.forEach((p, i) => { if (!p) return; const x = Math.round(p[0]/GRID), y = Math.round(p[1]/GRID); if (x >= 0 && y >= 0 && x < gw && y < gh) pix[i] = y*gw + x; });
@@ -779,7 +784,7 @@ function render() {
             { type:'scatter', data:curCell[1] >= 0 && !liveOn ? [curCell] : [], symbol:'rect', symbolSize:[24, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
   $('note2001').textContent = years[0] <= 2001 ? t.y2001 : '';
 
-  $('lineT').textContent = t.lineT(cy); $('lineS').textContent = t.lineS(2001, lastY);
+  $('lineT').textContent = t.lineT(cy); $('lineS').textContent = t.lineS(2002, lastY);
   const ax = { axisLine:{ lineStyle:{ color:'#333' } }, axisLabel:{ color:'#9b938a' }, splitLine:{ lineStyle:{ color:'#232329' } } };
   const legend = { bottom:0, icon:'roundRect', textStyle:{ color:'#9b938a' } };
   const qn = q => d3.range(12).map(m => d3.quantile(normYears.map(y => at(y, m + 1)).filter(v => v !== null).sort(d3.ascending), q) || 0), q25 = qn(.25), q75 = qn(.75);
@@ -913,12 +918,13 @@ $('stage').addEventListener('wheel', e => { e.preventDefault();
 
 function applyLang() {
   document.documentElement.lang = lang;
+  TL = null;                                  // the cached timeline has the old language's NOW label
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = T()[el.dataset.t]);
   $('q').placeholder = T().search;
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   if (series) { drawCrumbs(); layout(); render(); }
 }
-$('lang').onclick = e => { const v = e.target.dataset.v; if (!v) return; lang = v; try { localStorage.setItem('bb_lang', v); } catch (e) {} applyLang(); };
+$('lang').onclick = e => { const v = e.target.dataset.v; if (!v) return; lang = v; try { localStorage.setItem('bb_lang', v); } catch (e) {} const u = new URL(location.href); if (u.searchParams.has('lang')) { u.searchParams.set('lang', v); history.replaceState(null, '', u); } applyLang(); };
 $('mode').onclick = e => { const v = e.target.dataset.v; if (!v) return; mode = v; $('mode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); render(); };
 $('period').onclick = e => { const v = e.target.dataset.v; if (!v) return; period = v; $('period').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); const [a] = viewRange(); if (cur < a) cur = N - 1; render(); };
 function download(name, text) { const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); el.download = name; el.click(); }
