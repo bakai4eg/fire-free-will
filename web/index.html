@@ -894,6 +894,7 @@ $('now').onclick = () => toggleLive();
 // Chronology = a big map that plays 25 years with the calendar beside it; Analysis = the full panel
 $('view').onclick = e => { const v = e.target.dataset.v; if (!v) return; document.body.classList.toggle('chrono', v === 'chrono');
   $('view').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
+  if (v === 'analysis') { playing = false; $('play').textContent = '▶'; $('play').setAttribute('aria-label', 'play'); scrub = false; }   // Analysis = stop the film, show the full calendar
   setTimeout(() => { Object.values(charts).forEach(c => c.resize()); layout(); TL = null; render();
     if (v === 'chrono' && !playing) { if (liveOn) { liveOn = false; $('now').classList.remove('on'); layout(); } scrub = true; if (cur >= N - 1) cur = viewRange()[0]; $('play').click(); } }, 50); };
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
