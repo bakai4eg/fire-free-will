@@ -273,7 +273,7 @@ let sel = { kind:'world' }, selCells = null, liveCellsSel = null, livePts = null
 let cur = 0, playing = false, liveOn = false, mode = 'n', period = 'all', series = null;
 let globe = true, rot = [-20, -15], spinning = true;
 const charts = {};
-const isGlobe = () => globe && sel.kind === 'world';
+const isGlobe = () => globe && sel.kind === 'world' && !isZooming;
 
 let DN = {};
 const countryName = f => { const a2 = NUM2A2[f.id]; try { if (a2) { DN[lang] = DN[lang] || new Intl.DisplayNames([lang], { type:'region' }); const n = DN[lang].of(a2); if (n && n !== a2) return n; } } catch (e) {} return f.properties.name; };
@@ -320,7 +320,12 @@ let VIS = [], LIVEXY = [];
 const boxGeo = b => { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([b[1] + (b[3]-b[1])*t, b[0]], [b[1] + (b[3]-b[1])*t, b[2]], [b[1], b[0] + (b[2]-b[0])*t], [b[3], b[0] + (b[2]-b[0])*t]); } return { type:'MultiPoint', coordinates:pts }; };
 const zoomed = () => proj.scale() > 600;
 
-let tween = null;
+let tween = null, isZooming = false;
+function boxView(b) {          // projection that shows a bbox (used by the instant zoom)
+  const pj = d3.geoEqualEarth(), pad = Math.max(.6, (b[2]-b[0]) * .18);
+  pj.rotate([-(b[1] + b[3]) / 2, 0]).fitExtent([[20, 44], [W - 20, H - 74]], boxGeo([Math.max(-89, b[0]-pad), b[1]-pad*1.3, Math.min(89, b[2]+pad), b[3]+pad*1.3]));
+  return pj;
+}
 function viewParams() {        // target projection for the current selection
   const pj = d3.geoEqualEarth();
   if (sel.kind !== 'world') { const b = sel.bbox, pad = Math.max(.6, (b[2]-b[0]) * .18), lon0 = sel.center ? sel.center[0] : (b[1] + b[3]) / 2;
@@ -329,7 +334,7 @@ function viewParams() {        // target projection for the current selection
   return { r:pj.rotate(), s:pj.scale(), t:pj.translate() };
 }
 function flyTo() {             // animate the flat map from the current view to the new selection, then lay out for real
-  if (!proj || isGlobe() || proj.clipAngle && proj.clipAngle() || matchMedia('(prefers-reduced-motion: reduce)').matches) return layout();
+  if (!proj || isZooming || isGlobe() || proj.clipAngle && proj.clipAngle() || matchMedia('(prefers-reduced-motion: reduce)').matches) return layout();
   const r = $('stage').getBoundingClientRect(); if (Math.abs(r.width - W) > 1 || Math.abs(r.height - H) > 1) return layout();
   const a = { r:proj.rotate(), s:proj.scale(), t:proj.translate() }, b = viewParams();
   const ir = d3.interpolate(a.r, b.r), it = d3.interpolate(a.t, b.t), ls = d3.interpolate(Math.log(a.s), Math.log(b.s)), t0 = performance.now(), D = 650;
@@ -462,6 +467,7 @@ $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $
   if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 6) { const a = proj.invert(down), c = proj.invert(p); if (a && c) drawMarks([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); } });
 addEventListener('pointerup', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top], d0 = down; down = null;
   $('stage').classList.remove('drag'); if (d0.moved) return;
+  if (zoomBox) { clearTimeout(zoomT); zoomBox = null; isZooming = false; }      // a click wins over a pending zoom
   const a = onEarth(d0); if (!a) return;
   if (Math.hypot(p[0]-d0[0], p[1]-d0[1]) <= 6) {
     const [lo, la] = a, inside = sel.kind !== 'world' && sel.kind !== 'box' && sel.contains(lo, la);
@@ -488,8 +494,9 @@ async function selectBox(bbox, name, at) {
   const s = { kind:'box', bbox, name, contains:(lo, la) => la >= bbox[0] && la <= bbox[2] && lo >= bbox[1] && lo <= bbox[3] };
   s.kgBox = REGIONS.length > 0 && (bbox[2] - bbox[0]) <= 5 && (bbox[3] - bbox[1]) <= 12 && regionOf((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2) != null;
   const nameIt = () => { const c = at || [(bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2], pn = placeName(c[1], c[0]);
-    if (pn && (bbox[2] - bbox[0]) < 6) s.name = { ru:I18N.ru.near(pn[0]), ky:I18N.ky.near(pn[0]), en:I18N.en.near(pn[0]) }; };
-  if (!name) { if (CITIES || s.kgBox) nameIt(); else ensureCities().then(() => { if (sel === s) { nameIt(); drawCrumbs(); render(); } }); }
+    if (pn && (bbox[2] - bbox[0]) < 6) s.name = { ru:I18N.ru.near(pn[0]), ky:I18N.ky.near(pn[0]), en:I18N.en.near(pn[0]) };
+    else if ((bbox[2] - bbox[0]) < 35) { const cf = countryAt(c[0], c[1]); if (cf) { const L = lang, nm = l => { lang = l; const v = countryName(cf); lang = L; return v; }; s.name = { ru:I18N.ru.near(nm('ru')), ky:I18N.ky.near(nm('ky')), en:I18N.en.near(nm('en')) }; } } };
+  if (!name) { if (CITIES || s.kgBox || (bbox[2] - bbox[0]) >= 6) nameIt(); else ensureCities().then(() => { if (sel === s) { nameIt(); drawCrumbs(); render(); } }); }
   apply(s);
 }
 async function apply(s) {
@@ -756,18 +763,32 @@ $('play').onclick = () => { const wasLive = liveOn; if (liveOn) { liveOn = false
   $('play').textContent = playing ? '❚❚' : '▶'; if (wasLive) layout(); render(); };
 $('now').onclick = () => toggleLive();
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
+let zoomBox = null, zoomT = 0, zoomWorld = false;
 function zoomBy(k, at) {
-  let b = sel.kind === 'world' ? null : sel.bbox;
-  if (!b) { if (k >= 1) return; const c = at || [-rot[0], -rot[1]], h = 40; b = [c[1] - h, c[0] - h * 1.4, c[1] + h, c[0] + h * 1.4]; k = 1; }
+  let b = zoomBox || (sel.kind === 'world' ? null : sel.bbox);
+  if (!b) { if (k >= 1) return; const c = at || [-rot[0], -rot[1]], h = 32; b = [c[1] - h, c[0] - h * 1.4, c[1] + h, c[0] + h * 1.4]; }   // from the globe: start from a 64° window
   const cy = at ? at[1] : (b[0] + b[2]) / 2, cx = at ? at[0] : (b[1] + b[3]) / 2;
-  const nb = [cy - (cy - b[0]) * k, cx - (cx - b[1]) * k, cy + (b[2] - cy) * k, cx + (b[3] - cx) * k];
-  if (nb[2] - nb[0] > 70) return selectWorld(); if (nb[2] - nb[0] < .2) return;
-  selectBox([Math.max(-89, nb[0]), nb[1], Math.min(89, nb[2]), nb[3]], null);
+  let nb = [cy - (cy - b[0]) * k, cx - (cx - b[1]) * k, cy + (b[2] - cy) * k, cx + (b[3] - cx) * k];
+  if (nb[2] - nb[0] < .2) return;
+  zoomWorld = nb[2] - nb[0] > 70;
+  if (zoomWorld) nb = [-60, cx - 120, 75, cx + 120];
+  zoomBox = [Math.max(-89, nb[0]), nb[1], Math.min(89, nb[2]), nb[3]];
+  // 1) instant: re-project and redraw the map only (cheap)
+  if (tween) { cancelAnimationFrame(tween); tween = null; }
+  const pj = boxView(zoomBox); proj = pj; path = d3.geoPath(proj, ctx.land); isZooming = true;
+  drawBase(); ctx.marks.clearRect(0, 0, W, H);
+  ptsG = gCells.map(c => proj([c.lo, c.la])); buildPix(); buildVis(); buildLiveXY(); ctx.fire.clearRect(0, 0, W, H); drawFire(1);
+  // 2) later: the real selection (data, panel, live points), once the user stops zooming
+  clearTimeout(zoomT);
+  zoomT = setTimeout(() => { const zb = zoomBox, w = zoomWorld; zoomBox = null; isZooming = false; if (w) selectWorld(); else selectBox(zb, null); }, 380);
 }
-$('zin').onclick = () => zoomBy(.55); $('zout').onclick = () => zoomBy(1.8);
-let wheelT = 0;
-$('stage').addEventListener('wheel', e => { e.preventDefault(); const now = performance.now(); if (now - wheelT < 250) return; wheelT = now;
-  const r = $('stage').getBoundingClientRect(), at = onEarth([e.clientX - r.left, e.clientY - r.top]); zoomBy(e.deltaY < 0 ? .6 : 1.7, at); }, { passive:false });
+$('zin').onclick = () => zoomBy(.6); $('zout').onclick = () => zoomBy(1.65);
+let wheelRaf = 0, wheelAcc = 0, wheelAt = null;
+$('stage').addEventListener('wheel', e => { e.preventDefault();
+  const r = $('stage').getBoundingClientRect(); wheelAt = onEarth([e.clientX - r.left, e.clientY - r.top]) || wheelAt;
+  wheelAcc += (e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY);
+  if (!wheelRaf) wheelRaf = setTimeout(() => { const k = Math.exp(Math.max(-1.2, Math.min(1.2, wheelAcc * .0022))); wheelAcc = 0; wheelRaf = 0; zoomBy(k, wheelAt); }, 16);   // coalesce wheel events (~60 per second)
+}, { passive:false });
 
 function applyLang() {
   document.documentElement.lang = lang;
