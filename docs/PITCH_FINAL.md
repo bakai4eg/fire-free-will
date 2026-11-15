@@ -1,5 +1,20 @@
 # BurnBeat — финальная речь + шпора
 
+## 🆕 ДЛЯ ФИНАЛА: что сделали после полуфинала (вставить в слайд 7, ~25 сек)
+> "Since the semifinal, we did every 'next step' we promised.
+> **One:** we validated the method in ten countries — from Kazakhstan to Spain and Chile. Everywhere, raw data undercounts by 63 to 79 percent; after BurnBeat the error is within 4 percent, and the monthly error is about five times smaller.
+> **Two:** the Telegram bot now sends an alert when a region burns at least twice its normal week. Tonight it flagged Chui region: many times above a normal November week.
+> **Three:** the app works on phones and opens in English for any visitor."
+
+Шпора по новым цифрам:
+- **10 стран:** Казахстан, Турция, Чили, Монголия, Испания, Узбекистан, Португалия, Греция, Кыргызстан, Таджикистан.
+- **Сырой MODIS:** промах −63…−79%. **После гармонизации:** в пределах ±3.6%.
+- **Ошибка за месяц:** в 2–13 раз меньше, медиана ≈5×. Лучший результат у Казахстана: 7038 → 558, в 12.6 раза.
+- **Если спросят, где хуже всего:** *"Small countries like Tajikistan: only 2× better, because there are very few fires to learn from."*
+- **Если спросят про Украину и Непал:** *"The NASA download timed out tonight — they're next."*
+- **Алерт бота:** ≥5 очагов за 7 дней И ≥2× нормальной недели. Повтор не чаще раза в 3 дня.
+- **Ссылка для жюри на английском:** https://34-40-83-150.sslip.io/?lang=en
+
 ## КРЕАТИВНАЯ РЕЧЬ (~4–5 мин)
 
 **1 — BurnBeat** *(пауза, потом медленно)*

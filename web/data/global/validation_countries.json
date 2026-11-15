@@ -1,0 +1,185 @@
+{
+ "scheme": "leave-one-year-out 2012-2019, 1-degree cells, ratio shrunk toward the country ratio (K=10)",
+ "countries": {
+  "Kyrgyzstan": {
+   "raw": {
+    "mae": 79.1,
+    "bias_pct": -72.0,
+    "corr": 0.91
+   },
+   "const": {
+    "mae": 35.2,
+    "bias_pct": 0.1,
+    "corr": 0.906
+   },
+   "cell": {
+    "mae": 31.8,
+    "bias_pct": 0.6,
+    "corr": 0.928
+   },
+   "viirs_per_year": 1318
+  },
+  "Kazakhstan": {
+   "raw": {
+    "mae": 7038.4,
+    "bias_pct": -69.6,
+    "corr": 0.982
+   },
+   "const": {
+    "mae": 1419.8,
+    "bias_pct": -0.0,
+    "corr": 0.981
+   },
+   "cell": {
+    "mae": 558.1,
+    "bias_pct": 0.6,
+    "corr": 0.998
+   },
+   "viirs_per_year": 121294
+  },
+  "Uzbekistan": {
+   "raw": {
+    "mae": 603.1,
+    "bias_pct": -76.6,
+    "corr": 0.919
+   },
+   "const": {
+    "mae": 209.4,
+    "bias_pct": 0.1,
+    "corr": 0.918
+   },
+   "cell": {
+    "mae": 167.9,
+    "bias_pct": -3.6,
+    "corr": 0.942
+   },
+   "viirs_per_year": 9450
+  },
+  "Tajikistan": {
+   "raw": {
+    "mae": 28.8,
+    "bias_pct": -74.0,
+    "corr": 0.902
+   },
+   "const": {
+    "mae": 13.7,
+    "bias_pct": 0.6,
+    "corr": 0.901
+   },
+   "cell": {
+    "mae": 13.0,
+    "bias_pct": 1.6,
+    "corr": 0.918
+   },
+   "viirs_per_year": 465
+  },
+  "Mongolia": {
+   "raw": {
+    "mae": 1071.1,
+    "bias_pct": -78.7,
+    "corr": 0.994
+   },
+   "const": {
+    "mae": 193.7,
+    "bias_pct": -1.0,
+    "corr": 0.993
+   },
+   "cell": {
+    "mae": 201.9,
+    "bias_pct": -2.3,
+    "corr": 0.992
+   },
+   "viirs_per_year": 16330
+  },
+  "Turkey": {
+   "raw": {
+    "mae": 1724.7,
+    "bias_pct": -67.9,
+    "corr": 0.919
+   },
+   "const": {
+    "mae": 657.0,
+    "bias_pct": 0.3,
+    "corr": 0.918
+   },
+   "cell": {
+    "mae": 276.3,
+    "bias_pct": 0.4,
+    "corr": 0.989
+   },
+   "viirs_per_year": 30469
+  },
+  "Greece": {
+   "raw": {
+    "mae": 276.2,
+    "bias_pct": -70.7,
+    "corr": 0.978
+   },
+   "const": {
+    "mae": 69.4,
+    "bias_pct": 0.0,
+    "corr": 0.977
+   },
+   "cell": {
+    "mae": 56.0,
+    "bias_pct": -0.3,
+    "corr": 0.981
+   },
+   "viirs_per_year": 4688
+  },
+  "Portugal": {
+   "raw": {
+    "mae": 418.4,
+    "bias_pct": -63.0,
+    "corr": 0.992
+   },
+   "const": {
+    "mae": 82.2,
+    "bias_pct": -0.2,
+    "corr": 0.991
+   },
+   "cell": {
+    "mae": 86.2,
+    "bias_pct": -2.1,
+    "corr": 0.992
+   },
+   "viirs_per_year": 7972
+  },
+  "Spain": {
+   "raw": {
+    "mae": 560.2,
+    "bias_pct": -66.9,
+    "corr": 0.969
+   },
+   "const": {
+    "mae": 127.4,
+    "bias_pct": 0.4,
+    "corr": 0.967
+   },
+   "cell": {
+    "mae": 134.4,
+    "bias_pct": 1.3,
+    "corr": 0.969
+   },
+   "viirs_per_year": 10024
+  },
+  "Chile": {
+   "raw": {
+    "mae": 1229.9,
+    "bias_pct": -68.6,
+    "corr": 0.992
+   },
+   "const": {
+    "mae": 254.5,
+    "bias_pct": 0.1,
+    "corr": 0.991
+   },
+   "cell": {
+    "mae": 257.8,
+    "bias_pct": -2.9,
+    "corr": 0.989
+   },
+   "viirs_per_year": 21291
+  }
+ }
+}

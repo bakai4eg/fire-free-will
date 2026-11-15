@@ -55,6 +55,29 @@ The cell model wins on error and monthly correlation; the constant ratio keeps a
 rescale cells relative to each other. Both are far better than raw data, which jumps from ~4.4 M to ~17.4 M hotspots a year in 2012.
 The harmonized world series stays at 15–19 M hotspots a year for 2001–2025.
 
+## Validation country by country (`tools/validate_countries.py`)
+Same leave-one-year-out test (2012–2019) on 10 countries of very different size and climate, from NASA FIRMS country files,
+1° cells, ratio shrunk toward the country ratio (K = 10). MAE = monthly error in hotspots, bias = total error.
+
+| Country | VIIRS hotspots/yr | MAE raw → BurnBeat | Error smaller | Bias raw → BurnBeat |
+|---|---|---|---|---|
+| Kazakhstan | 121 294 | 7 038 → **558** | 12.6× | −69.6 % → **+0.6 %** |
+| Turkey | 30 469 | 1 725 → **276** | 6.2× | −67.9 % → **+0.4 %** |
+| Chile | 21 291 | 1 230 → **258** | 4.8× | −68.6 % → **−2.9 %** |
+| Mongolia | 16 330 | 1 071 → **202** | 5.3× | −78.7 % → **−2.3 %** |
+| Spain | 10 024 | 560 → **134** | 4.2× | −66.9 % → **+1.3 %** |
+| Uzbekistan | 9 450 | 603 → **168** | 3.6× | −76.6 % → **−3.6 %** |
+| Portugal | 7 972 | 418 → **86** | 4.9× | −63.0 % → **−2.1 %** |
+| Greece | 4 688 | 276 → **56** | 4.9× | −70.7 % → **−0.3 %** |
+| Kyrgyzstan | 1 318 | 79 → **32** | 2.5× | −72.0 % → **+0.6 %** |
+| Tajikistan | 465 | 29 → **13** | 2.2× | −74.0 % → **+1.6 %** |
+
+Raw MODIS undercounts by 63–79 % everywhere; after harmonization the bias stays within ±3.6 % and the monthly error is
+2–13× smaller (median ≈ 5×). The gain is largest where fire is spread over many cells (Kazakhstan, Turkey). In a few
+countries (Mongolia, Portugal, Spain, Chile) one ratio per country is as good as the per-cell ratio — the per-cell model never
+does much worse and helps most where burning differs a lot inside the country. Ukraine and Nepal were not completed
+(FIRMS download timed out). Results: `web/data/global/validation_countries.json`; the app shows them for these countries.
+
 ## Live layer and "now vs normal"
 - Last 7 days: public FIRMS NRT files (VIIRS NOAA-20 and NOAA-21; S-NPP no longer publishes NRT), `tools/fetch_live.py`, no API key.
 - NRT files have no `type` column, so factories and power plants are removed with a mask of persistent FIRMS type 2–3 locations from the archive (`web/api/static_sources.json`, ~1.5 km radius).

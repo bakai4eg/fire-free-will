@@ -175,7 +175,7 @@ const I18N = {
     fires:'очагов', toNorm:'к норме', normLow:'в это время года тут почти не горит', phase:'Сезон', peakNow:'сейчас пик', peakIn:n => `пик через ${n} мес.`, peakMonth:m => `пик: ${m}`,
     worst:'Худший год', yearNorm:'Обычно за год', lastYear:y => `За ${y} год`, norm:'Норма', raw:'Сырые данные', harm:'Гармонизированные',
     many:'больше', few:'меньше', above:'выше нормы', below:'ниже нормы', area:'Выбранная область', near:n => `${n} и окрестности`, point:'Точка', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очаги CSV', ptsOnlyKg:'Отдельные очаги архива — для Кыргызстана',
-    validW:v => `Проверка: каждый год 2012–2019 по очереди скрывали от модели и сравнивали с тем, что реально увидел VIIRS. Смещение ${v.cell.bias_pct}% (без гармонизации ${v.raw.bias_pct}%), ошибка в месяц в ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} раз меньше.`,
+    validC:(c, r) => ` ${c}: проверено отдельно — ошибка за месяц ${fmt(r.raw.mae)} → ${fmt(r.cell.mae)} очагов, смещение ${r.cell.bias_pct}% (без гармонизации ${r.raw.bias_pct}%).`, validW:v => `Проверка: каждый год 2012–2019 по очереди скрывали от модели и сравнивали с тем, что реально увидел VIIRS. Смещение ${v.cell.bias_pct}% (без гармонизации ${v.raw.bias_pct}%), ошибка в месяц в ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} раз меньше.`,
     validK:(b, r) => `Проверка по Кыргызстану: ошибка ${b.mae} очага в месяц против ${r} у сырого MODIS, смещение ${b.bias_pct}%.`,
     rain:'Осадки, % нормы', fireAnom:'Очаги, % к норме', wxNote:r => `r = ${r}: ${r < -0.25 ? 'дождливые месяцы горят заметно меньше.' : 'связь слабая.'}`,
     grid:'сетка ≈100 км', gridKg:'сетка ≈25 км · точки — отдельные очаги', gridLive:'точки — очаги за последние 7 дней',
@@ -209,7 +209,7 @@ const I18N = {
     fires:'очок', toNorm:'нормага карата', normLow:'жылдын бул маалында дээрлик күйбөйт', phase:'Сезон', peakNow:'азыр чокусу', peakIn:n => `чокуга ${n} ай`, peakMonth:m => `чокусу: ${m}`,
     worst:'Эң оор жыл', yearNorm:'Адатта жылына', lastYear:y => `${y}-жылы`, norm:'Норма', raw:'Чийки маалымат', harm:'Гармонизацияланган',
     many:'көп', few:'аз', above:'нормадан жогору', below:'нормадан төмөн', area:'Тандалган аймак', near:n => `${n} жана айланасы`, point:'Чекит', csvCal:'⬇ Календарь CSV', csvPts:'⬇ Очоктор CSV', ptsOnlyKg:'Архивдин өзүнчө очоктору — Кыргызстан үчүн',
-    validW:v => `Текшерүү: 2012–2019-жылдардын ар бири моделден кезек менен жашырылып, VIIRS көргөнү менен салыштырылды. Жылыш ${v.cell.bias_pct}% (гармонизациясыз ${v.raw.bias_pct}%), айлык ката ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} эсе аз.`,
+    validC:(c, r) => ` ${c}: өзүнчө текшерилди — айлык ката ${fmt(r.raw.mae)} → ${fmt(r.cell.mae)} очок, жылыш ${r.cell.bias_pct}% (гармонизациясыз ${r.raw.bias_pct}%).`, validW:v => `Текшерүү: 2012–2019-жылдардын ар бири моделден кезек менен жашырылып, VIIRS көргөнү менен салыштырылды. Жылыш ${v.cell.bias_pct}% (гармонизациясыз ${v.raw.bias_pct}%), айлык ката ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)} эсе аз.`,
     validK:(b, r) => `Кыргызстан боюнча текшерүү: ката айына ${b.mae} очок, чийки MODIS — ${r}, жылыш ${b.bias_pct}%.`,
     rain:'Жаан, нормадан %', fireAnom:'Очоктор, нормадан %', wxNote:r => `r = ${r}: ${r < -0.25 ? 'жаандуу айларда өрт байкаларлык азыраак.' : 'байланыш алсыз.'}`,
     grid:'тор ≈100 км', gridKg:'тор ≈25 км · чекиттер — өзүнчө очоктор', gridLive:'чекиттер — акыркы 7 күндөгү очоктор',
@@ -243,7 +243,7 @@ const I18N = {
     fires:'hotspots', toNorm:'vs normal', normLow:'it hardly burns here at this time of year', phase:'Season', peakNow:'peak now', peakIn:n => `peak in ${n} mo.`, peakMonth:m => `peak: ${m}`,
     worst:'Worst year', yearNorm:'Usually per year', lastYear:y => `In ${y}`, norm:'Normal', raw:'Raw data', harm:'Harmonized',
     many:'more', few:'fewer', above:'above normal', below:'below normal', area:'Selected area', near:n => `${n} area`, point:'Point', csvCal:'⬇ Calendar CSV', csvPts:'⬇ Hotspots CSV', ptsOnlyKg:'Archive hotspots — Kyrgyzstan only',
-    validW:v => `Validation: each year 2012–2019 was hidden from the model in turn and compared with what VIIRS really saw. Bias ${v.cell.bias_pct}% (${v.raw.bias_pct}% without harmonization), monthly error ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)}× smaller.`,
+    validC:(c, r) => ` ${c}, checked separately: monthly error ${fmt(r.raw.mae)} → ${fmt(r.cell.mae)} hotspots, bias ${r.cell.bias_pct}% (${r.raw.bias_pct}% without harmonization).`, validW:v => `Validation: each year 2012–2019 was hidden from the model in turn and compared with what VIIRS really saw. Bias ${v.cell.bias_pct}% (${v.raw.bias_pct}% without harmonization), monthly error ${Math.round(v.raw.mae_monthly_global / v.cell.mae_monthly_global)}× smaller.`,
     validK:(b, r) => `Kyrgyzstan validation: error ${b.mae} hotspots/month vs ${r} for raw MODIS, bias ${b.bias_pct}%.`,
     rain:'Rainfall, % of normal', fireAnom:'Hotspots, % vs normal', wxNote:r => `r = ${r}: ${r < -0.25 ? 'wet months burn noticeably less.' : 'weak link.'}`,
     grid:'grid ≈100 km', gridKg:'grid ≈25 km · dots are individual hotspots', gridLive:'dots are hotspots of the last 7 days',
@@ -805,7 +805,8 @@ function renderHow(med) {
   let raw, harm;
   if (selSrc() === 'kg') { const m = new Float32Array(N), v = new Float32Array(N); selCells.forEach(i => { for (let k = 0; k < N; k++) { m[k] += kgCells[i].m[k]; v[k] += kgCells[i].v[k]; } });
     raw = yrs.map(y => Math.round(ysum(y < 2012 ? m : v, y))); harm = yrs.map(y => Math.round(ysum(series, y))); $('harmS').textContent = t.harmLocal; const kv = KGMETA.validation; $('valid').textContent = t.validK(kv.models[kv.best], kv.raw_modis.mae); }
-  else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y)); $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation); }
+  else { raw = yrs.map(y => ysum(SUMMARY.raw, y)); harm = yrs.map(y => ysum(SUMMARY.harmonized, y)); $('harmS').textContent = t.harmWorld; $('valid').textContent = t.validW(SUMMARY.validation);
+    const vc = sel.kind === 'country' && VALC[VALC_ID[sel.f.id]]; if (vc) $('valid').textContent += t.validC(countryName(sel.f), vc); }
   charts.harm.resize();
   charts.harm.setOption({ textStyle:{ fontFamily:'Inter' }, animation:false, tooltip:{ trigger:'axis' }, legend, grid:{ left:52, right:8, top:10, bottom:40 },
     xAxis:{ type:'category', data:yrs, ...ax }, yAxis:{ type:'value', ...ax, axisLabel:{ color:'#9b938a', formatter:v => v >= 1e6 ? v/1e6 + 'M' : v >= 1e3 ? v/1e3 + 'k' : v } },
@@ -838,6 +839,8 @@ function drawClock() {
   if (liveOn && LSUM) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${fmt(sel.kind === 'world' ? LSUM.cells.reduce((s, c) => s + c[1], 0) : liveCellsSel.n20)}</b> ${t.fires} · ${t.liveDays}`; return; }
   $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`; $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
 }
+const VALC_ID = { '417':'Kyrgyzstan', '398':'Kazakhstan', '860':'Uzbekistan', '762':'Tajikistan', '496':'Mongolia', '792':'Turkey', '300':'Greece', '620':'Portugal', '724':'Spain', '152':'Chile', '804':'Ukraine', '524':'Nepal' };
+let VALC = {}; fetch('data/global/validation_countries.json').then(r => r.ok ? r.json() : null).then(j => { if (j) VALC = j.countries; }).catch(() => {});   // per-country check (tools/validate_countries.py)
 let TL = null;                 // cached timeline pictures (plain + glowing line) for the current series/period/size
 function drawTimeline() {
   const c = $('timeline'), r = c.getBoundingClientRect(), [a, b] = viewRange(), key = [r.width, r.height, a, b, series && series.length, series && series[N - 1], series && series[0], liveOn].join();
