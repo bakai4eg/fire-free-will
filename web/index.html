@@ -93,9 +93,6 @@
   details .inner { padding:0 16px 16px } details .inner h3 { font:700 13px Inter; margin:14px 0 2px }
   .src { color:var(--dim); font-size:11px; line-height:1.6 }
   .bot { display:flex; gap:12px; align-items:center } .bot p { margin:0; color:var(--soft); font-size:13px }
-  body.chrono .app { grid-template-columns:minmax(0,1fr) 380px }
-  body.chrono #dangerCard, body.chrono #liveCard, body.chrono #villCard, body.chrono #how, body.chrono .bot, body.chrono #lineCard, body.chrono #hero .stats, body.chrono #hero .dl, body.chrono #hero .note { display:none !important }
-  body.chrono #hero .story { font-size:15px }
   #loading { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
   @media (max-width:1100px) { .tg-text { display:none } }
   @media (max-width:980px) {
@@ -111,7 +108,6 @@
   <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b></a>
   <div class="search"><span class="ic">⌕</span><input id="q" autocomplete="off" spellcheck="false" aria-label="Search a place"><div class="drop" id="drop"></div></div>
   <div class="sp"></div>
-  <div class="seg" id="view"><button data-v="chrono" data-t="vChrono"></button><button data-v="analysis" class="on" data-t="vAnalysis"></button></div>
   <div class="seg" id="period"><button data-v="1" data-t="p1"></button><button data-v="5" data-t="p5"></button><button data-v="10" data-t="p10"></button><button data-v="all" class="on" data-t="pall"></button></div>
   <a class="pill tg" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener" aria-label="Telegram bot"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#2AABEE"/><path d="M5.4 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.6-.5.8-1 .5l-2.9-2.1-1.4 1.3c-.2.2-.3.3-.6.3l.2-2.9 5.3-4.8c.2-.2 0-.3-.3-.1l-6.6 4.1-2.8-.9c-.6-.2-.6-.6.1-.9z" fill="#fff"/></svg><span class="tg-text" data-t="tg"></span></a>
   <div class="seg" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
@@ -891,12 +887,6 @@ function tick(now) {
 $('play').onclick = () => { const wasLive = liveOn; scrub = true; if (!playing) document.querySelector('#cal').scrollIntoView({ block:'nearest', behavior:'smooth' }); if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
   $('play').textContent = playing ? '❚❚' : '▶'; $('play').setAttribute('aria-label', playing ? 'pause' : 'play'); if (wasLive) layout(); render(); };
 $('now').onclick = () => toggleLive();
-// Chronology = a big map that plays 25 years with the calendar beside it; Analysis = the full panel
-$('view').onclick = e => { const v = e.target.dataset.v; if (!v) return; document.body.classList.toggle('chrono', v === 'chrono');
-  $('view').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
-  if (v === 'analysis') { playing = false; $('play').textContent = '▶'; $('play').setAttribute('aria-label', 'play'); scrub = false; }   // Analysis = stop the film, show the full calendar
-  setTimeout(() => { Object.values(charts).forEach(c => c.resize()); layout(); TL = null; render();
-    if (v === 'chrono' && !playing) { if (liveOn) { liveOn = false; $('now').classList.remove('on'); layout(); } scrub = true; if (cur >= N - 1) cur = viewRange()[0]; $('play').click(); } }, 50); };
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
 function zoomBy(k, at) {          // k < 1 zooms in; the point under the cursor stays where it is
   if (tween) { cancelAnimationFrame(tween); tween = null; }
