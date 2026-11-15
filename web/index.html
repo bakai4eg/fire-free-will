@@ -93,6 +93,9 @@
   details .inner { padding:0 16px 16px } details .inner h3 { font:700 13px Inter; margin:14px 0 2px }
   .src { color:var(--dim); font-size:11px; line-height:1.6 }
   .bot { display:flex; gap:12px; align-items:center } .bot p { margin:0; color:var(--soft); font-size:13px }
+  body.chrono .app { grid-template-columns:minmax(0,1fr) 380px }
+  body.chrono #dangerCard, body.chrono #liveCard, body.chrono #villCard, body.chrono #how, body.chrono .bot, body.chrono #lineCard, body.chrono #hero .stats, body.chrono #hero .dl, body.chrono #hero .note { display:none !important }
+  body.chrono #hero .story { font-size:15px }
   #loading { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:var(--bg); color:var(--muted); transition:opacity .6s }
   @media (max-width:1100px) { .tg-text { display:none } }
   @media (max-width:980px) {
@@ -108,6 +111,7 @@
   <a class="brand" href="./"><svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 4 12 3-9 2 3h5" fill="none" stroke="#ff6a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>BurnBeat</b></a>
   <div class="search"><span class="ic">⌕</span><input id="q" autocomplete="off" spellcheck="false" aria-label="Search a place"><div class="drop" id="drop"></div></div>
   <div class="sp"></div>
+  <div class="seg" id="view"><button data-v="chrono" data-t="vChrono"></button><button data-v="analysis" class="on" data-t="vAnalysis"></button></div>
   <div class="seg" id="period"><button data-v="1" data-t="p1"></button><button data-v="5" data-t="p5"></button><button data-v="10" data-t="p10"></button><button data-v="all" class="on" data-t="pall"></button></div>
   <a class="pill tg" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener" aria-label="Telegram bot"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#2AABEE"/><path d="M5.4 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.6-.5.8-1 .5l-2.9-2.1-1.4 1.3c-.2.2-.3.3-.6.3l.2-2.9 5.3-4.8c.2-.2 0-.3-.3-.1l-6.6 4.1-2.8-.9c-.6-.2-.6-.6.1-.9z" fill="#fff"/></svg><span class="tg-text" data-t="tg"></span></a>
   <div class="seg" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
@@ -138,7 +142,7 @@
         <div class="seg" id="mode"><button data-v="n" class="on" data-t="modeN"></button><button data-v="a" data-t="modeA"></button><button data-v="e" data-t="modeE"></button><button data-v="r" data-t="modeR" id="modeR"></button></div></div>
       <div id="cal"></div><div class="note" id="note2001"></div>
     </div>
-    <div class="card"><h2 id="lineT"></h2><div class="sub" id="lineS"></div><div id="line"></div></div>
+    <div class="card" id="lineCard"><h2 id="lineT"></h2><div class="sub" id="lineS"></div><div id="line"></div></div>
     <div class="card" id="villCard"><h2 data-t="villT"></h2><div class="sub" data-t="villS"></div><ol class="vill" id="villList"></ol></div>
     <details class="card" id="how"><summary data-t="howT"></summary><div class="inner">
       <p class="note" data-t="howP"></p>
@@ -164,7 +168,8 @@ const I18N = {
   ru: { search:'Найти место: страна, город, область…', p1:'Год', p5:'5 лет', p10:'10 лет', pall:'Все 25 лет', tg:'Сводка в Telegram', nowBtn:'Сейчас', world:'Весь мир',
     hint:'Тянуть — двигать · колесо или +/− — масштаб · клик — выбрать страну', hintIn:'Тянуть — двигать · колесо — масштаб · клик — выбрать · Shift+тянуть или ▭ — своя область', useView:'Показать эту область', hintRect:'Протяните рамку вокруг нужной области', hintG:'Клик — выбрать страну · тянуть — вращать Землю',
     sugKg:'Кыргызстан', sugWorld:'Примеры', noRes:'Ничего не найдено', calT:'Календарь горения', calS:'Каждая клетка — месяц. Клик по клетке — показать этот месяц на карте',
-    modeN:'Очаги', modeA:'К норме', modeE:'Охват', modeR:'Осадки',
+    modeN:'Очаги', modeA:'К норме', modeE:'Охват', modeR:'Осадки', legN:['больше очагов','меньше'], legE:['горела большая доля','малая'], legR:['дождливо','сухо'],
+    vChrono:'Хронология', vAnalysis:'Анализ',
     calSub:{ n:'Сколько очагов было в каждом месяце. Клик по клетке — этот месяц на карте', a:'Насколько месяц выше или ниже обычного для него', e:'Какая доля территории горела: % клеток (≈100 км, в Кыргызстане ≈25 км), где был хотя бы один очаг', r:'Осадки за месяц, мм (NASA POWER). Сравните с очагами: сухие месяцы горят сильнее' }, unitE:'территории', unitR:'мм', lineT:y => `${y} против нормы`, lineS:(a, b) => `Норма — медиана ${a}–${b} по месяцам, серая полоса — обычный разброс`,
     howT:'Как это посчитано', howP:'Два поколения спутников видят огонь по-разному: новый VIIRS замечает в несколько раз больше мелких очагов, чем старый MODIS. Мы пересчитали 25 лет MODIS в шкалу VIIRS, чтобы прошлое и настоящее можно было честно сравнивать.',
     harmT:'Без гармонизации — ложный скачок в 2012', harmWorld:'Весь мир, очагов в год', harmLocal:'Эта область, очагов в год', wxT:'Огонь и дождь', wxS:'Месяцы сезона 2012–2025 · погода NASA POWER', srcT:'Данные',
@@ -183,7 +188,7 @@ const I18N = {
     why:{ peak:'пик сезона', season:'пожарный сезон', above:r => `выше нормы в ${ruTimes(r)}`, fires:n => `${n} ${ruPl(n, 'очаг', 'очага', 'очагов')} за сутки`, hot:t => `жарко ${t}°`, dry:h => `сухо, влажность ${h}%`, wind:w => `ветер до ${w} км/ч`, rain:r => `дождь ${r} мм`, calm:'нет факторов риска' },
     days:['Сегодня','Завтра'], disc:'Оценка условий, а не прогноз пожаров: сезон по истории 2001–2025, свежие очаги и прогноз погоды. Та же формула, что в Telegram-боте.', wxErr:'Прогноз погоды сейчас недоступен.', bigArea:'Для такой большой области опасность не считается — выберите место поменьше.',
     villT:'Сёла рядом с огнём', villS:'Очаги в радиусе 3 км от села за выбранный период. Клик — показать на карте', villNone:'Очагов рядом с сёлами не было.',
-    y2001:'2001: первые полгода работал один спутник — оценка менее точная',
+    y2001:'* 2001 — полгода работал один спутник, оценка грубее',
     worldMsg:(lo, hi) => `Каждый месяц спутники NASA видят на Земле от <em>${lo}</em> до <em>${hi}</em> очагов. <b>Нажмите на страну</b> или найдите место — покажем, когда там обычно горит и что происходит сейчас.`,
     unusual:'необычно для сезона', baseNote:y => `норма — медиана 2012–${y} (VIIRS)`, updated:u => `данные обновлены ${u}`, empty:'Здесь почти не бывает пожаров: за 25 лет в среднем меньше одного очага в месяц.',
     unusualTxt:(n, m) => `<em>${n}</em> — необычно много для этого времени года (обычно ~${m}).`,
@@ -197,7 +202,8 @@ const I18N = {
   ky: { search:'Жер издөө: өлкө, шаар, облус…', p1:'Жыл', p5:'5 жыл', p10:'10 жыл', pall:'25 жыл', tg:'Telegram сводка', nowBtn:'Азыр', world:'Бүт дүйнө',
     hint:'Тартуу — жылдыруу · дөңгөлөк же +/− — масштаб · басуу — өлкөнү тандоо', hintIn:'Тартуу — жылдыруу · дөңгөлөк — масштаб · басуу — тандоо · Shift+тартуу же ▭ — өз аймагыңыз', useView:'Бул аймакты көрсөтүү', hintRect:'Керектүү аймактын айланасына рамка тартыңыз', hintG:'Басуу — өлкөнү тандоо · тартуу — Жерди айлантуу',
     sugKg:'Кыргызстан', sugWorld:'Мисалдар', noRes:'Эч нерсе табылган жок', calT:'Күйүү календары', calS:'Ар бир уяча — бир ай. Уячаны бассаңыз, ошол ай картада көрүнөт',
-    modeN:'Очоктор', modeA:'Нормага', modeE:'Камтуу', modeR:'Жаан',
+    modeN:'Очоктор', modeA:'Нормага', modeE:'Камтуу', modeR:'Жаан', legN:['көбүрөөк очок','азыраак'], legE:['чоң бөлүгү күйгөн','аз'], legR:['жаандуу','кургак'],
+    vChrono:'Хронология', vAnalysis:'Талдоо',
     calSub:{ n:'Ар бир айдагы очоктор. Уячаны бассаңыз — ошол ай картада', a:'Ай өзүнүн кадимкисинен канчалык жогору же төмөн', e:'Аймактын канча бөлүгү күйгөн: жок дегенде бир очок болгон уячалардын %', r:'Айлык жаан, мм (NASA POWER). Очоктор менен салыштырыңыз: кургак айлар көбүрөөк күйөт' }, unitE:'аймак', unitR:'мм', lineT:y => `${y} жана норма`, lineS:(a, b) => `Норма — ${a}–${b} айлык медианасы, боз тилке — кадимки чачыроо`,
     howT:'Бул кантип эсептелген', howP:'Спутниктердин эки мууну өрттү ар башкача көрөт: жаңы VIIRS эски MODISке караганда майда очокторду бир нече эсе көп байкайт. Биз 25 жылдык MODISти VIIRS шкаласына которуп, өткөн менен азыркыны чынчыл салыштырууга мүмкүнчүлүк бердик.',
     harmT:'Гармонизациясыз — 2012-жылы жалган секирик', harmWorld:'Бүт дүйнө, жылына очоктор', harmLocal:'Бул аймак, жылына очоктор', wxT:'Өрт жана жаан', wxS:'2012–2025 сезон айлары · аба ырайы NASA POWER', srcT:'Маалымат',
@@ -216,7 +222,7 @@ const I18N = {
     why:{ peak:'сезондун чокусу', season:'өрт сезону', above:r => `нормадан ${x10(r)} эсе жогору`, fires:n => `суткада ${n} очок`, hot:t => `ысык ${t}°`, dry:h => `кургак, нымдуулук ${h}%`, wind:w => `шамал ${w} км/саат`, rain:r => `жаан ${r} мм`, calm:'коркунуч факторлору жок' },
     days:['Бүгүн','Эртең'], disc:'Бул шарттардын баасы, өрттүн божомолу эмес: тарых боюнча сезон, жаңы очоктор жана аба ырайынын божомолу. Telegram-боттогу формула.', wxErr:'Аба ырайынын божомолу азыр жеткиликсиз.', bigArea:'Мынчалык чоң аймак үчүн коркунуч эсептелбейт — кичирээк жерди тандаңыз.',
     villT:'Өрткө жакын айылдар', villS:'Айылдан 3 км радиуста очоктор, тандалган мезгилде. Басуу — картада көрсөтүү', villNone:'Айылдардын жанында очок болгон жок.',
-    y2001:'2001: алгачкы жарым жылда бир гана спутник иштеген — баа так эмес',
+    y2001:'* 2001 — жарым жыл бир спутник иштеген, баа болжолдуу',
     worldMsg:(lo, hi) => `NASA спутниктери ар айда Жерде <em>${lo}</em> дан <em>${hi}</em> чейин очок көрөт. <b>Өлкөнү басыңыз</b> же жер издеңиз — ал жерде качан күйөрүн жана азыр эмне болуп жатканын көрсөтөбүз.`,
     unusual:'сезон үчүн адаттан тыш', baseNote:y => `норма — 2012–${y} медианасы (VIIRS)`, updated:u => `маалымат жаңыртылды ${u}`, empty:'Бул жерде өрт дээрлик болбойт: 25 жылда орточо айына бир очоктон аз.',
     unusualTxt:(n, m) => `<em>${n}</em> — жылдын бул маалы үчүн адаттан тыш көп (адатта ~${m}).`,
@@ -230,7 +236,8 @@ const I18N = {
   en: { search:'Find a place: country, city, region…', p1:'Year', p5:'5 years', p10:'10 years', pall:'All 25 years', tg:'Telegram brief', nowBtn:'Now', world:'World',
     hint:'Drag — move · wheel or +/− — zoom · click — pick a country', hintIn:'Drag — move · wheel — zoom · click — pick · Shift+drag or ▭ — your own area', useView:'Show this area', hintRect:'Drag a frame around the area you need', hintG:'Click — pick a country · drag — spin the Earth',
     sugKg:'Kyrgyzstan', sugWorld:'Examples', noRes:'Nothing found', calT:'Burning calendar', calS:'Each cell is a month. Click a cell to show that month on the map',
-    modeN:'Hotspots', modeA:'vs normal', modeE:'Extent', modeR:'Rainfall',
+    modeN:'Hotspots', modeA:'vs normal', modeE:'Extent', modeR:'Rainfall', legN:['more hotspots','fewer'], legE:['larger share burned','smaller'], legR:['wet','dry'],
+    vChrono:'Chronology', vAnalysis:'Analysis',
     calSub:{ n:'Hotspots in each month. Click a cell to show that month on the map', a:'How much a month is above or below its own normal', e:'How much of the area burned: % of cells (≈100 km, Kyrgyzstan ≈25 km) with at least one hotspot', r:'Monthly rainfall, mm (NASA POWER). Compare with fires: dry months burn more' }, unitE:'of the area', unitR:'mm', lineT:y => `${y} vs normal`, lineS:(a, b) => `Normal = monthly median ${a}–${b}; grey band = the usual range`,
     howT:'How it is calculated', howP:'Two generations of satellites see fire differently: the new VIIRS spots several times more small fires than the old MODIS. We converted 25 years of MODIS to the VIIRS scale so that the past and the present can be compared honestly.',
     harmT:'Without harmonization: a false jump in 2012', harmWorld:'Whole world, hotspots per year', harmLocal:'This area, hotspots per year', wxT:'Fire and rain', wxS:'Fire-season months 2012–2025 · weather: NASA POWER', srcT:'Data',
@@ -249,7 +256,7 @@ const I18N = {
     why:{ peak:'peak of the season', season:'fire season', above:r => `${x10(r)}× above normal`, fires:n => `${n} hotspots in 24 h`, hot:t => `hot ${t}°`, dry:h => `dry, humidity ${h}%`, wind:w => `wind up to ${w} km/h`, rain:r => `rain ${r} mm`, calm:'no risk factors' },
     days:['Today','Tomorrow'], disc:'A rating of conditions, not a fire forecast: season from 2001–2025 history, fresh detections and the weather forecast. Same formula as the Telegram bot.', wxErr:'Weather forecast is unavailable right now.', bigArea:'Danger is not rated for such a large area — pick a smaller place.',
     villT:'Villages near fires', villS:'Hotspots within 3 km of a village in the selected period. Click to show on the map', villNone:'No hotspots near villages.',
-    y2001:'2001: only one satellite for the first half of the year — a rougher estimate',
+    y2001:'* 2001 — one satellite for half the year, rougher estimate',
     worldMsg:(lo, hi) => `Every month NASA satellites see between <em>${lo}</em> and <em>${hi}</em> fires on Earth. <b>Click a country</b> or search for a place to see when it usually burns there and what is happening now.`,
     unusual:'unusual for the season', baseNote:y => `normal = median 2012–${y} (VIIRS)`, updated:u => `data updated ${u}`, empty:'Fires almost never happen here: less than one hotspot a month on average over 25 years.',
     unusualTxt:(n, m) => `<em>${n}</em> — unusually many for this time of year (normally ~${m}).`,
@@ -457,13 +464,16 @@ let livePhase = 0;
 function drawFire(fade) {
   const g = ctx.fire;
   if (isGlobe()) globePix();
-  if (liveOn) { g.clearRect(0,0,W,H); if (!zoomed() || !LIVEXY.length) paintGrid(i => LCELLS[i], LUTLIVE, Math.log1p(40)); drawLivePoints(); return; }
+  if (liveOn) { g.clearRect(0,0,W,H); if (!zoomed() || !LIVEXY.length) { if (zoomed()) { g.filter = 'blur(6px)'; } paintGrid(i => LCELLS[i], LUTLIVE, Math.log1p(40)); g.filter = 'none'; } drawLivePoints(); return; }
   g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${isGlobe() ? 1 : fade})`; g.fillRect(0,0,W,H); g.globalCompositeOperation = 'source-over';
   if (zoomed()) {
     g.clearRect(0,0,W,H);
     const kg = VISKG, cells = kg ? kgCells : gCells, lm = Math.log1p(kg ? P99K : P99G);
+    if (!kg && VIS.length) g.filter = `blur(${Math.max(2, Math.round(Math.abs(VIS[0][1][2]) * .45))}px)`;   // 100 km cells: blur them into a heat field
     for (const [i, r] of VIS) { const n = cells[i].h[cur]; if (n < .5) continue;
-      const v = Math.min(1, Math.log1p(n) / lm); g.fillStyle = HEAT[Math.round(v * 63)]; g.globalAlpha = .25 + .55 * v; g.fillRect(r[0] + .5, r[1] + .5, Math.max(1, r[2] - 1), Math.max(1, r[3] - 1)); }
+      const v = Math.min(1, Math.log1p(n) / lm); g.fillStyle = HEAT[Math.round(v * 63)]; g.globalAlpha = kg ? .25 + .55 * v : .45 + .5 * v;
+      if (kg) g.fillRect(r[0] + .5, r[1] + .5, Math.max(1, r[2] - 1), Math.max(1, r[3] - 1)); else g.fillRect(r[0] - 1, r[1] - 1, r[2] + 2, r[3] + 2); }
+    g.filter = 'none';
     g.globalAlpha = 1;
     if (kg) { const pts = POINTS.get(MONTHS[cur]) || [];
       g.globalCompositeOperation = 'lighter'; for (const [la, lo] of pts) { const p = proj([lo, la]); if (p) { g.globalAlpha = .55; g.drawImage(sprite, p[0] - 6, p[1] - 6, 12, 12); } }
@@ -741,7 +751,8 @@ function render() {
     const val = mode === 'a' ? (med[mi] >= 1 ? Math.round(100 * (v - med[mi]) / med[mi]) : 0) : mode === 'e' ? +extent[k].toFixed(1) : mode === 'r' ? (wx[`${y}-${String(mi + 1).padStart(2, '0')}`] || [0, 0])[1] : Math.round(v);
     data.push([mi, yi, val]); }));
   const sorted = data.map(d => d[2]).sort((p, q) => p - q), maxN = Math.max(1, sorted[Math.floor(sorted.length * .95)] || 1);
-  const vm = { calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:10, itemHeight:140, textStyle:{ color:'#9b938a' } };
+  const vm = { calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:10, itemHeight:140, textStyle:{ color:'#9b938a' },
+    formatter:v => mode === 'e' ? Math.round(v) + '%' : mode === 'r' ? Math.round(v) + ' ' + t.unitR : mode === 'a' ? (v > 0 ? '+' : '') + Math.round(v) + '%' : fmt(v) };
   const curCell = [cm - 1, years.indexOf(cy)];
   RS.data = data;
   const shown = scrub && !liveOn ? data.map(d => ((years[0] + d[1]) - 2001) * 12 + d[0] <= cur ? d : { value:d, itemStyle:{ opacity:.12 } }) : data;
@@ -753,9 +764,9 @@ function render() {
     xAxis:{ type:'category', data:t.mon, position:'top', axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
     yAxis:{ type:'category', data:years, inverse:true, axisLine:{ show:false }, axisTick:{ show:false }, axisLabel:{ color:'#9b938a' } },
     visualMap: mode === 'a' ? { ...vm, min:-100, max:100, inRange:{ color:['#2b6cb0','#5fa5e6','#26262c','#ff8a4c','#d1380d'] }, text:[t.above, t.below] }
-             : mode === 'r' ? { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#1d3a52','#2b6cb0','#5fa5e6','#bfe3ff'] }, text:[t.many, t.few] }
-             : mode === 'e' ? { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#3b2a14','#8a5a12','#d99a1e','#ffd36b'] }, text:[t.many, t.few] }
-                            : { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.many, t.few] },
+             : mode === 'r' ? { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#1d3a52','#2b6cb0','#5fa5e6','#bfe3ff'] }, text:[t.legR[0], t.legR[1]] }
+             : mode === 'e' ? { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#3b2a14','#8a5a12','#d99a1e','#ffd36b'] }, text:[t.legE[0], t.legE[1]] }
+                            : { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.legN[0], t.legN[1]] },
     series:[{ type:'heatmap', data:shown, label:{ show:years.length <= 5, color:'#111', fontSize:10 }, itemStyle:{ borderColor:'#17171c', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
             { type:'scatter', data:curCell[1] >= 0 && !liveOn ? [curCell] : [], symbol:'rect', symbolSize:[24, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
   $('note2001').textContent = years[0] <= 2001 ? t.y2001 : '';
@@ -814,7 +825,29 @@ function drawClock() {
   if (liveOn && LSUM) { $('clockM').textContent = t.liveNow; $('clockN').innerHTML = `<b>${fmt(sel.kind === 'world' ? LSUM.cells.reduce((s, c) => s + c[1], 0) : liveCellsSel.n20)}</b> ${t.fires} · ${t.liveDays}`; return; }
   $('clockM').textContent = `${t.mon[+m-1].toUpperCase()} ${y}`; $('clockN').innerHTML = `<b>${fmt(series[cur])}</b> ${firesWord(series[cur], lang)} · ${label()}`;
 }
+let TL = null;                 // cached timeline pictures (plain + glowing line) for the current series/period/size
 function drawTimeline() {
+  const c = $('timeline'), r = c.getBoundingClientRect(), [a, b] = viewRange(), key = [r.width, r.height, a, b, series && series.length, series && series[N - 1], series && series[0], liveOn].join();
+  if (!TL || TL.key !== key || TL.series !== series) TL = buildTimeline(r, a, b, key);
+  if (c.width !== Math.round(r.width * DPR)) { c.width = r.width * DPR; c.height = r.height * DPR; }
+  const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(TL.base, 0, 0);
+  if (!liveOn && cur >= a) { const x = TL.x(cur) * DPR; g.drawImage(TL.glow, 0, 0, x, c.height, 0, 0, x, c.height);
+    g.setTransform(DPR, 0, 0, DPR, 0, 0); g.fillStyle = '#fff'; g.beginPath(); g.arc(TL.x(cur), TL.y(series[cur]), 3.5, 0, 7); g.fill(); }
+}
+function buildTimeline(r, a, b, key) {
+  const n = b - a + 1, w = r.width, h = r.height, max = d3.max(series.subarray(a, b + 1)) || 1;
+  const x = i => 12 + (w - 60) * (i - a) / Math.max(1, n - 1), y = v => h - 18 - (h - 28) * v / max;
+  const mk = () => { const cv = document.createElement('canvas'); cv.width = w * DPR; cv.height = h * DPR; const g = cv.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0); return [cv, g]; };
+  const line = (g) => { g.beginPath(); for (let i = a; i <= b; i++) i > a ? g.lineTo(x(i), y(series[i])) : g.moveTo(x(i), y(series[i])); };
+  const [base, gb] = mk(); line(gb); gb.strokeStyle = 'rgba(255,255,255,.2)'; gb.lineWidth = 1.2; gb.stroke();
+  gb.fillStyle = liveOn ? '#ff3b30' : 'rgba(255,59,48,.6)'; gb.beginPath(); gb.arc(w - 30, h / 2 - 6, liveOn ? 5 : 4, 0, 7); gb.fill();
+  gb.fillStyle = '#9b938a'; gb.font = '10px Inter'; gb.fillText(T().liveNow, w - 46, h - 4);
+  gb.fillStyle = '#5f5952'; gb.font = '10px JetBrains Mono'; const step = n > 120 ? 5 : 1;
+  for (let i = a; i <= b; i++) { const ym = MONTHS[i]; if (ym.endsWith('-01') && +ym.slice(0,4) % step === 0) gb.fillText(ym.slice(0,4), x(i) - 13, h - 4); }
+  const [glow, gg] = mk(); line(gg); gg.strokeStyle = '#ff6a1a'; gg.lineWidth = 1.8; gg.shadowColor = '#ff6a1a'; gg.shadowBlur = 8; gg.stroke();
+  return { key, series, base, glow, x, y };
+}
+function drawTimelineOld() {
   const c = $('timeline'), r = c.getBoundingClientRect(); c.width = r.width * DPR; c.height = r.height * DPR;
   const g = c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
   const [a, b] = viewRange(), n = b - a + 1, w = r.width, h = r.height, max = d3.max(series.subarray(a, b + 1)) || 1;
@@ -846,6 +879,11 @@ function tick(now) {
 $('play').onclick = () => { const wasLive = liveOn; scrub = true; if (!playing) document.querySelector('#cal').scrollIntoView({ block:'nearest', behavior:'smooth' }); if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
   $('play').textContent = playing ? '❚❚' : '▶'; $('play').setAttribute('aria-label', playing ? 'pause' : 'play'); if (wasLive) layout(); render(); };
 $('now').onclick = () => toggleLive();
+// Chronology = a big map that plays 25 years with the calendar beside it; Analysis = the full panel
+$('view').onclick = e => { const v = e.target.dataset.v; if (!v) return; document.body.classList.toggle('chrono', v === 'chrono');
+  $('view').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
+  setTimeout(() => { Object.values(charts).forEach(c => c.resize()); layout(); TL = null; render();
+    if (v === 'chrono' && !playing) { if (liveOn) { liveOn = false; $('now').classList.remove('on'); layout(); } scrub = true; if (cur >= N - 1) cur = viewRange()[0]; $('play').click(); } }, 50); };
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
 function zoomBy(k, at) {          // k < 1 zooms in; the point under the cursor stays where it is
   if (tween) { cancelAnimationFrame(tween); tween = null; }
