@@ -1,26 +1,52 @@
-# Fire Calendar — MODIS + VIIRS harmonized hotspots
+# BurnBeat — a harmonized fire calendar for any place on Earth
 
-```
-python tools/make_demo_data.py   # FAKE data (delete data/raw/*_Demo.csv when real data is in)
-python pipeline.py               # data/raw/*.csv -> web/data/{cells.json, meta.json, points.csv}
-python -m http.server 8000 -d web   # open http://localhost:8000
-```
-No pip installs needed (Python stdlib + CDN libs).
+**Live:** https://34-40-83-150.sslip.io · **Mirror:** https://bakai4eg.github.io/fire-free-will/
+NASA Space Apps Challenge 2026 · *Harmonization of MODIS and VIIRS Hot Spots*
 
-## Real data
-FIRMS archive, yearly CSVs per country: https://firms.modaps.eosdis.nasa.gov/country/
-Take MODIS (2001–now) and VIIRS S-NPP (2012–now) for Kyrgyzstan (+ Kazakhstan if KG is sparse).
-Put them into `data/raw/`, rerun `pipeline.py`. Settings (grid size, overlap years) are at the top of `pipeline.py`.
+## The problem
+NASA satellites have recorded fires since 2000, but with two generations of sensors. VIIRS (2012–) sees about
+4× more small fires than MODIS (2000–), so the raw record jumps from 4.4 to 17.4 million hotspots a year in 2012.
+Stitched together as is, the planet seems to suddenly catch fire. A fire manager can't tell a bad season from a sensor change.
 
-## Who does what
-| Role | Task |
+## What BurnBeat does
+1. **Harmonizes 25 years** of MODIS and VIIRS into one consistent record (VIIRS-equivalent hotspots).
+2. **Answers three questions for any place on Earth** — search a place, click a country, or draw an area:
+   - **When does it usually burn?** Burning calendar 2001–2025: hotspots, anomaly vs normal, burned extent, rainfall. ▶ plays 25 years on the map.
+   - **Is it worse than normal right now?** Last 7 days (refreshed every 3 hours) vs a VIIRS-era normal.
+   - **How risky are the next 3 days?** Season + anomaly + fresh detections + weather forecast (a rating, not a fire forecast).
+3. **Kyrgyzstan in detail:** 0.25° grid, individual hotspots, real region borders, villages near fires, and a Telegram bot with a daily brief.
+
+## Does the harmonization work?
+Each year 2012–2019 was hidden from the model in turn and compared with what VIIRS really saw:
+
+| | Bias | Monthly error |
+|---|---|---|
+| Raw MODIS | −75 % | 1 042 951 hotspots |
+| **BurnBeat** | **−0.3 %** | **54 491 hotspots (19× smaller)** |
+
+The harmonized world record stays at 15–19 million hotspots a year for 2001–2025. Full method, validation and limits: [docs/METHOD.md](docs/METHOD.md).
+
+## Who it is for
+- **Emergency services** — plan the season, see anomalies early, send patrols before the peak.
+- **Local governments and farmers** — a morning Telegram brief: risk level with reasons, new fires near the village.
+- **Scientists and journalists** — any country, CSV and PNG export, an open method with honest limits.
+
+## Data
+NASA FIRMS (MODIS C6.1, VIIRS S-NPP, VIIRS NOAA-20/21 near-real-time) · NASA POWER · Open-Meteo · GeoNames · geoBoundaries · Natural Earth (world-atlas).
+Vegetation fires only: factories, gas flares and volcanoes are removed.
+
+## How it is built
+| Part | Files |
 |---|---|
-| Data | Download real FIRMS CSVs, check how many KG points exist, fix column names if needed |
-| Science | Improve harmonization (per land-cover ratio, day/night, NOAA-20), validation numbers for the pitch |
-| Front 1 | Map: polygon draw, lat/lon input, region presets (oblasts) |
-| Front 2 | Calendar look, RU/EN switch, mobile |
-| Features | "season onset/peak/end", compare two regions, PDF report |
-| Pitch | User story (MChS / ayil okmotu), slides, demo video, **AI-use description (required by Space Apps)** |
+| Harmonization, Kyrgyzstan (0.25°) | `pipeline.py` |
+| Harmonization, whole world (1°) | `tools/global_pipeline.py`, `tools/run_global.py` |
+| Live last 7 days (server, every 3 h) | `tools/fetch_live.py` |
+| Weather, villages, Kyrgyz points | `tools/fetch_weather.py`, `tools/precompute_kg.py` |
+| Web app (one file, d3 + ECharts, RU/KY/EN) | `web/index.html` |
+| API for the bot | `web/api/` |
+
+Run locally: `python -m http.server 8000 -d web` → http://localhost:8000. Rebuild Kyrgyz data: `python pipeline.py`. Rebuild the world: `python tools/run_global.py` (downloads ~7 GB, Python only).
+Hosting: Google Cloud VM with Caddy (HTTPS, code pulled from GitHub every 5 min, live data every 3 h) and GitHub Pages as a mirror.
 
 ## Use of AI (Super Intelligence) tools
 This project was built with the help of an AI coding assistant (Anthropic Claude, via Claude Code).
