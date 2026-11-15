@@ -146,7 +146,7 @@ def harmonize(counts, ratio, tf):
         cells.append({"la": (cell[0] + .5) * CELL, "lo": (cell[1] + .5) * CELL, "m": m, "v": v, "h": h})
     return cells
 
-SITE = "https://bakai4eg.github.io/fire-free-will/"
+SITE = "https://34-40-83-150.sslip.io/"
 MON_RU = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"]
 
 def write_api(cells, meta):
