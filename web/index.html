@@ -367,6 +367,7 @@ function flyTo() {             // animate the flat map from the current view to 
   const a = { r:proj.rotate(), s:proj.scale(), t:proj.translate() }, b = viewParams();
   const ir = d3.interpolate(a.r, b.r), it = d3.interpolate(a.t, b.t), ls = d3.interpolate(Math.log(a.s), Math.log(b.s)), t0 = performance.now(), D = 650;
   if (tween) cancelAnimationFrame(tween);
+  Object.values(C).forEach(c => c.style.transform = ''); moving = false; clearTimeout(commitT);
   ctx.fire.clearRect(0, 0, W, H); ctx.marks.clearRect(0, 0, W, H);
   const step = now => { const k = Math.min(1, (now - t0) / D), e = d3.easeCubicInOut(k);
     proj.rotate(ir(e)).scale(Math.exp(ls(e))).translate(it(e)); drawBase();
@@ -392,17 +393,28 @@ function layout() {
   if (!isGlobe()) buildPix();
   buildVis(); buildLiveXY();
   $('scaleNote').textContent = liveOn && zoomed() ? T().gridLive : zoomed() ? (VISKG ? T().gridKg : T().grid) : '';
-  ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks();
+  ctx.fire.clearRect(0,0,W,H); drawFire(1); drawMarks(); markCommitted();
 }
 function setChrome() {         // cursor, hint, buttons for the current mode
   $('stage').classList.toggle('globe', isGlobe()); $('stage').classList.toggle('pan', !isGlobe() && !rectMode); $('stage').classList.toggle('rectmode', rectMode);
   $('hint').textContent = rectMode ? T().hintRect : isGlobe() ? T().hintG : sel.kind === 'world' ? T().hint : T().hintIn;
   $('rect').classList.toggle('on', rectMode); $('useView').textContent = T().useView; $('useView').classList.toggle('on', camActive && !rectMode);
 }
-function redrawCam() {         // instant redraw after pan / zoom (map, fire, marks), no data recomputation
+// While panning/zooming we only move the already drawn canvases with a CSS transform (GPU, instant).
+// The exact redraw (land, fire, borders) happens once, 140 ms after the movement stops.
+let committed = null, commitT = 0, moving = false;
+function markCommitted() { committed = { s:proj.scale(), t:proj.translate().slice() }; Object.values(C).forEach(c => c.style.transform = ''); moving = false; }
+function applyXform() {
+  if (!committed) return redrawCam();
+  const k = proj.scale() / committed.s, t = proj.translate(), dx = t[0] - committed.t[0] * k, dy = t[1] - committed.t[1] * k;
+  const css = `translate(${dx}px, ${dy}px) scale(${k})`; Object.values(C).forEach(c => { c.style.transformOrigin = '0 0'; c.style.transform = css; }); moving = true;
+  clearTimeout(commitT); commitT = setTimeout(redrawCam, 140);
+}
+function redrawCam() {         // exact redraw after pan / zoom (map, fire, marks), no data recomputation
+  clearTimeout(commitT);
   path = d3.geoPath(proj, ctx.land); drawBase();
   ptsG = gCells.map(c => proj([c.lo, c.la])); buildPix(); buildVis(); buildLiveXY();
-  ctx.fire.clearRect(0, 0, W, H); drawFire(1); drawMarks(); setChrome();
+  ctx.fire.clearRect(0, 0, W, H); drawFire(1); drawMarks(); setChrome(); markCommitted();
   $('scaleNote').textContent = liveOn && zoomed() ? T().gridLive : zoomed() ? (VISKG ? T().gridKg : T().grid) : '';
 }
 function drawBase() {
@@ -509,10 +521,9 @@ $('stage').addEventListener('pointerdown', e => { if (e.target.closest('.player,
 $('stage').addEventListener('pointermove', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top];
   if (isGlobe()) { if (Math.hypot(p[0]-down[0], p[1]-down[1]) > 4) { spinning = false; $('stage').classList.add('drag'); const k = 90 / proj.scale();
       rot = [rot[0] + (p[0] - (down.lx ?? down[0])) * k, Math.max(-60, Math.min(60, rot[1] - (p[1] - (down.ly ?? down[1])) * k))]; down.lx = p[0]; down.ly = p[1]; down.moved = true; proj.rotate(rot); drawBase(); drawFire(1); } return; }
-  if (Math.hypot(p[0]-down[0], p[1]-down[1]) <= 4 && !down.moved) return;
+  if (Math.hypot(p[0]-down[0], p[1]-down[1]) <= 6 && !down.moved) return;
   if (down.rect) { const a = proj.invert(down), c = proj.invert(p); if (a && c) drawMarks([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); down.dragged = true; return; }
-  down.moved = true; $('stage').classList.add('drag'); proj.translate([down.t0[0] + p[0] - down[0], down.t0[1] + p[1] - down[1]]); camActive = true;
-  if (!panT) panT = setTimeout(() => { panT = 0; redrawCam(); }, 16); });
+  down.moved = true; $('stage').classList.add('drag'); proj.translate([down.t0[0] + p[0] - down[0], down.t0[1] + p[1] - down[1]]); camActive = true; applyXform(); });
 let panT = 0;
 // two-finger pinch zoom (phones / tablets)
 const touches = new Map(); let pinchD = 0;
@@ -522,10 +533,11 @@ $('stage').addEventListener('pointermove', e => { if (!touches.has(e.pointerId))
     if (Math.abs(d - pinchD) > 8) { zoomBy(pinchD / d, onEarth([(a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top])); pinchD = d; } } });
 ['pointerup', 'pointercancel'].forEach(t => addEventListener(t, e => { touches.delete(e.pointerId); if (touches.size < 2) pinchD = 0; }));
 addEventListener('pointerup', e => { if (!down) return; const r = $('stage').getBoundingClientRect(), p = [e.clientX - r.left, e.clientY - r.top], d0 = down; down = null;
-  $('stage').classList.remove('drag'); if (d0.moved) { clearTimeout(panT); panT = 0; redrawCam(); return; }
+  $('stage').classList.remove('drag'); if (d0.moved) { redrawCam(); setChrome(); return; }
   const a = onEarth(d0); if (!a) return;
   if (!d0.dragged) {
-    const [lo, la] = a, inside = sel.kind !== 'world' && sel.kind !== 'box' && sel.contains(lo, la);
+    const [lo, la] = a; if (sel.kind === 'box' && sel.contains(lo, la)) return;   // clicking inside your own area keeps it
+    const inside = sel.kind !== 'world' && sel.contains(lo, la);
     if (!inside) { const c = countryAt(lo, la); if (c) return selectCountry(c); }
     const d = .5; selectBox([la - d, lo - d * 1.3, la + d, lo + d * 1.3], null, [lo, la]);
   } else { const c = onEarth(p); if (!c) return; rectMode = false; selectBox([Math.min(a[1],c[1]), Math.min(a[0],c[0]), Math.max(a[1],c[1]), Math.max(a[0],c[0])]); }
@@ -871,9 +883,9 @@ let last = 0, acc = 0, globeAcc = 0, liveAcc = 0;
 function tick(now) {
   const dt = Math.max(0, Math.min(500, now - (last || now))); last = Math.max(last, now);   // never negative, even if timestamps jump
   if (isGlobe() && spinning && !down && (globeAcc += dt) > 40) { rot = [rot[0] + globeAcc * .004, rot[1]]; globeAcc = 0; proj.rotate(rot); drawBase(); drawFire(1); }
-  if (!tween && liveOn && zoomed() && LIVEXY.length && LIVEXY.length < 6000 && (liveAcc += dt) > 33) { livePhase = (livePhase + liveAcc / 1800) % 1; liveAcc = 0; drawFire(1); }
+  if (!tween && !moving && liveOn && zoomed() && LIVEXY.length && LIVEXY.length < 6000 && (liveAcc += dt) > 33) { livePhase = (livePhase + liveAcc / 1800) % 1; liveAcc = 0; drawFire(1); }
   else if (playing && (acc += dt) >= 130) { acc = 0; const [, b] = viewRange();
-    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning)) drawFire(.55); drawClock(); drawTimeline(); playUI(); } }
+    if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning) && !moving) drawFire(.55); drawClock(); drawTimeline(); playUI(); } }
   requestAnimationFrame(tick);
 }
 $('play').onclick = () => { const wasLive = liveOn; scrub = true; if (!playing) document.querySelector('#cal').scrollIntoView({ block:'nearest', behavior:'smooth' }); if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
@@ -894,7 +906,7 @@ function zoomBy(k, at) {          // k < 1 zooms in; the point under the cursor 
   if (s1 <= worldS * .9 + 1 && k > 1 && sel.kind === 'world' && globe) { camActive = false; layout(); return; }   // zoomed all the way out: back to the globe
   const ps = at ? proj(at) : [W / 2, H / 2], t = proj.translate();
   proj.scale(s1).translate([ps[0] - (ps[0] - t[0]) * s1 / s0, ps[1] - (ps[1] - t[1]) * s1 / s0]);
-  camActive = true; redrawCam();
+  camActive = true; applyXform(); setChrome();
 }
 $('zin').onclick = () => zoomBy(.6); $('zout').onclick = () => zoomBy(1.65);
 $('rect').onclick = () => { rectMode = !rectMode; if (rectMode && isGlobe()) { globe = false; layout(); } setChrome(); };
