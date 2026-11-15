@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-OUT = os.path.join(ROOT, "web", "data", "live")
+OUT = os.environ.get("BURNBEAT_LIVE_OUT") or os.path.join(ROOT, "web", "data", "live")   # the server writes outside the git checkout
 BASE = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/"
 FILES = {20: "noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_7d.csv", 21: "noaa-21-viirs-c2/csv/J2_VIIRS_C2_Global_7d.csv"}
 R = 0.015
@@ -50,6 +50,7 @@ for la, lo, d, ts, sat, frp in sorted(rows, key=lambda x: x[3], reverse=True):
     seen.add((k, d))
     kept.append((la, lo, ts, sat, frp, False))
 
+FINAL, OUT = OUT, OUT.rstrip("/\\") + ".new"          # build in a side folder, then swap: readers never see half a dataset
 shutil.rmtree(OUT, ignore_errors=True); os.makedirs(OUT)
 cells, tiles = defaultdict(lambda: [0, 0]), defaultdict(list)
 for la, lo, ts, sat, frp, dup in kept:
@@ -64,4 +65,7 @@ newest = kept[0][2] if kept else ""
 json.dump({"updated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), "newest": newest, "days": 7,
            "static_removed": len(static), "cells": [[c, v[0], v[1]] for c, v in cells.items()]},
           open(os.path.join(OUT, "summary.json"), "w"), separators=(",", ":"))
+old = FINAL.rstrip("/\\") + ".old"; shutil.rmtree(old, ignore_errors=True)
+if os.path.exists(FINAL): os.replace(FINAL, old)
+os.replace(OUT, FINAL); shutil.rmtree(old, ignore_errors=True)
 print(f"{len(kept)} kept, {len(static)} static places removed, {len(tiles)} tiles, newest {newest}")
