@@ -29,7 +29,7 @@
   .drop button:hover, .drop button.hi { background:var(--card2) } .drop button span { color:var(--muted); font-size:12px }
   .sp { flex:1 }
   .pill { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 13px; font-weight:500; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-flex; gap:6px; align-items:center; color:var(--ink) }
-  .pill:hover { background:var(--card2) } .pill.fire { background:var(--fire); border-color:var(--fire); color:#160800; font-weight:600 } .pill:disabled { opacity:.35; cursor:not-allowed }
+  .pill:hover { background:var(--card2) } .pill.tg { border-color:rgba(42,171,238,.45); } .pill.tg:hover { background:rgba(42,171,238,.15) } .pill.fire { background:var(--fire); border-color:var(--fire); color:#160800; font-weight:600 } .pill:disabled { opacity:.35; cursor:not-allowed }
   .seg { display:inline-flex; background:var(--card); border-radius:999px; padding:3px; border:1px solid var(--line) }
   .seg button { border:0; background:none; padding:5px 11px; border-radius:999px; color:var(--muted); cursor:pointer; font-weight:600; font-size:12px }
   .seg button.on { background:var(--card2); color:var(--ink) }
@@ -109,7 +109,7 @@
   <div class="search"><span class="ic">⌕</span><input id="q" autocomplete="off" spellcheck="false" aria-label="Search a place"><div class="drop" id="drop"></div></div>
   <div class="sp"></div>
   <div class="seg" id="period"><button data-v="1" data-t="p1"></button><button data-v="5" data-t="p5"></button><button data-v="10" data-t="p10"></button><button data-v="all" class="on" data-t="pall"></button></div>
-  <a class="pill fire" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener">✈<span class="tg-text" data-t="tg"></span></a>
+  <a class="pill tg" href="https://t.me/burn_beat_bot" target="_blank" rel="noopener" aria-label="Telegram bot"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#2AABEE"/><path d="M5.4 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.6-.5.8-1 .5l-2.9-2.1-1.4 1.3c-.2.2-.3.3-.6.3l.2-2.9 5.3-4.8c.2-.2 0-.3-.3-.1l-6.6 4.1-2.8-.9c-.6-.2-.6-.6.1-.9z" fill="#fff"/></svg><span class="tg-text" data-t="tg"></span></a>
   <div class="seg" id="lang"><button data-v="ru">RU</button><button data-v="ky">KY</button><button data-v="en">EN</button></div>
 </header>
 
@@ -546,7 +546,7 @@ async function selectBox(bbox, name, at) {
   apply(s);
 }
 async function apply(s) {
-  sel = s; playing = false; camActive = false; $('play').textContent = '▶';
+  sel = s; playing = false; camActive = false; scrub = false; $('play').textContent = '▶';
   if (sel.kind === 'world') { series = Float32Array.from(SUMMARY.harmonized); selCells = []; }
   else { const kg = selSrc() === 'kg', cells = kg ? kgCells : gCells, out = new Float32Array(N), ck = sel.kind === 'country' ? 'c' + sel.f.id : null;
     if (ck && CELLCACHE.has(ck)) selCells = CELLCACHE.get(ck);
@@ -663,7 +663,7 @@ async function renderDanger(med, liveRatio) {
 }
 
 // =============================== panel ===============================
-let RS = null, extent = null, WORLDEXT = null;
+let RS = null, extent = null, WORLDEXT = null, scrub = false;   // scrub: the user is moving through time (play / timeline), future months stay pale
 const viewRange = () => period === 'all' ? [0, N - 1] : [Math.max(0, N - 12 * +period), N - 1];
 function render() {
   const t = T(), [a, b] = viewRange(), cy = +MONTHS[cur].slice(0,4), cm = +MONTHS[cur].slice(5);
@@ -744,6 +744,7 @@ function render() {
   const vm = { calculable:true, orient:'horizontal', left:'center', bottom:0, itemWidth:10, itemHeight:140, textStyle:{ color:'#9b938a' } };
   const curCell = [cm - 1, years.indexOf(cy)];
   RS.data = data;
+  const shown = scrub && !liveOn ? data.map(d => ((years[0] + d[1]) - 2001) * 12 + d[0] <= cur ? d : { value:d, itemStyle:{ opacity:.12 } }) : data;
   charts.cal.getDom().style.height = Math.max(180, 70 + years.length * 15.5) + 'px'; charts.cal.resize();
   charts.cal.setOption({ textStyle:{ fontFamily:'Inter' }, grid:{ left:40, right:6, top:22, bottom:50 },
     tooltip:{ formatter:p => { if (p.seriesType !== 'heatmap') return ''; const v = Array.isArray(p.value) ? p.value : p.data.value; const k = (years[v[1]] - 2001) * 12 + v[0];
@@ -755,7 +756,7 @@ function render() {
              : mode === 'r' ? { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#1d3a52','#2b6cb0','#5fa5e6','#bfe3ff'] }, text:[t.many, t.few] }
              : mode === 'e' ? { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#3b2a14','#8a5a12','#d99a1e','#ffd36b'] }, text:[t.many, t.few] }
                             : { ...vm, min:0, max:maxN, inRange:{ color:['#1f1e24','#4a1d2c','#8f2a2a','#d9480f','#ff8c28','#ffd480'] }, text:[t.many, t.few] },
-    series:[{ type:'heatmap', data, label:{ show:years.length <= 5, color:'#111', fontSize:10 }, itemStyle:{ borderColor:'#17171c', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
+    series:[{ type:'heatmap', data:shown, label:{ show:years.length <= 5, color:'#111', fontSize:10 }, itemStyle:{ borderColor:'#17171c', borderWidth:1.5, borderRadius:3 }, emphasis:{ itemStyle:{ borderColor:'#fff', borderWidth:1.5 } } },
             { type:'scatter', data:curCell[1] >= 0 && !liveOn ? [curCell] : [], symbol:'rect', symbolSize:[24, 14], itemStyle:{ color:'transparent', borderColor:'#fff', borderWidth:2 }, silent:true, z:10 }] }, true);
   $('note2001').textContent = years[0] <= 2001 ? t.y2001 : '';
 
@@ -829,9 +830,9 @@ function drawTimeline() {
   for (let i = a; i <= b; i++) { const ym = MONTHS[i]; if (ym.endsWith('-01') && +ym.slice(0,4) % step === 0) g.fillText(ym.slice(0,4), x(i) - 13, h - 4); }
 }
 $('timeline').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(), [a, b] = viewRange(), px = e.clientX - r.left;
-  if (px > r.width - 50) { if (!liveOn && LSUM) toggleLive(true); return; } if (liveOn) toggleLive(false); seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
+  if (px > r.width - 50) { if (!liveOn && LSUM) toggleLive(true); return; } if (liveOn) toggleLive(false); scrub = true; seek(a + Math.round((px - 12) / (r.width - 60) * (b - a))); });
 function seek(i) { cur = Math.max(0, Math.min(N - 1, i)); ctx.fire.clearRect(0,0,W,H); drawFire(1); render(); }
-function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) { playing = false; $('play').textContent = '▶'; } $('now').classList.toggle('on', liveOn); layout(); render(); }
+function toggleLive(force) { liveOn = force === undefined ? !liveOn : force; if (liveOn) scrub = false; if (liveOn) { playing = false; $('play').textContent = '▶'; } $('now').classList.toggle('on', liveOn); layout(); render(); }
 
 let last = 0, acc = 0, globeAcc = 0, liveAcc = 0;
 function tick(now) {
@@ -842,7 +843,7 @@ function tick(now) {
     if (cur >= b) { playing = false; $('play').textContent = '▶'; render(); } else { cur++; if (!(isGlobe() && spinning)) drawFire(.55); drawClock(); drawTimeline(); playUI(); } }
   requestAnimationFrame(tick);
 }
-$('play').onclick = () => { const wasLive = liveOn; if (!playing) document.querySelector('#cal').scrollIntoView({ block:'nearest', behavior:'smooth' }); if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
+$('play').onclick = () => { const wasLive = liveOn; scrub = true; if (!playing) document.querySelector('#cal').scrollIntoView({ block:'nearest', behavior:'smooth' }); if (liveOn) { liveOn = false; $('now').classList.remove('on'); } playing = !playing; const [a, b] = viewRange(); if (playing && (cur >= b || cur < a)) cur = a;
   $('play').textContent = playing ? '❚❚' : '▶'; $('play').setAttribute('aria-label', playing ? 'pause' : 'play'); if (wasLive) layout(); render(); };
 $('now').onclick = () => toggleLive();
 $('viewBtn').onclick = e => { e.stopPropagation(); globe = !globe; spinning = globe; layout(); };
