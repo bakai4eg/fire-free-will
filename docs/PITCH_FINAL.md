@@ -13,7 +13,7 @@
 - **Если спросят, где хуже всего:** *"Small countries like Tajikistan: only 2× better, because there are very few fires to learn from."*
 - **Если спросят про Украину и Непал:** *"The NASA download timed out tonight — they're next."*
 - **Алерт бота:** ≥5 очагов за 7 дней И ≥2× нормальной недели. Повтор не чаще раза в 3 дня.
-- **Ссылка для жюри на английском:** https://34-40-83-150.sslip.io/?lang=en
+- **Ссылка для жюри на английском:** https://bakai4eg.github.io/fire-free-will/?lang=en
 
 ## КРЕАТИВНАЯ РЕЧЬ (~4–5 мин)
 

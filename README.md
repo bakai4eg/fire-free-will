@@ -1,6 +1,8 @@
 # BurnBeat — a harmonized fire calendar for any place on Earth
 
-**Live:** https://34-40-83-150.sslip.io · **Mirror:** https://bakai4eg.github.io/fire-free-will/
+**Live:** https://bakai4eg.github.io/fire-free-will/ (live NASA hotspots refreshed every 3 hours)
+
+> The original server address `34-40-83-150.sslip.io` (in the Space Apps form) went offline on 17 Nov 2026 when its cloud billing account closed; the same app now runs entirely on GitHub Pages.
 NASA Space Apps Challenge 2026 · *Harmonization of MODIS and VIIRS Hot Spots*
 
 ## The problem
@@ -45,10 +47,10 @@ Vegetation fires only: factories, gas flares and volcanoes are removed.
 | Web app (one file, d3 + ECharts, RU/KY/EN) | `web/index.html` |
 | API for the bot | `web/api/` |
 
-Open in English: https://34-40-83-150.sslip.io/?lang=en (the app also picks the browser language).
+Open in English: https://bakai4eg.github.io/fire-free-will/?lang=en (the app also picks the browser language).
 
 Run locally: `python -m http.server 8000 -d web` → http://localhost:8000. Rebuild Kyrgyz data: `python pipeline.py`. Rebuild the world: `python tools/run_global.py` (downloads ~7 GB, Python only).
-Hosting: Google Cloud VM with Caddy (HTTPS, code pulled from GitHub every 5 min, live data every 3 h) and GitHub Pages as a mirror.
+Hosting: GitHub Pages; GitHub Actions rebuilds the live layer (`tools/fetch_live.py`) every 3 hours and on every push. No server.
 
 ## Use of AI (Super Intelligence) tools
 This project was built with the help of an AI coding assistant (Anthropic Claude, via Claude Code).
